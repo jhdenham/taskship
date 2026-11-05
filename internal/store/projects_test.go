@@ -60,7 +60,7 @@ func TestGetProjectNotFound(t *testing.T) {
 func TestListProjectsSortedAndEmpty(t *testing.T) {
 	ctx := context.Background()
 	s := openTest(t, t.TempDir())
-	got, err := s.ListProjects(ctx)
+	got, err := s.ListProjects(ctx, false)
 	if err != nil || got == nil || len(got) != 0 {
 		t.Fatalf("empty list = %#v, %v; want non-nil empty slice", got, err)
 	}
@@ -72,7 +72,7 @@ func TestListProjectsSortedAndEmpty(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, err = s.ListProjects(ctx)
+	got, err = s.ListProjects(ctx, false)
 	if err != nil {
 		t.Fatal(err)
 	}
