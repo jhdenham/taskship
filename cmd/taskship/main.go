@@ -11,7 +11,5 @@ import (
 var version = ""
 
 func main() {
-	if err := cli.NewRootCmd(version).Execute(); err != nil {
-		os.Exit(1)
-	}
+	os.Exit(cli.Execute(cli.NewRootCmd(version)))
 }

@@ -4,7 +4,9 @@
 
 Taskship is a local-first task manager and coding-agent dispatcher for developers. Organize projects and tasks from a CLI or TUI, then launch a coding agent such as Claude with the task's context. The agent reviews the task and proposes a plan before changing any code.
 
-> **Status:** early development. Only `taskship --version` exists today. Every other command described in `docs/` is planned, not implemented.
+> **Status:** early development. Implemented so far: `taskship --version` and `taskship project add|list|show`. Every other command described in `docs/` is planned, not implemented.
+>
+> Data is stored in `~/.taskship/` (override with `TASKSHIP_HOME`), which is created by the first command that needs it.
 
 ## Principles
 
@@ -27,7 +29,9 @@ Taskship is a local-first task manager and coding-agent dispatcher for developer
 
 ```text
 cmd/taskship/       main package for the taskship binary
-internal/cli/       Cobra command tree
+internal/cli/       Cobra command tree, exit codes, output
+internal/core/      domain types and validation
+internal/store/     SQLite persistence and embedded migrations
 docs/               user-facing documentation (planned behavior)
 ```
 
