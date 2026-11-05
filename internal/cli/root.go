@@ -20,7 +20,13 @@ func NewRootCmd(version string) *cobra.Command {
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return usageError{err}
 	})
-	root.AddCommand(newProjectCmd())
+	root.AddCommand(
+		newProjectCmd(),
+		newTaskCmd(),
+		newTaskAddCmd("add"),
+		newTaskListCmd("tasks"),
+		newTaskShowCmd("show"),
+	)
 	return root
 }
 
