@@ -202,3 +202,95 @@ func TestForTask(t *testing.T) {
 		})
 	}
 }
+
+func TestMainCheckout(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	ctx := context.Background()
+	base, _ := filepath.EvalSymlinks(t.TempDir())
+	p := func(rel string) string { return filepath.Join(base, rel) }
+	if err := os.MkdirAll(p("myproject/internal"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(p("plain"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	git(t, p("myproject"), "init", "-q")
+	git(t, p("myproject"), "commit", "-q", "--allow-empty", "-m", "init")
+	git(t, p("myproject"), "worktree", "add", "-q", p("wt/feature"))
+	// A bare repository with worktrees next to it, a common layout for
+	// worktree-heavy workflows.
+	git(t, base, "clone", "-q", "--bare", p("myproject"), p("other/.bare"))
+	git(t, p("other/.bare"), "worktree", "add", "-q", p("other/main"))
+
+	tests := []struct {
+		dir, want string
+		bare      bool
+	}{
+		{"myproject", "myproject", false},
+		{"myproject/internal", "myproject", false},
+		{"wt/feature", "myproject", false},
+		{"other/main", "other/.bare", true},
+	}
+	for _, tt := range tests {
+		got, bare := MainCheckout(ctx, p(tt.dir))
+		if got != p(tt.want) || bare != tt.bare {
+			t.Errorf("MainCheckout(%s) = %q, %v; want %q, %v", tt.dir, got, bare, p(tt.want), tt.bare)
+		}
+	}
+	if got, _ := MainCheckout(ctx, p("plain")); got != "" {
+		t.Errorf("MainCheckout(plain) = %q, want none", got)
+	}
+}
+
+func TestRemoteName(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	ctx := context.Background()
+	repo := t.TempDir()
+	git(t, repo, "init", "-q")
+	git(t, repo, "commit", "-q", "--allow-empty", "-m", "init")
+	worktree := filepath.Join(t.TempDir(), "feature")
+	git(t, repo, "worktree", "add", "-q", worktree)
+
+	if got := RemoteName(ctx, repo); got != "" {
+		t.Errorf("no remotes: %q", got)
+	}
+	git(t, repo, "remote", "add", "upstream", "https://github.com/someone/upstream-name.git/")
+	if got := RemoteName(ctx, repo); got != "upstream-name" {
+		t.Errorf("one non-origin remote: %q", got)
+	}
+	git(t, repo, "remote", "add", "fork", "https://github.com/me/fork-name")
+	if got := RemoteName(ctx, repo); got != "" {
+		t.Errorf("two remotes, no origin: %q", got)
+	}
+	git(t, repo, "remote", "add", "origin", "git@github.com:me/myproject.git")
+	for _, dir := range []string{repo, worktree} {
+		if got := RemoteName(ctx, dir); got != "myproject" {
+			t.Errorf("origin from %s: %q", dir, got)
+		}
+	}
+	if got := RemoteName(ctx, t.TempDir()); got != "" {
+		t.Errorf("not a repository: %q", got)
+	}
+}
+
+func TestRepoNameFromURL(t *testing.T) {
+	for url, want := range map[string]string{
+		"git@github.com:me/myproject.git":             "myproject",
+		"git@github.com:myproject.git":                "myproject",
+		"https://github.com/me/myproject":             "myproject",
+		"https://github.com/me/myproject.git/":        "myproject",
+		"ssh://git@example.com:2222/me/MyProject.git": "MyProject",
+		"/srv/git/myproject.git":                      "myproject",
+		"file:///srv/git/myproject":                   "myproject",
+		"myproject":                                   "myproject",
+		"":                                            "",
+	} {
+		if got := repoNameFromURL(url); got != want {
+			t.Errorf("repoNameFromURL(%q) = %q, want %q", url, got, want)
+		}
+	}
+}

@@ -35,11 +35,11 @@ func Inspect(ctx context.Context, dir string) (path, gitCommonDir string, err er
 // a Git repository or git is unavailable. rev-parse only reads metadata; it
 // runs no hooks or repository-configured commands.
 func commonDir(ctx context.Context, dir string) string {
-	out, err := exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--path-format=absolute", "--git-common-dir").Output()
-	if err != nil {
+	out, ok := gitOutput(ctx, dir, "rev-parse", "--path-format=absolute", "--git-common-dir")
+	if !ok {
 		return ""
 	}
-	d, err := filepath.EvalSymlinks(strings.TrimSpace(string(out)))
+	d, err := filepath.EvalSymlinks(out)
 	if err != nil {
 		return ""
 	}
@@ -173,13 +173,82 @@ func root(ctx context.Context, dir, gitCommonDir string, w core.Workspace) strin
 // containing dir, or "" if there is none. Like commonDir, it only reads
 // metadata.
 func toplevel(ctx context.Context, dir string) string {
-	out, err := exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--show-toplevel").Output()
-	if err != nil {
+	out, ok := gitOutput(ctx, dir, "rev-parse", "--show-toplevel")
+	if !ok {
 		return ""
 	}
-	d, err := filepath.EvalSymlinks(strings.TrimSpace(string(out)))
+	d, err := filepath.EvalSymlinks(out)
 	if err != nil {
 		return ""
 	}
 	return d
+}
+
+// MainCheckout returns the symlink-free path of the main worktree of the Git
+// repository containing dir: the checkout that linked worktrees were added
+// from, or the repository itself if it is bare. It returns "" if dir is not
+// in a Git repository.
+func MainCheckout(ctx context.Context, dir string) (path string, bare bool) {
+	out, ok := gitOutput(ctx, dir, "worktree", "list", "--porcelain")
+	if !ok {
+		return "", false
+	}
+	// The main worktree is listed first, as "worktree PATH" followed by its
+	// attributes, one of which is "bare" for a bare repository.
+	first, _, _ := strings.Cut(out, "\n\n")
+	lines := strings.Split(first, "\n")
+	p, found := strings.CutPrefix(lines[0], "worktree ")
+	if !found {
+		return "", false
+	}
+	path, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return "", false
+	}
+	return path, slices.Contains(lines[1:], "bare")
+}
+
+// RemoteName returns the repository name in the URL of the "origin" remote
+// of the Git repository containing dir, or of its only remote if there is no
+// origin (for example "myproject" for git@github.com:me/myproject.git). It
+// returns "" if there is no such remote. Reading remotes runs no
+// repository-configured commands.
+func RemoteName(ctx context.Context, dir string) string {
+	out, ok := gitOutput(ctx, dir, "remote")
+	if !ok {
+		return ""
+	}
+	remotes := strings.Fields(out)
+	remote := "origin"
+	if !slices.Contains(remotes, remote) {
+		if len(remotes) != 1 {
+			return ""
+		}
+		remote = remotes[0]
+	}
+	url, ok := gitOutput(ctx, dir, "remote", "get-url", remote)
+	if !ok {
+		return ""
+	}
+	return repoNameFromURL(url)
+}
+
+// repoNameFromURL returns the last path element of a Git remote URL, without
+// a trailing slash or ".git".
+func repoNameFromURL(url string) string {
+	url = strings.TrimSuffix(strings.TrimSuffix(strings.TrimSpace(url), "/"), ".git")
+	if i := strings.LastIndexAny(url, "/:"); i >= 0 {
+		url = url[i+1:]
+	}
+	return url
+}
+
+// gitOutput runs a read-only git command in dir and returns its trimmed
+// output; ok is false if git fails or is not installed.
+func gitOutput(ctx context.Context, dir string, args ...string) (out string, ok bool) {
+	b, err := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...).Output()
+	if err != nil {
+		return "", false
+	}
+	return strings.TrimSpace(string(b)), true
 }
