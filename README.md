@@ -4,7 +4,7 @@
 
 Taskship is a local-first task manager and coding-agent dispatcher for developers. Organize projects and tasks from a CLI or TUI, then launch a coding agent such as Claude with the task's context. The agent reviews the task and proposes a plan before changing any code.
 
-> **Status:** early development. Implemented so far: `taskship --version`, `taskship project add|list|show|edit|archive|restore`, and `taskship task add|list|show|edit|archive|restore` (with the shortcuts `add`, `tasks`, and `show`). `add` currently requires `--project`. Every other command described in `docs/` is planned, not implemented.
+> **Status:** early development. Implemented so far: `taskship --version`, `taskship project add|list|show|edit|archive|restore`, `taskship task add|list|show|edit|archive|restore` (with the shortcuts `add`, `tasks`, and `show`), and `taskship export`. Tasks can be shown and edited as Markdown (`show --md`, `task edit` in `$EDITOR` or `--from`); see [docs/concepts.md](docs/concepts.md#tasks-as-markdown). `add` currently requires `--project`. Every other command described in `docs/` is planned, not implemented.
 >
 > Data is stored in `~/.taskship/` (override with `TASKSHIP_HOME`), which is created by the first command that needs it.
 

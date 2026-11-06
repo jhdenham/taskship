@@ -26,6 +26,7 @@ func NewRootCmd(version string) *cobra.Command {
 		newTaskAddCmd("add"),
 		newTaskListCmd("tasks"),
 		newTaskShowCmd("show"),
+		newExportCmd(),
 	)
 	return root
 }

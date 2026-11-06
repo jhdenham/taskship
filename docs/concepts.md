@@ -2,7 +2,34 @@
 
 ## Projects and tasks
 
-A project groups tasks and has a display prefix such as `PROJ`. A task has a title, description, workflow status, priority, and optional acceptance criteria.
+A project groups tasks and has a display prefix such as `PROJ`. A task has a title, a Markdown description, a workflow status, and a priority. Acceptance criteria are optional and live in the description, conventionally as a checklist under an `## Acceptance criteria` heading. Taskship doesn't enforce any structure for the description.
+
+## Tasks as Markdown
+
+Tasks are stored in SQLite, and Markdown is how you read and edit them by hand:
+
+```markdown
+---
+ref: PROJ-1
+project: myproject
+status: todo
+priority: high
+---
+# Build a weekly habit tracker
+
+Track habits per week.
+
+## Acceptance criteria
+
+- [ ] Weekly view shows each habit
+- [ ] Data persists across restarts
+```
+
+- `taskship show PROJ-1 --md` prints a task in this format.
+- `taskship task edit PROJ-1` with no flags opens it in `$VISUAL` or `$EDITOR`. `--from FILE` (or `--from -` for stdin) applies a document without an editor, which is how scripts and agents edit tasks.
+- `taskship export DIR` writes each task to `DIR/PROJ-1.md`. The files are a snapshot; editing them doesn't change the tasks.
+
+When editing, `status` and `priority` can be changed, and `ref` and `project` can't. The front matter keys are optional, and a missing key leaves that field unchanged. The `# Title` heading is required, and everything after it is the description. Only fields that differ from the current task are updated. If the editor's changes are invalid, they are kept in a temporary file and the error says how to apply them with `--from`.
 
 ## Task sources
 

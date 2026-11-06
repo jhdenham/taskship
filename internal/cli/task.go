@@ -2,6 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -126,12 +130,16 @@ func newTaskListCmd(name string) *cobra.Command {
 }
 
 func newTaskShowCmd(name string) *cobra.Command {
-	var asJSON bool
+	var asJSON, asMarkdown bool
 	cmd := &cobra.Command{
-		Use:   name + " TASK_REF",
-		Short: "Show task details",
-		Args:  exactArgs(1),
+		Use:     name + " TASK_REF",
+		Short:   "Show task details",
+		Example: "  taskship " + name + " PROJ-1\n  taskship " + name + " PROJ-1 --md",
+		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if asJSON && asMarkdown {
+				return usageError{fmt.Errorf("--json and --md cannot be used together")}
+			}
 			s, err := openStore(cmd.Context())
 			if err != nil {
 				return err
@@ -143,6 +151,10 @@ func newTaskShowCmd(name string) *cobra.Command {
 			}
 			if asJSON {
 				return writeJSON(cmd, t)
+			}
+			if asMarkdown {
+				_, err := fmt.Fprint(cmd.OutOrStdout(), core.TaskMarkdown(t))
+				return err
 			}
 			out := cmd.OutOrStdout()
 			fmt.Fprintf(out, "%s  %s\n\n", t.Ref, t.Title)
@@ -166,17 +178,26 @@ func newTaskShowCmd(name string) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
+	cmd.Flags().BoolVar(&asMarkdown, "md", false, "output Markdown, the format used by edit and export")
 	return cmd
 }
 
 func newTaskEditCmd() *cobra.Command {
-	var title, description, status, priority string
+	var title, description, status, priority, from string
 	var asJSON bool
 	cmd := &cobra.Command{
-		Use:     "edit TASK_REF [--title TITLE] [--description TEXT] [--status STATUS] [--priority PRIORITY]",
-		Short:   "Change a task's title, description, status, or priority",
-		Example: "  taskship task edit PROJ-1 --status in_progress --priority high",
-		Args:    exactArgs(1),
+		Use:   "edit TASK_REF [--title TITLE] [--description TEXT] [--status STATUS] [--priority PRIORITY] [--from FILE]",
+		Short: "Change a task's title, description, status, or priority",
+		Long: `Change a task's title, description, status, or priority.
+
+With no flags, the task opens as Markdown in $VISUAL or $EDITOR (default vi).
+With --from, the Markdown is read from a file, or from stdin if FILE is "-".
+Only fields that differ from the current task are changed. See "taskship show --md"
+for the format.`,
+		Example: "  taskship task edit PROJ-1 --status in_progress --priority high\n" +
+			"  taskship task edit PROJ-1\n" +
+			"  taskship show PROJ-1 --md | sed 's/^status: .*/status: done/' | taskship task edit PROJ-1 --from -",
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var patch store.TaskPatch
 			flags := cmd.Flags()
@@ -200,18 +221,57 @@ func newTaskEditCmd() *cobra.Command {
 				}
 				patch.Priority = &pr
 			}
-			if patch == (store.TaskPatch{}) {
-				return usageError{fmt.Errorf("nothing to change; pass --title, --description, --status, or --priority")}
+			fromFile := flags.Changed("from")
+			if fromFile && patch != (store.TaskPatch{}) {
+				return usageError{fmt.Errorf("--from cannot be combined with --title, --description, --status, or --priority")}
 			}
-			s, err := openStore(cmd.Context())
+			ctx := cmd.Context()
+			s, err := openStore(ctx)
 			if err != nil {
 				return err
 			}
 			defer s.Close()
-			t, err := s.UpdateTask(cmd.Context(), args[0], patch)
-			if err != nil {
-				return err
+
+			// draft is the editor's temporary file. It is kept if the edits
+			// cannot be applied, so they are not lost.
+			var draft string
+			keepDraft := func(err error) error {
+				if draft == "" {
+					return err
+				}
+				return fmt.Errorf("%w\nYour edits are saved in %s. Fix them and run: taskship task edit %s --from %s", err, draft, args[0], draft)
 			}
+			if patch == (store.TaskPatch{}) {
+				t, err := s.GetTask(ctx, args[0])
+				if err != nil {
+					return err
+				}
+				var src []byte
+				if fromFile {
+					src, err = readFrom(cmd, from)
+				} else {
+					draft, src, err = editMarkdown(cmd, t)
+				}
+				if err != nil {
+					return err
+				}
+				if patch, err = markdownPatch(t, string(src)); err != nil {
+					return keepDraft(err)
+				}
+				if patch == (store.TaskPatch{}) {
+					removeDraft(draft)
+					if asJSON {
+						return writeJSON(cmd, t)
+					}
+					fmt.Fprintf(cmd.OutOrStdout(), "No changes to %s\n", t.Ref)
+					return nil
+				}
+			}
+			t, err := s.UpdateTask(ctx, args[0], patch)
+			if err != nil {
+				return keepDraft(err)
+			}
+			removeDraft(draft)
 			if asJSON {
 				return writeJSON(cmd, t)
 			}
@@ -223,8 +283,89 @@ func newTaskEditCmd() *cobra.Command {
 	cmd.Flags().StringVar(&description, "description", "", "new description")
 	cmd.Flags().StringVar(&status, "status", "", "new status: backlog, todo, in_progress, done, canceled")
 	cmd.Flags().StringVar(&priority, "priority", "", "new priority: none, low, medium, high, urgent")
+	cmd.Flags().StringVar(&from, "from", "", `read the task as Markdown from FILE ("-" for stdin)`)
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
+}
+
+// markdownPatch compares a Markdown task document with the current task and
+// returns a patch of the fields that differ.
+func markdownPatch(t core.Task, src string) (store.TaskPatch, error) {
+	var patch store.TaskPatch
+	doc, err := core.ParseTaskMarkdown(src)
+	if err != nil {
+		return patch, err
+	}
+	if doc.Ref != "" && !strings.EqualFold(doc.Ref, t.Ref) {
+		return patch, fmt.Errorf("%w: ref is %s and cannot be changed (found %q)", core.ErrInvalid, t.Ref, doc.Ref)
+	}
+	if doc.Project != "" && doc.Project != t.Project {
+		return patch, fmt.Errorf("%w: project is %s and cannot be changed here (found %q)", core.ErrInvalid, t.Project, doc.Project)
+	}
+	if doc.Title != t.Title {
+		patch.Title = &doc.Title
+	}
+	if doc.Description != strings.Trim(t.Description, "\n") {
+		patch.Description = &doc.Description
+	}
+	if doc.Status != "" && doc.Status != t.Status {
+		patch.Status = &doc.Status
+	}
+	if doc.Priority != "" && doc.Priority != t.Priority {
+		patch.Priority = &doc.Priority
+	}
+	return patch, nil
+}
+
+// editMarkdown writes the task to a temporary Markdown file, opens it in the
+// user's editor, and returns the file's path and edited contents.
+func editMarkdown(cmd *cobra.Command, t core.Task) (string, []byte, error) {
+	f, err := os.CreateTemp("", t.Ref+"-*.md")
+	if err != nil {
+		return "", nil, err
+	}
+	path := f.Name()
+	_, err = f.WriteString(core.TaskMarkdown(t))
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(path)
+		return "", nil, err
+	}
+
+	editor := strings.Fields(os.Getenv("VISUAL"))
+	if len(editor) == 0 {
+		editor = strings.Fields(os.Getenv("EDITOR"))
+	}
+	if len(editor) == 0 {
+		editor = []string{"vi"}
+	}
+	c := exec.CommandContext(cmd.Context(), editor[0], append(editor[1:], path)...)
+	c.Stdin, c.Stdout, c.Stderr = cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr()
+	if err := c.Run(); err != nil {
+		os.Remove(path)
+		return "", nil, fmt.Errorf("editor %s: %w", editor[0], err)
+	}
+	src, err := os.ReadFile(path)
+	if err != nil {
+		os.Remove(path)
+		return "", nil, err
+	}
+	return path, src, nil
+}
+
+func removeDraft(path string) {
+	if path != "" {
+		os.Remove(path)
+	}
+}
+
+func readFrom(cmd *cobra.Command, path string) ([]byte, error) {
+	if path == "-" {
+		return io.ReadAll(cmd.InOrStdin())
+	}
+	return os.ReadFile(path)
 }
 
 // newTaskArchiveCmd returns "task archive" or, if archive is false, "task restore".

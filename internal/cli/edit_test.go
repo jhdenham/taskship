@@ -121,7 +121,6 @@ func TestEditArchiveExitCodes(t *testing.T) {
 		args []string
 		code int
 	}{
-		{"task edit nothing", []string{"task", "edit", "PROJ-1"}, exitInvalidInput},
 		{"task edit empty title", []string{"task", "edit", "PROJ-1", "--title", ""}, exitInvalidInput},
 		{"task edit bad status", []string{"task", "edit", "PROJ-1", "--status", "open"}, exitInvalidInput},
 		{"task edit bad priority", []string{"task", "edit", "PROJ-1", "--priority", "p1"}, exitInvalidInput},

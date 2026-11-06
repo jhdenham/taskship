@@ -4,7 +4,7 @@
 
 Taskship is a local-first task manager and coding-agent dispatcher, written in Go. This is a monorepo: the Go CLI (and the future server, which is a subcommand of the same binary), the docs, and later the website.
 
-Current state: only `taskship --version` is implemented. Detailed requirements are kept outside this public repo.
+Current state: see the status line in `README.md` for what is implemented. Detailed requirements are kept outside this public repo.
 
 Never mention the maintainer's private projects in this repo. In examples, use `myproject` with the prefix `PROJ` (e.g. `PROJ-42`).
 
