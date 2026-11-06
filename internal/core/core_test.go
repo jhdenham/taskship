@@ -18,7 +18,7 @@ func TestValidateProject(t *testing.T) {
 	}{
 		{"empty name", func(p *Project) { p.Name = "" }},
 		{"uppercase name", func(p *Project) { p.Name = "MyProject" }},
-		{"name starts with digit", func(p *Project) { p.Name = "1project" }},
+		{"name starts with hyphen", func(p *Project) { p.Name = "-project" }},
 		{"name trailing hyphen", func(p *Project) { p.Name = "my-" }},
 		{"name double hyphen", func(p *Project) { p.Name = "my--project" }},
 		{"name too long", func(p *Project) { p.Name = strings.Repeat("a", 41) }},

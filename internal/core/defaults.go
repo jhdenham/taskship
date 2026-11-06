@@ -9,8 +9,8 @@ import (
 
 // NameFromFolder suggests a project name from a folder or repository name:
 // camelCase is split into words ("MyCoolApp" becomes "my-cool-app"), letters
-// are lowercased, other characters become hyphens, and anything before the
-// first letter is dropped. It returns "" if nothing usable is left.
+// are lowercased, and other characters become hyphens. It returns "" if
+// nothing usable is left.
 func NameFromFolder(folder string) string {
 	var b strings.Builder
 	runes := []rune(folder)
@@ -28,7 +28,7 @@ func NameFromFolder(folder string) string {
 		b.WriteRune(unicode.ToLower(r))
 	}
 	name := nonNameChars.ReplaceAllString(b.String(), "-")
-	name = strings.TrimLeft(name, "-0123456789")
+	name = strings.TrimLeft(name, "-")
 	if len(name) > maxNameLen {
 		name = name[:maxNameLen]
 	}
@@ -41,10 +41,11 @@ var (
 )
 
 // DefaultPrefix suggests a task prefix for a valid project name.
-// Version-like words (v2, 2024) are dropped first. Several words give their
+// Numbers and versions (2024, v2) are dropped first. Several words give their
 // initials, up to four; a word of up to four characters is used whole; a
 // longer word gives its consonant skeleton (see skeleton). If taken reports
-// the prefix as used, 2, 3, and so on are appended.
+// the prefix as used, 2, 3, and so on are appended. It returns "" if no
+// prefix starting with a letter can be made.
 func DefaultPrefix(name string, taken func(string) bool) string {
 	words := strings.Split(name, "-")
 	var kept []string
@@ -57,6 +58,9 @@ func DefaultPrefix(name string, taken func(string) bool) string {
 	if !prefixRE.MatchString(prefix) {
 		// Dropping words left nothing, or a word starting with a digit.
 		prefix = prefixFromWords(words)
+	}
+	if !prefixRE.MatchString(prefix) {
+		return ""
 	}
 	if !taken(prefix) {
 		return prefix

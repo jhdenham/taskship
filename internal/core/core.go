@@ -29,7 +29,7 @@ type Project struct {
 }
 
 var (
-	nameRE   = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
+	nameRE   = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 	prefixRE = regexp.MustCompile(`^[A-Z][A-Z0-9]{0,9}$`)
 )
 
@@ -38,7 +38,7 @@ const maxNameLen = 40
 // ValidateProject checks the user-supplied fields of a new or edited project.
 func ValidateProject(p Project) error {
 	if len(p.Name) > maxNameLen || !nameRE.MatchString(p.Name) {
-		return fmt.Errorf("%w: name %q must be lowercase letters, digits, and single hyphens, start with a letter, and be at most %d characters", ErrInvalid, p.Name, maxNameLen)
+		return fmt.Errorf("%w: name %q must be lowercase letters, digits, and single hyphens, and be at most %d characters", ErrInvalid, p.Name, maxNameLen)
 	}
 	if !prefixRE.MatchString(p.TaskPrefix) {
 		return fmt.Errorf("%w: task prefix %q must be 1-10 uppercase letters or digits, starting with a letter", ErrInvalid, p.TaskPrefix)
