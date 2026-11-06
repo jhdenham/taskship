@@ -41,7 +41,22 @@ A run records an attempt to work on a task, including agent, machine, plan, and 
 
 ## Workspace mappings
 
-Each machine maps a project to a local repository checkout. A shared task does not imply a shared filesystem path.
+Each machine maps a project to its local checkouts, called workspaces. A shared task does not imply a shared filesystem path: workspaces are stored only in the machine's local database and are never synced, so the same project can live at different paths on different machines.
+
+```sh
+taskship workspace add myproject --path ~/code/myproject   # --path defaults to the current directory
+taskship workspace list                                   # paths that no longer exist are marked (missing)
+taskship workspace remove ~/code/myproject                # unregisters; files are not touched
+```
+
+Register a repository's main checkout once. Taskship identifies the repository by its common Git directory, so every linked worktree of it is recognized from Git metadata when you use it. Worktrees are never stored, so creating and deleting them, by hand or with a tool, leaves nothing to clean up. A non-Git folder can be registered too, and covers everything below it.
+
+Without `--project`, `taskship add` uses the project of the current directory:
+
+1. Inside a Git repository, any workspace of the same repository matches, including from a nested folder or a linked worktree elsewhere on disk.
+2. Otherwise, a workspace matches if the current directory is inside it.
+3. If several projects match, the most specific workspace containing the current directory wins. If none contains it (for example, a worktree of a repository registered for two projects), the command fails with exit code 4 and asks for `--project`.
+4. If nothing matches, the command fails and suggests `--project` or `taskship workspace add`. Taskship never falls back to a default project.
 
 ## Plan-first dispatch
 
@@ -49,7 +64,7 @@ The default agent workflow reviews task readiness and proposes a plan before cod
 
 ## Leave no trace and worktree discovery
 
-Taskship does not add metadata files to repositories. Projects are registered explicitly. Per-machine paths are configured outside repositories under `~/.taskship/`. When launched from an existing Git worktree of a registered project, Taskship recognizes and uses that worktree automatically.
+Taskship does not add metadata files to repositories. Projects are registered explicitly. Per-machine paths are stored outside repositories under `~/.taskship/`. When launched from an existing Git worktree of a registered project, Taskship recognizes it from Git metadata (`git rev-parse --git-common-dir`), which is read-only and runs no repository hooks.
 
 ## Initialization and skills
 

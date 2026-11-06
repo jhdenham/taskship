@@ -11,8 +11,9 @@ import (
 
 // Error kinds. Wrap these so callers can classify failures with errors.Is.
 var (
-	ErrInvalid  = errors.New("invalid input")
-	ErrNotFound = errors.New("not found")
+	ErrInvalid   = errors.New("invalid input")
+	ErrNotFound  = errors.New("not found")
+	ErrAmbiguous = errors.New("ambiguous")
 )
 
 // Project groups tasks. TaskPrefix forms task refs such as PROJ-42.

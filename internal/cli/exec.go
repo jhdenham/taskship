@@ -14,13 +14,14 @@ import (
 	"github.com/jhdenham/taskship/internal/store"
 )
 
-// Exit codes. Codes 4 (ambiguous resolution), 5 (backend/auth unavailable)
-// and 6 (agent launch failed) are reserved for later commands.
+// Exit codes. Codes 5 (backend/auth unavailable) and 6 (agent launch
+// failed) are reserved for later commands.
 const (
 	exitOK           = 0
 	exitFailure      = 1
 	exitInvalidInput = 2
 	exitNotFound     = 3
+	exitAmbiguous    = 4
 )
 
 // Execute runs cmd, prints any error to stderr, and returns the exit code.
@@ -36,6 +37,8 @@ func Execute(cmd *cobra.Command) int {
 		return exitInvalidInput
 	case errors.Is(err, core.ErrNotFound):
 		return exitNotFound
+	case errors.Is(err, core.ErrAmbiguous):
+		return exitAmbiguous
 	default:
 		return exitFailure
 	}

@@ -30,8 +30,8 @@ func userVersion(t *testing.T, s *Store) int {
 func TestOpenCreatesHomeAndMigrates(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "home")
 	s := openTest(t, dir)
-	if v := userVersion(t, s); v != 1 {
-		t.Errorf("user_version = %d, want 1", v)
+	if v := userVersion(t, s); v != 2 {
+		t.Errorf("user_version = %d, want 2", v)
 	}
 	var n int
 	if err := s.db.QueryRow("SELECT count(*) FROM projects").Scan(&n); err != nil {
@@ -49,8 +49,8 @@ func TestReopenPreservesDataAndSchema(t *testing.T) {
 	s.Close()
 
 	s = openTest(t, dir)
-	if v := userVersion(t, s); v != 1 {
-		t.Errorf("user_version after reopen = %d, want 1", v)
+	if v := userVersion(t, s); v != 2 {
+		t.Errorf("user_version after reopen = %d, want 2", v)
 	}
 	var n int
 	if err := s.db.QueryRow("SELECT count(*) FROM projects").Scan(&n); err != nil || n != 1 {

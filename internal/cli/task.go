@@ -38,14 +38,14 @@ func newTaskAddCmd(name string) *cobra.Command {
 	var project, description, status, priority string
 	var asJSON bool
 	cmd := &cobra.Command{
-		Use:     name + " TITLE --project SLUG",
-		Short:   "Create a task",
-		Example: "  taskship " + name + " \"Fix export\" --project myproject",
+		Use:   name + " TITLE [--project SLUG]",
+		Short: "Create a task",
+		Long: `Create a task. Without --project, the project is the one whose registered
+workspace contains the current directory, directly or through a Git worktree of
+the same repository (see "taskship workspace").`,
+		Example: "  taskship " + name + " \"Fix export\"\n  taskship " + name + " \"Fix export\" --project myproject",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if project == "" {
-				return usageError{fmt.Errorf("--project is required")}
-			}
 			st, err := core.ParseStatus(status)
 			if err != nil {
 				return err
@@ -59,6 +59,11 @@ func newTaskAddCmd(name string) *cobra.Command {
 				return err
 			}
 			defer s.Close()
+			if project == "" {
+				if project, err = projectForCurrentDir(cmd.Context(), s); err != nil {
+					return err
+				}
+			}
 			t, err := s.CreateTask(cmd.Context(), project, core.Task{
 				Title: args[0], Description: description, Status: st, Priority: pr,
 			})
@@ -72,7 +77,7 @@ func newTaskAddCmd(name string) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&project, "project", "p", "", "project slug (required)")
+	cmd.Flags().StringVarP(&project, "project", "p", "", "project slug (default: the project of the current directory)")
 	cmd.Flags().StringVar(&description, "description", "", "task description")
 	cmd.Flags().StringVar(&status, "status", string(core.StatusTodo), "initial status")
 	cmd.Flags().StringVar(&priority, "priority", string(core.PriorityNone), "priority: none, low, medium, high, urgent")
