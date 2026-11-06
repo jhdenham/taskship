@@ -52,18 +52,22 @@ func TestDefaultPrefix(t *testing.T) {
 		{"web", "WEB"},
 		{"web3", "WEB3"},
 		{"x", "X"},
-		// Longer words: consonant skeleton, doubled letters collapsed, y a
-		// consonant, vowels refilled left to right when short.
-		{"taskship", "TSKS"},
-		{"myproject", "MYPR"},
-		{"frontend", "FRNT"},
-		{"dashboard", "DSHB"},
+		// Longer words: the first three and the last letter of the consonant
+		// skeleton, doubled letters collapsed, y a consonant, vowels refilled
+		// left to right when short.
+		{"taskship", "TSKP"},
+		{"myproject", "MYPT"},
+		{"frontend", "FRND"},
+		{"backend", "BCKD"},
+		{"password", "PSWD"},
+		{"dashboard", "DSHD"},
+		{"security", "SCRY"},
 		{"billing", "BLNG"},
 		{"habit", "HABT"},
 		{"audio", "AUDI"},
 		// Leading numbers are dropped like versions; a prefix starts with a letter.
 		{"2024-notes", "NOTS"},
-		{"360-security", "SCRT"},
+		{"360-security", "SCRY"},
 		{"7-eleven", "ELVN"},
 		{"v2-3d", "V3"},
 	}
@@ -88,8 +92,8 @@ func TestDefaultPrefixNone(t *testing.T) {
 }
 
 func TestDefaultPrefixSkipsTakenPrefixes(t *testing.T) {
-	taken := map[string]bool{"TSKS": true, "TSKS2": true}
-	if got := DefaultPrefix("taskship", func(p string) bool { return taken[p] }); got != "TSKS3" {
-		t.Errorf("DefaultPrefix with TSKS and TSKS2 taken = %q, want TSKS3", got)
+	taken := map[string]bool{"TSKP": true, "TSKP2": true}
+	if got := DefaultPrefix("taskship", func(p string) bool { return taken[p] }); got != "TSKP3" {
+		t.Errorf("DefaultPrefix with TSKP and TSKP2 taken = %q, want TSKP3", got)
 	}
 }

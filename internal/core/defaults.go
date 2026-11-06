@@ -91,10 +91,11 @@ func prefixFromWords(words []string) string {
 	}
 }
 
-// skeleton returns the first four letters of a word's consonant skeleton:
-// its first letter and the consonants after it (counting y and digits),
-// with doubled letters collapsed. If that is shorter than four, vowels are
-// put back from left to right.
+// skeleton returns four letters of a word's consonant skeleton, which is its
+// first letter and the consonants after it (counting y and digits), with
+// doubled letters collapsed: the first three and the last, so the prefix
+// spans the whole word (taskship gives TSKP). If the skeleton is shorter than
+// four, vowels are put back from left to right.
 func skeleton(word string) string {
 	var w []byte
 	for i := 0; i < len(word); i++ {
@@ -121,9 +122,12 @@ func skeleton(word string) string {
 	}
 	var out []byte
 	for i, c := range w {
-		if keep[i] && len(out) < 4 {
+		if keep[i] {
 			out = append(out, c)
 		}
+	}
+	if len(out) > 4 {
+		out = append(out[:3], out[len(out)-1])
 	}
 	return string(out)
 }
