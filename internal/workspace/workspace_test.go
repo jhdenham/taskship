@@ -33,7 +33,10 @@ func TestResolve(t *testing.T) {
 		{"non-git most specific", "/docs/notes/2026", "", "notes", false},
 		{"non-git parent", "/docs/other", "", "everything", false},
 		{"unregistered repo", "/code/unknown", "/code/unknown/.git", "", false},
-		{"unregistered repo inside registered dir", "/docs/repo", "/docs/repo/.git", "everything", false},
+		// A plain folder doesn't claim Git repositories inside it, including
+		// itself once it becomes one.
+		{"unregistered repo inside registered dir", "/docs/repo", "/docs/repo/.git", "", false},
+		{"registered dir turned into a repo", "/docs/notes", "/docs/notes/.git", "", false},
 		{"sibling with shared prefix", "/code/myproject-2", "", "", false},
 		{"outside everything", "/tmp", "", "", false},
 	}

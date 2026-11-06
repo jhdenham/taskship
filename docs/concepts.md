@@ -49,12 +49,12 @@ taskship workspace list                                   # paths that no longer
 taskship workspace remove ~/code/myproject                # unregisters; files are not touched
 ```
 
-Register a repository's main checkout once. Taskship identifies the repository by its common Git directory, so every linked worktree of it is recognized from Git metadata when you use it. Worktrees are never stored, so creating and deleting them, by hand or with a tool, leaves nothing to clean up. A non-Git folder can be registered too, and covers everything below it.
+Register a repository's main checkout once. Taskship identifies the repository by its common Git directory, so every linked worktree of it is recognized from Git metadata when you use it. Worktrees are never stored, so creating and deleting them, by hand or with a tool, leaves nothing to clean up. A non-Git folder can be registered too, and covers everything below it except Git repositories inside it, which are separate projects.
 
 Without `--project`, `taskship add` uses the project of the current directory:
 
-1. Inside a Git repository, any workspace of the same repository matches, including from a nested folder or a linked worktree elsewhere on disk.
-2. Otherwise, a workspace matches if the current directory is inside it.
+1. Inside a Git repository, only workspaces of the same repository match, including from a nested folder or a linked worktree elsewhere on disk. A non-Git workspace never matches a repository inside it.
+2. Outside a Git repository, a workspace matches if the current directory is inside it.
 3. If several projects match, the most specific workspace containing the current directory wins. If none contains it (for example, a worktree of a repository registered for two projects), the command fails with exit code 4 and asks for `--project`.
 4. If nothing matches, the command fails and suggests `--project` or `taskship workspace add`. Taskship never falls back to a default project.
 

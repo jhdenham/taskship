@@ -47,26 +47,18 @@ func commonDir(ctx context.Context, dir string) string {
 }
 
 // Resolve returns the registered workspace that path belongs to, given
-// path's common Git directory from Inspect. Inside a Git repository, any
-// workspace of the same repository matches, so linked worktrees are
-// recognized without being registered. Otherwise, a workspace matches if it
-// contains path. Among matches, the most specific workspace containing path
+// path's common Git directory from Inspect. Inside a Git repository, only
+// workspaces of the same repository match, so linked worktrees are
+// recognized without being registered and a plain folder never claims a
+// repository inside it. Outside one, a workspace matches if it contains path. Among matches, the most specific workspace containing path
 // wins; if none contains it and the matches belong to different projects,
 // the result is ambiguous. ok is false if nothing matches.
 func Resolve(path, gitCommonDir string, workspaces []core.Workspace) (w core.Workspace, ok bool, err error) {
 	var matches []core.Workspace
-	if gitCommonDir != "" {
-		for _, w := range workspaces {
-			if w.GitCommonDir == gitCommonDir {
-				matches = append(matches, w)
-			}
-		}
-	}
-	if len(matches) == 0 {
-		for _, w := range workspaces {
-			if contains(w.Path, path) {
-				matches = append(matches, w)
-			}
+	for _, w := range workspaces {
+		if gitCommonDir != "" && w.GitCommonDir == gitCommonDir ||
+			gitCommonDir == "" && contains(w.Path, path) {
+			matches = append(matches, w)
 		}
 	}
 	if len(matches) == 0 {
