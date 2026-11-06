@@ -77,11 +77,13 @@ The default agent workflow reviews task readiness and proposes a plan before cod
 
 `taskship run PROJ-1 --dry-run` shows what a run would do without launching anything: the agent (`--agent`, `-a`; only `claude` for now), the workspace it would run in, and the exact prompt it would receive. Launching agents is not implemented yet, so `--dry-run` is required.
 
-The workspace is chosen in this order:
+The agent always runs at the root of a workspace, never in a subfolder, so it can see the whole checkout. The workspace is chosen in this order:
 
-1. `--workspace PATH`, which must be a workspace of the task's project or a Git worktree of one.
-2. The current directory, if it is in a workspace of the task's project or a Git worktree of one.
+1. The one containing `--workspace PATH`, which must belong to the task's project.
+2. The one containing the current directory, if it belongs to the task's project.
 3. The project's only registered workspace. If the project has several, the command fails with exit code 4 and asks for `--workspace`. If it has none, it says how to register one.
+
+In a Git worktree of a registered checkout, the agent runs at the same position in the worktree as the registered path has in its own checkout. That is usually the worktree's top level. For a project registered at a monorepo subfolder such as `~/code/mono/api`, it is that subfolder of the worktree.
 
 The prompt contains only the task's ref, project, title, and description (acceptance criteria are part of the description), never configuration or environment variables, so it can't carry credentials. The title and description are fenced and marked as untrusted requirements, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. This is a request to the agent, not an enforcement mechanism.
 

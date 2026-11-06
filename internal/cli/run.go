@@ -21,9 +21,12 @@ func newRunCmd() *cobra.Command {
 implemented yet, so --dry-run is required: it prints the chosen workspace and
 the exact prompt the agent would receive, and launches nothing.
 
-The workspace is --workspace if given (it must belong to the task's project),
-otherwise the current directory if it is in a workspace of the task's project
-or a Git worktree of one, otherwise the project's only registered workspace.`,
+The agent runs at the root of a workspace, never in a subfolder. The workspace
+is the one containing --workspace if given (it must belong to the task's
+project), otherwise the one containing the current directory if that belongs
+to the task's project, otherwise the project's only registered workspace. In a
+Git worktree of a registered checkout, the agent runs at the worktree's
+corresponding folder, usually its top level.`,
 		Example: "  taskship run PROJ-42 --dry-run\n  taskship run PROJ-42 --dry-run --workspace ~/worktrees/myproject/feature",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,7 +58,7 @@ or a Git worktree of one, otherwise the project's only registered workspace.`,
 			if err != nil {
 				return err
 			}
-			if dir, err = workspace.ForTask(t, dir, commonDir, workspacePath != "", ws); err != nil {
+			if dir, err = workspace.ForTask(ctx, t, dir, commonDir, workspacePath != "", ws); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, dir, dispatch.BuildPrompt(t))

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -25,6 +26,12 @@ func TestRunDryRun(t *testing.T) {
 	if !strings.HasPrefix(out, header) || !strings.Contains(out, "Task reference: PROJ-1\n") ||
 		!strings.Contains(out, "# Add weekly habit tracker\n\n## Acceptance criteria\n\n- [ ] Weekly view\n```\n") {
 		t.Errorf("dry run output:\n%s", out)
+	}
+
+	// From a subfolder, the agent still runs at the checkout root.
+	t.Chdir(filepath.Join(repo, "internal"))
+	if out := mustRun(t, "run", "PROJ-1", "--dry-run"); !strings.Contains(out, "Workspace: "+repo+"\n") {
+		t.Errorf("subfolder output:\n%s", out)
 	}
 
 	// From an unrelated directory, the project's only workspace is used.

@@ -103,11 +103,11 @@ func contains(base, path string) bool {
 // ForTask chooses the directory to run task t in, given a directory and its
 // common Git directory from Inspect. If explicit is true, dir was passed by
 // the user and must belong to the task's project. Otherwise dir is the
-// current directory: it is used if it belongs to the task's project, and
-// failing that, the project's only registered workspace is. With several
-// workspaces, the choice is ambiguous; with none, the error says how to
-// register one.
-func ForTask(t core.Task, dir, gitCommonDir string, explicit bool, all []core.Workspace) (string, error) {
+// current directory: if it belongs to the task's project, its workspace root
+// is used (see root), and failing that, the project's only registered
+// workspace is. With several workspaces, the choice is ambiguous; with none,
+// the error says how to register one.
+func ForTask(ctx context.Context, t core.Task, dir, gitCommonDir string, explicit bool, all []core.Workspace) (string, error) {
 	var own []core.Workspace
 	for _, w := range all {
 		if w.ProjectID == t.ProjectID {
@@ -125,7 +125,7 @@ func ForTask(t core.Task, dir, gitCommonDir string, explicit bool, all []core.Wo
 		return "", err
 	}
 	if ok && w.ProjectID == t.ProjectID {
-		return dir, nil
+		return root(ctx, dir, gitCommonDir, w), nil
 	}
 	if explicit {
 		return "", fmt.Errorf("%w: %s is not a workspace of %s (see: taskship workspace list -p %s)", core.ErrInvalid, dir, t.Project, t.Project)
@@ -145,4 +145,41 @@ func ForTask(t core.Task, dir, gitCommonDir string, explicit bool, all []core.Wo
 		paths[i] = w.Path
 	}
 	return "", fmt.Errorf("%w: %s has several workspaces (%s); run from inside one or pass --workspace PATH", core.ErrAmbiguous, t.Project, strings.Join(paths, ", "))
+}
+
+// root returns the workspace root for dir, which belongs to workspace w. In a
+// Git checkout of w's repository, that is the folder at w's position within
+// dir's worktree: w itself in the checkout w was registered from, and the
+// same subfolder (often the top level) in any other worktree, including one
+// nested inside w. Otherwise it is w.
+func root(ctx context.Context, dir, gitCommonDir string, w core.Workspace) string {
+	if w.GitCommonDir == "" || w.GitCommonDir != gitCommonDir {
+		return w.Path
+	}
+	top := toplevel(ctx, dir)
+	if top == "" {
+		return w.Path
+	}
+	// If w's own worktree is gone, its position is unknown: use the top level.
+	if wTop := toplevel(ctx, w.Path); wTop != "" {
+		if rel, err := filepath.Rel(wTop, w.Path); err == nil {
+			return filepath.Join(top, rel)
+		}
+	}
+	return top
+}
+
+// toplevel returns the symlink-free top-level directory of the worktree
+// containing dir, or "" if there is none. Like commonDir, it only reads
+// metadata.
+func toplevel(ctx context.Context, dir string) string {
+	out, err := exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "--show-toplevel").Output()
+	if err != nil {
+		return ""
+	}
+	d, err := filepath.EvalSymlinks(strings.TrimSpace(string(out)))
+	if err != nil {
+		return ""
+	}
+	return d
 }
