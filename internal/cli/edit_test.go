@@ -19,7 +19,7 @@ func TestTaskEdit(t *testing.T) {
 	seedCLIProjects(t)
 	mustRun(t, "add", "Old title", "-p", "myproject", "--description", "keep me")
 
-	if out := mustRun(t, "task", "edit", "proj-1", "--title", "New title", "--status", "in_progress", "--priority", "high"); out != "Updated PROJ-1: New title\n" {
+	if out := mustRun(t, "task", "edit", "proj-1", "--title", "New title", "--status", "in_progress", "--priority", "high"); out != "✓ Updated PROJ-1: New title\n" {
 		t.Errorf("edit output = %q", out)
 	}
 	task := taskJSON(t, "PROJ-1")
@@ -41,7 +41,7 @@ func TestTaskArchiveRestore(t *testing.T) {
 	mustRun(t, "add", "a", "-p", "myproject")
 	mustRun(t, "add", "b", "-p", "myproject")
 
-	if out := mustRun(t, "task", "archive", "PROJ-1"); out != "Archived PROJ-1: a\n" {
+	if out := mustRun(t, "task", "archive", "PROJ-1"); out != "✓ Archived PROJ-1: a\n" {
 		t.Errorf("archive output = %q", out)
 	}
 	mustRun(t, "task", "archive", "PROJ-1") // repeating is fine
@@ -59,7 +59,7 @@ func TestTaskArchiveRestore(t *testing.T) {
 		t.Error("show --json of archived task lacks archived_at")
 	}
 
-	if out := mustRun(t, "task", "restore", "PROJ-1"); out != "Restored PROJ-1: a\n" {
+	if out := mustRun(t, "task", "restore", "PROJ-1"); out != "✓ Restored PROJ-1: a\n" {
 		t.Errorf("restore output = %q", out)
 	}
 	if out := mustRun(t, "tasks"); !strings.Contains(out, "PROJ-1") {
@@ -71,7 +71,7 @@ func TestProjectEdit(t *testing.T) {
 	seedCLIProjects(t)
 	mustRun(t, "add", "a", "-p", "myproject")
 
-	if out := mustRun(t, "project", "edit", "myproject", "--name", "renamed", "--description", "Renamed"); out != "Updated project renamed\n" {
+	if out := mustRun(t, "project", "edit", "myproject", "--name", "renamed", "--description", "Renamed"); out != "✓ Updated project renamed\n" {
 		t.Errorf("edit output = %q", out)
 	}
 	if out := mustRun(t, "project", "show", "renamed"); !strings.Contains(out, "Renamed") || !strings.Contains(out, "PROJ") {
@@ -88,7 +88,7 @@ func TestProjectArchiveRestore(t *testing.T) {
 	mustRun(t, "add", "a", "-p", "myproject")
 	mustRun(t, "add", "b", "-p", "other")
 
-	if out := mustRun(t, "project", "archive", "myproject"); out != "Archived project myproject\n" {
+	if out := mustRun(t, "project", "archive", "myproject"); out != "✓ Archived project myproject\n" {
 		t.Errorf("archive output = %q", out)
 	}
 	if out := mustRun(t, "project", "list"); strings.Contains(out, "myproject") {
@@ -104,7 +104,7 @@ func TestProjectArchiveRestore(t *testing.T) {
 		t.Errorf("add to archived project: exit %d, stderr %q", r.code, r.stderr)
 	}
 
-	if out := mustRun(t, "project", "restore", "myproject"); out != "Restored project myproject\n" {
+	if out := mustRun(t, "project", "restore", "myproject"); out != "✓ Restored project myproject\n" {
 		t.Errorf("restore output = %q", out)
 	}
 	if out := mustRun(t, "tasks"); !strings.Contains(out, "PROJ-1") {

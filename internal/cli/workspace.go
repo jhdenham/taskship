@@ -60,7 +60,7 @@ func newWorkspaceAddCmd() *cobra.Command {
 				return writeJSON(cmd, w)
 			}
 			out := cmd.OutOrStdout()
-			fmt.Fprintf(out, "Added workspace %s for %s\n", w.Path, w.Project)
+			success(out, "Added workspace %s for %s", displayPath(w.Path), w.Project)
 			if w.GitCommonDir != "" {
 				fmt.Fprintln(out, "Worktrees of this repository are recognized automatically.")
 			}
@@ -104,7 +104,7 @@ func newWorkspaceListCmd() *cobra.Command {
 				if _, err := os.Stat(ws.Path); err != nil {
 					mark = " (missing)"
 				}
-				fmt.Fprintf(w, "%s\t%s%s\n", ws.Project, ws.Path, mark)
+				fmt.Fprintf(w, "%s\t%s%s\n", ws.Project, displayPath(ws.Path), mark)
 			}
 			return w.Flush()
 		},
@@ -141,7 +141,7 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, w)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Removed workspace %s from %s\n", w.Path, w.Project)
+			success(cmd.OutOrStdout(), "Removed workspace %s from %s", displayPath(w.Path), w.Project)
 			return nil
 		},
 	}

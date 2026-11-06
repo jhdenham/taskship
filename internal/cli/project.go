@@ -52,7 +52,7 @@ func newProjectAddCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, created)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Created project %s (%s)\n", created.Name, created.TaskPrefix)
+			success(cmd.OutOrStdout(), "Created project %s (%s)", created.Name, created.TaskPrefix)
 			return nil
 		},
 	}
@@ -168,7 +168,7 @@ func newProjectEditCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, p)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Updated project %s\n", p.Name)
+			success(cmd.OutOrStdout(), "Updated project %s", p.Name)
 			return nil
 		},
 	}
@@ -202,7 +202,7 @@ func newProjectArchiveCmd(archive bool) *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, p)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s project %s\n", done, p.Name)
+			success(cmd.OutOrStdout(), "%s project %s", done, p.Name)
 			return nil
 		},
 	}

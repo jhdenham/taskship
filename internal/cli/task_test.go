@@ -15,13 +15,13 @@ func seedCLIProjects(t *testing.T) {
 
 func TestTaskAddShortcutAndCanonicalShareNumbering(t *testing.T) {
 	seedCLIProjects(t)
-	if out := mustRun(t, "add", "Fix export", "-p", "myproject"); out != "Created PROJ-1: Fix export\n" {
+	if out := mustRun(t, "add", "Fix export", "-p", "myproject"); out != "✓ Created PROJ-1: Fix export\n" {
 		t.Errorf("add output = %q", out)
 	}
-	if out := mustRun(t, "task", "add", "Second", "--project", "myproject"); out != "Created PROJ-2: Second\n" {
+	if out := mustRun(t, "task", "add", "Second", "--project", "myproject"); out != "✓ Created PROJ-2: Second\n" {
 		t.Errorf("task add output = %q", out)
 	}
-	if out := mustRun(t, "add", "Elsewhere", "-p", "other"); out != "Created OTH-1: Elsewhere\n" {
+	if out := mustRun(t, "add", "Elsewhere", "-p", "other"); out != "✓ Created OTH-1: Elsewhere\n" {
 		t.Errorf("add in other project = %q", out)
 	}
 }

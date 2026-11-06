@@ -94,7 +94,7 @@ func TestFirstStatefulCommandInitializesStorage(t *testing.T) {
 func TestProjectCommands(t *testing.T) {
 	tempHome(t)
 
-	if out := mustRun(t, "project", "add", "myproject", "--prefix", "PROJ"); out != "Created project myproject (PROJ)\n" {
+	if out := mustRun(t, "project", "add", "myproject", "--prefix", "PROJ"); out != "✓ Created project myproject (PROJ)\n" {
 		t.Errorf("add output = %q", out)
 	}
 	mustRun(t, "project", "add", "another", "--prefix", "ANO")

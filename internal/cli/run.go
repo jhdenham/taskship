@@ -61,7 +61,7 @@ corresponding folder, usually its top level.`,
 			if dir, err = workspace.ForTask(ctx, t, dir, commonDir, workspacePath != "", ws); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, dir, dispatch.BuildPrompt(t))
+			fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(dir), dispatch.BuildPrompt(t))
 			return nil
 		},
 	}

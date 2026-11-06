@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -45,7 +44,7 @@ the files do not change the tasks.`,
 			if len(tasks) == 1 {
 				noun = "task"
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Exported %d %s to %s\n", len(tasks), noun, dir)
+			success(cmd.OutOrStdout(), "Exported %d %s to %s", len(tasks), noun, displayPath(dir))
 			return nil
 		},
 	}

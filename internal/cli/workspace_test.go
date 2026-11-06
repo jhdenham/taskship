@@ -39,11 +39,11 @@ func TestWorkspaceCommands(t *testing.T) {
 	notes := t.TempDir()
 
 	out := mustRun(t, "workspace", "add", "myproject", "--path", repo)
-	if !strings.HasPrefix(out, "Added workspace "+repo+" for myproject\n") || !strings.Contains(out, "recognized automatically") {
+	if !strings.HasPrefix(out, "✓ Added workspace "+repo+" for myproject\n") || !strings.Contains(out, "recognized automatically") {
 		t.Errorf("add output = %q", out)
 	}
 	t.Chdir(notes)
-	if out := mustRun(t, "workspace", "add", "other"); out != "Added workspace "+mustEval(t, notes)+" for other\n" {
+	if out := mustRun(t, "workspace", "add", "other"); out != "✓ Added workspace "+mustEval(t, notes)+" for other\n" {
 		t.Errorf("add default path output = %q", out)
 	}
 	if r := run(t, "", "workspace", "add", "other", "--path", repo); r.code != exitInvalidInput {
@@ -74,13 +74,13 @@ func TestWorkspaceCommands(t *testing.T) {
 	if out := mustRun(t, "workspace", "list"); !strings.Contains(out, "(missing)") {
 		t.Errorf("list after delete:\n%s", out)
 	}
-	if out := mustRun(t, "workspace", "remove", mustEval(t, filepath.Dir(notes))+"/"+filepath.Base(notes)); !strings.HasPrefix(out, "Removed workspace") {
+	if out := mustRun(t, "workspace", "remove", mustEval(t, filepath.Dir(notes))+"/"+filepath.Base(notes)); !strings.HasPrefix(out, "✓ Removed workspace") {
 		t.Errorf("remove output = %q", out)
 	}
 	if r := run(t, "", "workspace", "remove", notes); r.code != exitNotFound {
 		t.Errorf("remove twice: exit %d", r.code)
 	}
-	if out := mustRun(t, "workspace", "remove", "."); out != "Removed workspace "+repo+" from myproject\n" {
+	if out := mustRun(t, "workspace", "remove", "."); out != "✓ Removed workspace "+repo+" from myproject\n" {
 		t.Errorf("remove . output = %q", out)
 	}
 	if out := mustRun(t, "workspace", "list"); !strings.HasPrefix(out, "No workspaces.") {
@@ -95,13 +95,13 @@ func TestAddInfersProject(t *testing.T) {
 
 	for i, dir := range []string{repo, filepath.Join(repo, "internal"), worktree} {
 		t.Chdir(dir)
-		want := "Created PROJ-" + string(rune('1'+i)) + ": from " + filepath.Base(dir) + "\n"
+		want := "✓ Created PROJ-" + string(rune('1'+i)) + ": from " + filepath.Base(dir) + "\n"
 		if out := mustRun(t, "add", "from "+filepath.Base(dir)); out != want {
 			t.Errorf("in %s: %q, want %q", dir, out, want)
 		}
 	}
 	// An explicit --project wins over the directory.
-	if out := mustRun(t, "add", "explicit", "-p", "other"); out != "Created OTH-1: explicit\n" {
+	if out := mustRun(t, "add", "explicit", "-p", "other"); out != "✓ Created OTH-1: explicit\n" {
 		t.Errorf("explicit project: %q", out)
 	}
 	// Deleting the worktree leaves nothing to clean up.
@@ -124,7 +124,7 @@ func TestAddInfersProject(t *testing.T) {
 		t.Errorf("ambiguous: exit %d, stderr %q", r.code, r.stderr)
 	}
 	t.Chdir(filepath.Join(repo, "internal"))
-	if out := mustRun(t, "add", "most specific"); !strings.HasPrefix(out, "Created OTH-") {
+	if out := mustRun(t, "add", "most specific"); !strings.HasPrefix(out, "✓ Created OTH-") {
 		t.Errorf("most specific: %q", out)
 	}
 

@@ -66,7 +66,7 @@ func TestEditInEditor(t *testing.T) {
 	mustRun(t, "add", "Title", "-p", "myproject", "--description", "Old body")
 	tmp := fakeEditor(t, editedTask)
 
-	if out := mustRun(t, "task", "edit", "PROJ-1"); out != "Updated PROJ-1: Edited title\n" {
+	if out := mustRun(t, "task", "edit", "PROJ-1"); out != "✓ Updated PROJ-1: Edited title\n" {
 		t.Errorf("edit output = %q", out)
 	}
 	task := taskJSON(t, "PROJ-1")
@@ -140,7 +140,7 @@ func TestEditFromStdin(t *testing.T) {
 	cmd.SetOut(&out)
 	cmd.SetErr(&errb)
 	cmd.SetArgs([]string{"task", "edit", "proj-1", "--from", "-"})
-	if code := Execute(cmd); code != exitOK || out.String() != "Updated PROJ-1: New title\n" {
+	if code := Execute(cmd); code != exitOK || out.String() != "✓ Updated PROJ-1: New title\n" {
 		t.Fatalf("exit %d, stdout %q, stderr %q", code, out.String(), errb.String())
 	}
 	task := taskJSON(t, "PROJ-1")
@@ -192,7 +192,7 @@ func TestExport(t *testing.T) {
 	mustRun(t, "task", "archive", "PROJ-2")
 	dir := filepath.Join(t.TempDir(), "export")
 
-	if out := mustRun(t, "export", dir, "-p", "myproject"); out != "Exported 1 task to "+dir+"\n" {
+	if out := mustRun(t, "export", dir, "-p", "myproject"); out != "✓ Exported 1 task to "+dir+"\n" {
 		t.Errorf("export output = %q", out)
 	}
 	got, err := os.ReadFile(filepath.Join(dir, "PROJ-1.md"))
@@ -203,7 +203,7 @@ func TestExport(t *testing.T) {
 		t.Errorf("PROJ-1.md =\n%s\nwant\n%s", got, want)
 	}
 
-	if out := mustRun(t, "export", dir); out != "Exported 2 tasks to "+dir+"\n" {
+	if out := mustRun(t, "export", dir); out != "✓ Exported 2 tasks to "+dir+"\n" {
 		t.Errorf("export all output = %q", out)
 	}
 	entries, _ := os.ReadDir(dir)

@@ -76,7 +76,7 @@ the same repository (see "taskship workspace").`,
 			if asJSON {
 				return writeJSON(cmd, t)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Created %s: %s\n", t.Ref, t.Title)
+			success(cmd.OutOrStdout(), "Created %s: %s", t.Ref, t.Title)
 			return nil
 		},
 	}
@@ -366,7 +366,7 @@ for the format.`,
 			if asJSON {
 				return writeJSON(cmd, t)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Updated %s: %s\n", t.Ref, t.Title)
+			success(cmd.OutOrStdout(), "Updated %s: %s", t.Ref, t.Title)
 			return nil
 		},
 	}
@@ -483,7 +483,7 @@ func newTaskArchiveCmd(archive bool) *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, t)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s: %s\n", done, t.Ref, t.Title)
+			success(cmd.OutOrStdout(), "%s %s: %s", done, t.Ref, t.Title)
 			return nil
 		},
 	}
