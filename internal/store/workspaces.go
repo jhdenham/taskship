@@ -17,7 +17,7 @@ FROM workspaces w JOIN projects p ON p.id = w.project_id`
 
 // AddWorkspace registers w.Path (and w.GitCommonDir) for a project. A path
 // can belong to only one project.
-func (s *Store) AddWorkspace(ctx context.Context, projectSlug string, w core.Workspace) (core.Workspace, error) {
+func (s *Store) AddWorkspace(ctx context.Context, project string, w core.Workspace) (core.Workspace, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
 		return core.Workspace{}, err
@@ -28,7 +28,7 @@ func (s *Store) AddWorkspace(ctx context.Context, projectSlug string, w core.Wor
 	}
 	defer tx.Rollback()
 
-	p, err := getProject(ctx, tx, projectSlug)
+	p, err := getProject(ctx, tx, project)
 	if err != nil {
 		return core.Workspace{}, err
 	}
@@ -40,7 +40,7 @@ func (s *Store) AddWorkspace(ctx context.Context, projectSlug string, w core.Wor
 		return core.Workspace{}, err
 	}
 
-	w.ID, w.ProjectID, w.Project, w.CreatedAt = id.String(), p.ID, p.Slug, now()
+	w.ID, w.ProjectID, w.Project, w.CreatedAt = id.String(), p.ID, p.Name, now()
 	_, err = tx.ExecContext(ctx,
 		"INSERT INTO workspaces (id, project_id, path, git_common_dir, created_at) VALUES (?, ?, ?, ?, ?)",
 		w.ID, w.ProjectID, w.Path, w.GitCommonDir, w.CreatedAt.Format(timeLayout))
@@ -51,15 +51,15 @@ func (s *Store) AddWorkspace(ctx context.Context, projectSlug string, w core.Wor
 }
 
 // ListWorkspaces returns registered workspaces, optionally for one project,
-// ordered by project slug and path.
-func (s *Store) ListWorkspaces(ctx context.Context, projectSlug string) ([]core.Workspace, error) {
+// ordered by project name and path.
+func (s *Store) ListWorkspaces(ctx context.Context, project string) ([]core.Workspace, error) {
 	query, args := workspaceSelect, []any{}
-	if projectSlug != "" {
-		if _, err := getProject(ctx, s.db, projectSlug); err != nil {
+	if project != "" {
+		if _, err := getProject(ctx, s.db, project); err != nil {
 			return nil, err
 		}
 		query += " WHERE p.slug = ?"
-		args = append(args, projectSlug)
+		args = append(args, project)
 	}
 	rows, err := s.db.QueryContext(ctx, query+" ORDER BY p.slug, w.path", args...)
 	if err != nil {

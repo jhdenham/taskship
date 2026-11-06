@@ -38,7 +38,7 @@ func newTaskAddCmd(name string) *cobra.Command {
 	var project, description, status, priority string
 	var asJSON bool
 	cmd := &cobra.Command{
-		Use:   name + " TITLE [--project SLUG]",
+		Use:   name + " TITLE [--project NAME]",
 		Short: "Create a task",
 		Long: `Create a task. Without --project, the project is the one whose registered
 workspace contains the current directory, directly or through a Git worktree of
@@ -64,7 +64,7 @@ the same repository (see "taskship workspace").`,
 				if project, ok, err = projectForCurrentDir(cmd.Context(), s); err != nil {
 					return err
 				} else if !ok {
-					return usageError{fmt.Errorf("no project is registered for this directory; pass --project SLUG, or register this checkout with: taskship workspace add SLUG")}
+					return usageError{fmt.Errorf("no project is registered for this directory; pass --project NAME, or register this checkout with: taskship workspace add NAME")}
 				}
 			}
 			t, err := s.CreateTask(cmd.Context(), project, core.Task{
@@ -80,7 +80,7 @@ the same repository (see "taskship workspace").`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&project, "project", "p", "", "project slug (default: the project of the current directory)")
+	cmd.Flags().StringVarP(&project, "project", "p", "", "project name (default: the project of the current directory)")
 	cmd.Flags().StringVar(&description, "description", "", "task description")
 	cmd.Flags().StringVar(&status, "status", string(core.StatusTodo), "initial status")
 	cmd.Flags().StringVar(&priority, "priority", string(core.PriorityNone), "priority: none, low, medium, high, urgent")
@@ -93,7 +93,7 @@ func newTaskListCmd(name string) *cobra.Command {
 	var statuses []string
 	var asJSON, archived, allProjects bool
 	cmd := &cobra.Command{
-		Use:   name + " [--project SLUG | --all-projects]",
+		Use:   name + " [--project NAME | --all-projects]",
 		Short: "List tasks",
 		Long: `List tasks.
 
@@ -109,7 +109,7 @@ first line says what is shown and how to change it.`,
 			if project != "" && allProjects {
 				return usageError{fmt.Errorf("--project and --all-projects cannot be used together")}
 			}
-			filter := store.TaskFilter{ProjectSlug: project, IncludeArchived: archived}
+			filter := store.TaskFilter{Project: project, IncludeArchived: archived}
 			for _, s := range statuses {
 				st, err := core.ParseStatus(s)
 				if err != nil {
@@ -124,10 +124,10 @@ first line says what is shown and how to change it.`,
 			defer s.Close()
 			scope := listScope{project: project}
 			if project == "" && !allProjects {
-				if filter.ProjectSlug, scope.inferred, err = projectForCurrentDir(cmd.Context(), s); err != nil {
+				if filter.Project, scope.inferred, err = projectForCurrentDir(cmd.Context(), s); err != nil {
 					return err
 				}
-				scope.project = filter.ProjectSlug
+				scope.project = filter.Project
 				scope.noProjectHere = !scope.inferred
 			}
 			tasks, err := s.ListTasks(cmd.Context(), filter)
@@ -186,7 +186,7 @@ func (sc listScope) summary(f store.TaskFilter, n int) string {
 	case sc.project != "":
 		where, hint = " in "+sc.project, " Use --all-projects to see every project."
 	case sc.noProjectHere && n > 0:
-		hint = " Use --project SLUG for one project."
+		hint = " Use --project NAME for one project."
 	}
 	var filters []string
 	if len(f.Statuses) > 0 {

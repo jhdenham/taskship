@@ -13,7 +13,7 @@ func TestProjectRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	s := openTest(t, dir)
 
-	created, err := s.CreateProject(ctx, core.Project{Slug: "myproject", Name: "My Project", TaskPrefix: "PROJ", Description: "d"})
+	created, err := s.CreateProject(ctx, core.Project{Name: "myproject", TaskPrefix: "PROJ", Description: "d"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestProjectRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.ID != created.ID || got.Name != "My Project" || got.TaskPrefix != "PROJ" ||
+	if got.ID != created.ID || got.Name != "myproject" || got.TaskPrefix != "PROJ" ||
 		got.Description != "d" || !got.CreatedAt.Equal(created.CreatedAt) || got.ArchivedAt != nil {
 		t.Errorf("GetProject = %+v, want %+v", got, created)
 	}
@@ -36,13 +36,13 @@ func TestProjectRoundTrip(t *testing.T) {
 func TestCreateProjectRejectsDuplicatesAndInvalid(t *testing.T) {
 	ctx := context.Background()
 	s := openTest(t, t.TempDir())
-	if _, err := s.CreateProject(ctx, core.Project{Slug: "myproject", Name: "myproject", TaskPrefix: "PROJ"}); err != nil {
+	if _, err := s.CreateProject(ctx, core.Project{Name: "myproject", TaskPrefix: "PROJ"}); err != nil {
 		t.Fatal(err)
 	}
 	for name, p := range map[string]core.Project{
-		"duplicate slug":   {Slug: "myproject", Name: "x", TaskPrefix: "OTHER"},
-		"duplicate prefix": {Slug: "other", Name: "x", TaskPrefix: "PROJ"},
-		"invalid slug":     {Slug: "Bad Slug", Name: "x", TaskPrefix: "BAD"},
+		"duplicate name":   {Name: "myproject", TaskPrefix: "OTHER"},
+		"duplicate prefix": {Name: "other", TaskPrefix: "PROJ"},
+		"invalid name":     {Name: "Bad Name", TaskPrefix: "BAD"},
 	} {
 		if _, err := s.CreateProject(ctx, p); !errors.Is(err, core.ErrInvalid) {
 			t.Errorf("%s: err = %v, want ErrInvalid", name, err)
@@ -65,8 +65,8 @@ func TestListProjectsSortedAndEmpty(t *testing.T) {
 		t.Fatalf("empty list = %#v, %v; want non-nil empty slice", got, err)
 	}
 	for _, p := range []core.Project{
-		{Slug: "zeta", Name: "zeta", TaskPrefix: "ZET"},
-		{Slug: "alpha", Name: "alpha", TaskPrefix: "ALP"},
+		{Name: "zeta", TaskPrefix: "ZET"},
+		{Name: "alpha", TaskPrefix: "ALP"},
 	} {
 		if _, err := s.CreateProject(ctx, p); err != nil {
 			t.Fatal(err)
@@ -76,7 +76,7 @@ func TestListProjectsSortedAndEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 || got[0].Slug != "alpha" || got[1].Slug != "zeta" {
+	if len(got) != 2 || got[0].Name != "alpha" || got[1].Name != "zeta" {
 		t.Errorf("ListProjects order = %v", got)
 	}
 }

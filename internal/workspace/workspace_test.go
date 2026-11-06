@@ -156,7 +156,7 @@ func TestForTask(t *testing.T) {
 	// A registered linked worktree that is later deleted.
 	git(t, p("solo"), "worktree", "remove", p("wt/solo-registered"))
 
-	task := func(id, slug string) core.Task { return core.Task{ProjectID: id, Project: slug} }
+	task := func(id, name string) core.Task { return core.Task{ProjectID: id, Project: name} }
 	tests := []struct {
 		name     string
 		task     core.Task

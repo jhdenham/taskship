@@ -71,7 +71,7 @@ func TestProjectEdit(t *testing.T) {
 	seedCLIProjects(t)
 	mustRun(t, "add", "a", "-p", "myproject")
 
-	if out := mustRun(t, "project", "edit", "myproject", "--slug", "renamed", "--name", "Renamed"); out != "Updated project renamed\n" {
+	if out := mustRun(t, "project", "edit", "myproject", "--name", "renamed", "--description", "Renamed"); out != "Updated project renamed\n" {
 		t.Errorf("edit output = %q", out)
 	}
 	if out := mustRun(t, "project", "show", "renamed"); !strings.Contains(out, "Renamed") || !strings.Contains(out, "PROJ") {
@@ -128,7 +128,7 @@ func TestEditArchiveExitCodes(t *testing.T) {
 		{"task archive unknown", []string{"task", "archive", "PROJ-9"}, exitNotFound},
 		{"task restore malformed", []string{"task", "restore", "nope"}, exitInvalidInput},
 		{"project edit nothing", []string{"project", "edit", "myproject"}, exitInvalidInput},
-		{"project edit slug taken", []string{"project", "edit", "myproject", "--slug", "other"}, exitInvalidInput},
+		{"project edit name taken", []string{"project", "edit", "myproject", "--name", "other"}, exitInvalidInput},
 		{"project edit prefix", []string{"project", "edit", "myproject", "--prefix", "NEW"}, exitInvalidInput},
 		{"project edit unknown", []string{"project", "edit", "nope", "--name", "x"}, exitNotFound},
 		{"project archive unknown", []string{"project", "archive", "nope"}, exitNotFound},

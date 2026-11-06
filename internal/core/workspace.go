@@ -9,7 +9,7 @@ import "time"
 type Workspace struct {
 	ID           string    `json:"id"`
 	ProjectID    string    `json:"project_id"`
-	Project      string    `json:"project"` // project slug, for display
+	Project      string    `json:"project"` // project name, for display
 	Path         string    `json:"path"`
 	GitCommonDir string    `json:"git_common_dir,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`

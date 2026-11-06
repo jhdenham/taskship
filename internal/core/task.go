@@ -42,7 +42,7 @@ type Task struct {
 	ID          string     `json:"id"`
 	Ref         string     `json:"ref"`
 	ProjectID   string     `json:"project_id"`
-	Project     string     `json:"project"` // project slug, for display
+	Project     string     `json:"project"` // project name, for display
 	Sequence    int        `json:"sequence_number"`
 	Title       string     `json:"title"`
 	Description string     `json:"description"`

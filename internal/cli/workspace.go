@@ -76,7 +76,7 @@ func newWorkspaceListCmd() *cobra.Command {
 	var project string
 	var asJSON bool
 	cmd := &cobra.Command{
-		Use:   "list [--project SLUG]",
+		Use:   "list [--project NAME]",
 		Short: "List registered workspaces",
 		Long:  "List registered workspaces. Paths that no longer exist are marked (missing); remove them with \"taskship workspace remove PATH\".",
 		Args:  exactArgs(0),
@@ -149,10 +149,10 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 	return cmd
 }
 
-// projectForCurrentDir returns the slug of the project whose registered
+// projectForCurrentDir returns the name of the project whose registered
 // workspace contains the current directory, directly or through a Git
 // worktree of the same repository. ok is false if no project matches.
-func projectForCurrentDir(ctx context.Context, s *store.Store) (slug string, ok bool, err error) {
+func projectForCurrentDir(ctx context.Context, s *store.Store) (name string, ok bool, err error) {
 	path, commonDir, err := workspace.Inspect(ctx, ".")
 	if err != nil {
 		return "", false, err

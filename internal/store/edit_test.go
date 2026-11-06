@@ -91,29 +91,29 @@ func TestUpdateProject(t *testing.T) {
 	before, _ := s.GetProject(ctx, "myproject")
 	mustCreateTask(t, s, "myproject", newTask("a"))
 
-	p, err := s.UpdateProject(ctx, "myproject", ProjectPatch{Slug: ptr("renamed"), Name: ptr("Renamed")})
+	p, err := s.UpdateProject(ctx, "myproject", ProjectPatch{Name: ptr("renamed"), Description: ptr("d")})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.ID != before.ID || p.Slug != "renamed" || p.Name != "Renamed" || p.TaskPrefix != "PROJ" {
+	if p.ID != before.ID || p.Name != "renamed" || p.Description != "d" || p.TaskPrefix != "PROJ" {
 		t.Errorf("updated project = %+v", p)
 	}
 	if _, err := s.GetProject(ctx, "myproject"); !errors.Is(err, core.ErrNotFound) {
-		t.Errorf("old slug still resolves: %v", err)
+		t.Errorf("old name still resolves: %v", err)
 	}
 	// Tasks follow the project; refs are unchanged.
 	if task, err := s.GetTask(ctx, "PROJ-1"); err != nil || task.Project != "renamed" {
 		t.Errorf("task after rename = %+v, %v", task, err)
 	}
-	// Keeping your own slug is fine; taking another project's is not.
-	if _, err := s.UpdateProject(ctx, "renamed", ProjectPatch{Slug: ptr("renamed")}); err != nil {
-		t.Errorf("same slug: %v", err)
+	// Keeping your own name is fine; taking another project's is not.
+	if _, err := s.UpdateProject(ctx, "renamed", ProjectPatch{Name: ptr("renamed")}); err != nil {
+		t.Errorf("same name: %v", err)
 	}
-	if _, err := s.UpdateProject(ctx, "renamed", ProjectPatch{Slug: ptr("other")}); !errors.Is(err, core.ErrInvalid) {
-		t.Errorf("slug taken: err = %v, want ErrInvalid", err)
+	if _, err := s.UpdateProject(ctx, "renamed", ProjectPatch{Name: ptr("other")}); !errors.Is(err, core.ErrInvalid) {
+		t.Errorf("name taken: err = %v, want ErrInvalid", err)
 	}
-	if _, err := s.UpdateProject(ctx, "renamed", ProjectPatch{Slug: ptr("Bad Slug")}); !errors.Is(err, core.ErrInvalid) {
-		t.Errorf("invalid slug: err = %v, want ErrInvalid", err)
+	if _, err := s.UpdateProject(ctx, "renamed", ProjectPatch{Name: ptr("Bad Name")}); !errors.Is(err, core.ErrInvalid) {
+		t.Errorf("invalid name: err = %v, want ErrInvalid", err)
 	}
 	if _, err := s.UpdateProject(ctx, "nope", ProjectPatch{Name: ptr("x")}); !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("unknown project: err = %v, want ErrNotFound", err)
@@ -133,7 +133,7 @@ func TestArchiveRestoreProject(t *testing.T) {
 		}
 	}
 	projects, _ := s.ListProjects(ctx, false)
-	if len(projects) != 1 || projects[0].Slug != "other" {
+	if len(projects) != 1 || projects[0].Name != "other" {
 		t.Errorf("unarchived projects = %v", projects)
 	}
 	if all, _ := s.ListProjects(ctx, true); len(all) != 2 {

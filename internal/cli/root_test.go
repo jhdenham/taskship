@@ -94,13 +94,13 @@ func TestFirstStatefulCommandInitializesStorage(t *testing.T) {
 func TestProjectCommands(t *testing.T) {
 	tempHome(t)
 
-	if out := mustRun(t, "project", "add", "myproject", "--prefix", "PROJ", "--name", "My Project"); out != "Created project myproject (PROJ)\n" {
+	if out := mustRun(t, "project", "add", "myproject", "--prefix", "PROJ"); out != "Created project myproject (PROJ)\n" {
 		t.Errorf("add output = %q", out)
 	}
 	mustRun(t, "project", "add", "another", "--prefix", "ANO")
 
 	list := mustRun(t, "project", "list")
-	if !strings.Contains(list, "another") || !strings.Contains(list, "My Project") ||
+	if !strings.HasPrefix(list, "NAME       PREFIX\n") || !strings.Contains(list, "another") ||
 		strings.Index(list, "another") > strings.Index(list, "myproject") {
 		t.Errorf("list output = %q", list)
 	}
@@ -114,7 +114,7 @@ func TestProjectCommands(t *testing.T) {
 	}
 
 	show := mustRun(t, "project", "show", "myproject")
-	if !strings.Contains(show, "PROJ") || !strings.Contains(show, "My Project") {
+	if !strings.HasPrefix(show, "Name:     myproject\n") || !strings.Contains(show, "PROJ") {
 		t.Errorf("show output = %q", show)
 	}
 
@@ -122,10 +122,13 @@ func TestProjectCommands(t *testing.T) {
 	if err := json.Unmarshal([]byte(mustRun(t, "project", "show", "myproject", "--json")), &raw); err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"id", "slug", "name", "task_prefix", "description", "created_at", "updated_at"} {
+	for _, key := range []string{"id", "name", "task_prefix", "description", "created_at", "updated_at"} {
 		if _, ok := raw[key]; !ok {
 			t.Errorf("show --json missing %q: %v", key, raw)
 		}
+	}
+	if _, ok := raw["slug"]; ok {
+		t.Errorf("show --json includes slug: %v", raw)
 	}
 	if _, ok := raw["archived_at"]; ok {
 		t.Errorf("show --json includes archived_at for an unarchived project")
@@ -149,10 +152,10 @@ func TestExitCodes(t *testing.T) {
 		code int
 	}{
 		{"missing prefix", []string{"project", "add", "x"}, exitInvalidInput},
-		{"missing slug", []string{"project", "add", "--prefix", "X"}, exitInvalidInput},
+		{"missing name", []string{"project", "add", "--prefix", "X"}, exitInvalidInput},
 		{"unknown flag", []string{"project", "list", "--bogus"}, exitInvalidInput},
-		{"invalid slug", []string{"project", "add", "Bad", "--prefix", "BAD"}, exitInvalidInput},
-		{"duplicate slug", []string{"project", "add", "myproject", "--prefix", "OTHER"}, exitInvalidInput},
+		{"invalid name", []string{"project", "add", "Bad", "--prefix", "BAD"}, exitInvalidInput},
+		{"duplicate name", []string{"project", "add", "myproject", "--prefix", "OTHER"}, exitInvalidInput},
 		{"duplicate prefix", []string{"project", "add", "other", "--prefix", "PROJ"}, exitInvalidInput},
 		{"unknown project", []string{"project", "show", "nope"}, exitNotFound},
 	}

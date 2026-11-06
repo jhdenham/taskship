@@ -15,7 +15,8 @@ import (
 // timeLayout is fixed-width so stored timestamps sort lexically.
 const timeLayout = "2006-01-02T15:04:05.000000Z"
 
-const projectColumns = "id, slug, name, task_prefix, description, archived_at, created_at, updated_at"
+// The slug column holds the project's name (core.Project.Name).
+const projectColumns = "id, slug, task_prefix, description, archived_at, created_at, updated_at"
 
 // querier is satisfied by both *sql.DB and *sql.Tx.
 type querier interface {
@@ -45,7 +46,7 @@ func (s *Store) CreateProject(ctx context.Context, p core.Project) (core.Project
 	}
 	defer tx.Rollback()
 
-	if err := checkSlugFree(ctx, tx, p.Slug, ""); err != nil {
+	if err := checkNameFree(ctx, tx, p.Name, ""); err != nil {
 		return core.Project{}, err
 	}
 	var existing string
@@ -57,38 +58,38 @@ func (s *Store) CreateProject(ctx context.Context, p core.Project) (core.Project
 	}
 
 	_, err = tx.ExecContext(ctx,
-		"INSERT INTO projects ("+projectColumns+") VALUES (?, ?, ?, ?, ?, NULL, ?, ?)",
-		p.ID, p.Slug, p.Name, p.TaskPrefix, p.Description, ts.Format(timeLayout), ts.Format(timeLayout))
+		"INSERT INTO projects ("+projectColumns+") VALUES (?, ?, ?, ?, NULL, ?, ?)",
+		p.ID, p.Name, p.TaskPrefix, p.Description, ts.Format(timeLayout), ts.Format(timeLayout))
 	if err != nil {
 		return core.Project{}, err
 	}
 	return p, tx.Commit()
 }
 
-// checkSlugFree reports an error if a project other than exceptID uses slug.
-func checkSlugFree(ctx context.Context, q querier, slug, exceptID string) error {
+// checkNameFree reports an error if a project other than exceptID uses name.
+func checkNameFree(ctx context.Context, q querier, name, exceptID string) error {
 	var id string
-	err := q.QueryRowContext(ctx, "SELECT id FROM projects WHERE slug = ?", slug).Scan(&id)
+	err := q.QueryRowContext(ctx, "SELECT id FROM projects WHERE slug = ?", name).Scan(&id)
 	switch {
 	case errors.Is(err, sql.ErrNoRows), err == nil && id == exceptID:
 		return nil
 	case err == nil:
-		return fmt.Errorf("%w: project %q already exists", core.ErrInvalid, slug)
+		return fmt.Errorf("%w: project %q already exists", core.ErrInvalid, name)
 	default:
 		return err
 	}
 }
 
-// GetProject returns the project with the given slug, archived or not.
-func (s *Store) GetProject(ctx context.Context, slug string) (core.Project, error) {
-	return getProject(ctx, s.db, slug)
+// GetProject returns the project with the given name, archived or not.
+func (s *Store) GetProject(ctx context.Context, name string) (core.Project, error) {
+	return getProject(ctx, s.db, name)
 }
 
-func getProject(ctx context.Context, q querier, slug string) (core.Project, error) {
-	row := q.QueryRowContext(ctx, "SELECT "+projectColumns+" FROM projects WHERE slug = ?", slug)
+func getProject(ctx context.Context, q querier, name string) (core.Project, error) {
+	row := q.QueryRowContext(ctx, "SELECT "+projectColumns+" FROM projects WHERE slug = ?", name)
 	p, err := scanProject(row)
 	if errors.Is(err, sql.ErrNoRows) {
-		return core.Project{}, fmt.Errorf("project %q: %w", slug, core.ErrNotFound)
+		return core.Project{}, fmt.Errorf("project %q: %w", name, core.ErrNotFound)
 	}
 	return p, err
 }
@@ -96,23 +97,20 @@ func getProject(ctx context.Context, q querier, slug string) (core.Project, erro
 // ProjectPatch lists project fields to change; nil fields are left as is.
 // The task prefix is not editable until old-ref aliasing is decided.
 type ProjectPatch struct {
-	Slug, Name, Description *string
+	Name, Description *string
 }
 
-// UpdateProject applies patch to the project with the given slug.
-func (s *Store) UpdateProject(ctx context.Context, slug string, patch ProjectPatch) (core.Project, error) {
+// UpdateProject applies patch to the project with the given name.
+func (s *Store) UpdateProject(ctx context.Context, name string, patch ProjectPatch) (core.Project, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return core.Project{}, err
 	}
 	defer tx.Rollback()
 
-	p, err := getProject(ctx, tx, slug)
+	p, err := getProject(ctx, tx, name)
 	if err != nil {
 		return core.Project{}, err
-	}
-	if patch.Slug != nil {
-		p.Slug = *patch.Slug
 	}
 	if patch.Name != nil {
 		p.Name = *patch.Name
@@ -123,12 +121,12 @@ func (s *Store) UpdateProject(ctx context.Context, slug string, patch ProjectPat
 	if err := core.ValidateProject(p); err != nil {
 		return core.Project{}, err
 	}
-	if err := checkSlugFree(ctx, tx, p.Slug, p.ID); err != nil {
+	if err := checkNameFree(ctx, tx, p.Name, p.ID); err != nil {
 		return core.Project{}, err
 	}
 	p.UpdatedAt = now()
-	_, err = tx.ExecContext(ctx, "UPDATE projects SET slug = ?, name = ?, description = ?, updated_at = ? WHERE id = ?",
-		p.Slug, p.Name, p.Description, p.UpdatedAt.Format(timeLayout), p.ID)
+	_, err = tx.ExecContext(ctx, "UPDATE projects SET slug = ?, description = ?, updated_at = ? WHERE id = ?",
+		p.Name, p.Description, p.UpdatedAt.Format(timeLayout), p.ID)
 	if err != nil {
 		return core.Project{}, err
 	}
@@ -137,14 +135,14 @@ func (s *Store) UpdateProject(ctx context.Context, slug string, patch ProjectPat
 
 // SetProjectArchived archives or restores a project. It is a no-op if the
 // project is already in the requested state.
-func (s *Store) SetProjectArchived(ctx context.Context, slug string, archived bool) (core.Project, error) {
+func (s *Store) SetProjectArchived(ctx context.Context, name string, archived bool) (core.Project, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return core.Project{}, err
 	}
 	defer tx.Rollback()
 
-	p, err := getProject(ctx, tx, slug)
+	p, err := getProject(ctx, tx, name)
 	if err != nil || (p.ArchivedAt != nil) == archived {
 		return p, err
 	}
@@ -162,7 +160,7 @@ func (s *Store) SetProjectArchived(ctx context.Context, slug string, archived bo
 	return p, tx.Commit()
 }
 
-// ListProjects returns projects ordered by slug, excluding archived ones
+// ListProjects returns projects ordered by name, excluding archived ones
 // unless includeArchived is set.
 func (s *Store) ListProjects(ctx context.Context, includeArchived bool) ([]core.Project, error) {
 	query := "SELECT " + projectColumns + " FROM projects"
@@ -189,7 +187,7 @@ func scanProject(row interface{ Scan(...any) error }) (core.Project, error) {
 	var p core.Project
 	var archived sql.NullString
 	var created, updated string
-	if err := row.Scan(&p.ID, &p.Slug, &p.Name, &p.TaskPrefix, &p.Description, &archived, &created, &updated); err != nil {
+	if err := row.Scan(&p.ID, &p.Name, &p.TaskPrefix, &p.Description, &archived, &created, &updated); err != nil {
 		return core.Project{}, err
 	}
 	var err error

@@ -14,7 +14,7 @@ import (
 func newExportCmd() *cobra.Command {
 	var project string
 	cmd := &cobra.Command{
-		Use:   "export DIR [--project SLUG]",
+		Use:   "export DIR [--project NAME]",
 		Short: "Write tasks to a directory as Markdown files",
 		Long: `Write each unarchived task to DIR/REF.md (for example DIR/PROJ-1.md) in the
 format shown by "taskship show --md". DIR is created if needed, and existing
@@ -28,7 +28,7 @@ the files do not change the tasks.`,
 				return err
 			}
 			defer s.Close()
-			tasks, err := s.ListTasks(cmd.Context(), store.TaskFilter{ProjectSlug: project})
+			tasks, err := s.ListTasks(cmd.Context(), store.TaskFilter{Project: project})
 			if err != nil {
 				return err
 			}

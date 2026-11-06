@@ -182,7 +182,7 @@ func TestTasksScope(t *testing.T) {
 	}
 
 	t.Chdir(t.TempDir())
-	if got := firstLine("tasks"); got != "Showing 3 tasks across all projects. Use --project SLUG for one project." {
+	if got := firstLine("tasks"); got != "Showing 3 tasks across all projects. Use --project NAME for one project." {
 		t.Errorf("outside any project: %q", got)
 	}
 

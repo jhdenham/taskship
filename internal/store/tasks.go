@@ -17,9 +17,9 @@ const taskSelect = `SELECT t.id, p.task_prefix, t.project_id, p.slug, t.sequence
 	t.description, t.status, t.priority, t.archived_at, t.created_at, t.updated_at
 	FROM tasks t JOIN projects p ON p.id = t.project_id`
 
-// CreateTask validates t and stores it in the project with the given slug,
+// CreateTask validates t and stores it in the project with the given name,
 // assigning the next sequence number in that project.
-func (s *Store) CreateTask(ctx context.Context, projectSlug string, t core.Task) (core.Task, error) {
+func (s *Store) CreateTask(ctx context.Context, project string, t core.Task) (core.Task, error) {
 	if err := core.ValidateTask(t); err != nil {
 		return core.Task{}, err
 	}
@@ -38,12 +38,12 @@ func (s *Store) CreateTask(ctx context.Context, projectSlug string, t core.Task)
 	}
 	defer tx.Rollback()
 
-	p, err := getProject(ctx, tx, projectSlug)
+	p, err := getProject(ctx, tx, project)
 	if err != nil {
 		return core.Task{}, err
 	}
 	if p.ArchivedAt != nil {
-		return core.Task{}, fmt.Errorf("%w: project %q is archived; restore it with: taskship project restore %s", core.ErrInvalid, p.Slug, p.Slug)
+		return core.Task{}, fmt.Errorf("%w: project %q is archived; restore it with: taskship project restore %s", core.ErrInvalid, p.Name, p.Name)
 	}
 	t.ProjectID = p.ID
 	if err := tx.QueryRowContext(ctx,
@@ -62,7 +62,7 @@ func (s *Store) CreateTask(ctx context.Context, projectSlug string, t core.Task)
 	if err := tx.Commit(); err != nil {
 		return core.Task{}, err
 	}
-	t.ID, t.Project, t.Ref = id.String(), p.Slug, core.FormatTaskRef(p.TaskPrefix, t.Sequence)
+	t.ID, t.Project, t.Ref = id.String(), p.Name, core.FormatTaskRef(p.TaskPrefix, t.Sequence)
 	t.CreatedAt, t.UpdatedAt, t.ArchivedAt = ts, ts, nil
 	return t, nil
 }
@@ -159,12 +159,12 @@ func (s *Store) SetTaskArchived(ctx context.Context, ref string, archived bool) 
 // TaskFilter selects tasks for ListTasks. Zero values match everything
 // except archived tasks and tasks in archived projects.
 type TaskFilter struct {
-	ProjectSlug     string
+	Project         string
 	Statuses        []core.Status
 	IncludeArchived bool
 }
 
-// ListTasks returns tasks matching f, ordered by project slug and sequence
+// ListTasks returns tasks matching f, ordered by project name and sequence
 // number. Filtering by an unknown project returns ErrNotFound.
 func (s *Store) ListTasks(ctx context.Context, f TaskFilter) ([]core.Task, error) {
 	var where []string
@@ -172,12 +172,12 @@ func (s *Store) ListTasks(ctx context.Context, f TaskFilter) ([]core.Task, error
 	if !f.IncludeArchived {
 		where = append(where, "t.archived_at IS NULL", "p.archived_at IS NULL")
 	}
-	if f.ProjectSlug != "" {
-		if _, err := s.GetProject(ctx, f.ProjectSlug); err != nil {
+	if f.Project != "" {
+		if _, err := s.GetProject(ctx, f.Project); err != nil {
 			return nil, err
 		}
 		where = append(where, "p.slug = ?")
-		args = append(args, f.ProjectSlug)
+		args = append(args, f.Project)
 	}
 	if len(f.Statuses) > 0 {
 		where = append(where, "t.status IN (?"+strings.Repeat(", ?", len(f.Statuses)-1)+")")

@@ -17,8 +17,8 @@ func newTask(title string) core.Task {
 func seedProjects(t *testing.T, s *Store) {
 	t.Helper()
 	for _, p := range []core.Project{
-		{Slug: "myproject", Name: "myproject", TaskPrefix: "PROJ"},
-		{Slug: "other", Name: "other", TaskPrefix: "OTH"},
+		{Name: "myproject", TaskPrefix: "PROJ"},
+		{Name: "other", TaskPrefix: "OTH"},
 	} {
 		if _, err := s.CreateProject(context.Background(), p); err != nil {
 			t.Fatal(err)
@@ -133,9 +133,9 @@ func TestListTasksFilters(t *testing.T) {
 		want   []string
 	}{
 		{"all, ordered by project then number", TaskFilter{}, []string{"PROJ-1", "PROJ-2", "PROJ-3", "OTH-1"}},
-		{"by project", TaskFilter{ProjectSlug: "other"}, []string{"OTH-1"}},
+		{"by project", TaskFilter{Project: "other"}, []string{"OTH-1"}},
 		{"by status", TaskFilter{Statuses: []core.Status{core.StatusTodo}}, []string{"PROJ-1", "OTH-1"}},
-		{"by project and statuses", TaskFilter{ProjectSlug: "myproject", Statuses: []core.Status{core.StatusDone, core.StatusInProgress}}, []string{"PROJ-2", "PROJ-3"}},
+		{"by project and statuses", TaskFilter{Project: "myproject", Statuses: []core.Status{core.StatusDone, core.StatusInProgress}}, []string{"PROJ-2", "PROJ-3"}},
 		{"no matches", TaskFilter{Statuses: []core.Status{core.StatusCanceled}}, []string{}},
 	}
 	for _, tt := range tests {
@@ -159,7 +159,7 @@ func TestListTasksFilters(t *testing.T) {
 		})
 	}
 
-	if _, err := s.ListTasks(ctx, TaskFilter{ProjectSlug: "nope"}); !errors.Is(err, core.ErrNotFound) {
+	if _, err := s.ListTasks(ctx, TaskFilter{Project: "nope"}); !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("unknown project filter: err = %v, want ErrNotFound", err)
 	}
 }
