@@ -129,7 +129,7 @@ func TestAddInfersProject(t *testing.T) {
 	}
 
 	t.Chdir(t.TempDir())
-	if r := run(t, "", "add", "x"); r.code != exitInvalidInput || !strings.Contains(r.stderr, "workspace add") {
+	if r := run(t, "", "add", "x"); r.code != exitInvalidInput || r.stderr != "taskship: this folder isn't part of a Taskship project. Run \"taskship init\" to set it up, or pass --project NAME to use an existing project.\n" {
 		t.Errorf("unregistered dir: exit %d, stderr %q", r.code, r.stderr)
 	}
 }
@@ -166,11 +166,11 @@ func TestTasksScope(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"tasks"}, "Showing 2 tasks in myproject (this directory). Use --all-projects to see every project."},
-		{[]string{"tasks", "--status", "todo"}, "Showing 1 task in myproject (this directory), with status todo. Use --all-projects to see every project."},
+		{[]string{"tasks"}, "Showing 2 tasks in myproject (this folder). Use --all-projects to see every project."},
+		{[]string{"tasks", "--status", "todo"}, "Showing 1 task in myproject (this folder), with status todo. Use --all-projects to see every project."},
 		{[]string{"tasks", "-p", "other"}, "Showing 1 task in other. Use --all-projects to see every project."},
 		{[]string{"tasks", "--all-projects", "--archived"}, "Showing 3 tasks across all projects, including archived."},
-		{[]string{"task", "list", "--status", "canceled"}, "No tasks in myproject (this directory), with status canceled. Use --all-projects to see every project."},
+		{[]string{"task", "list", "--status", "canceled"}, "No tasks in myproject (this folder), with status canceled. Use --all-projects to see every project."},
 	}
 	for _, tt := range tests {
 		if got := firstLine(tt.args...); got != tt.want {

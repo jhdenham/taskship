@@ -118,6 +118,22 @@ func contains(base, path string) bool {
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
+// NoFolderError reports that a project has no usable folder on this
+// machine: none is registered, or the only one (Missing) no longer exists.
+// It wraps core.ErrNotFound.
+type NoFolderError struct {
+	Project, Missing string
+}
+
+func (e *NoFolderError) Error() string {
+	if e.Missing != "" {
+		return fmt.Sprintf("the folder %s of %s no longer exists", e.Missing, e.Project)
+	}
+	return fmt.Sprintf("no folder is registered for %s", e.Project)
+}
+
+func (e *NoFolderError) Unwrap() error { return core.ErrNotFound }
+
 // ForTask chooses the directory to run task t in, given the Location of a
 // directory. If explicit is true, the directory was passed by the user and
 // must belong to the task's project. Otherwise it is the current directory.
@@ -154,10 +170,10 @@ func ForTask(ctx context.Context, t core.Task, loc Location, explicit bool, all 
 
 	switch len(own) {
 	case 0:
-		return "", fmt.Errorf("%w: no workspace is registered for %s; register a checkout with: taskship workspace add %s --path PATH", core.ErrNotFound, t.Project, t.Project)
+		return "", &NoFolderError{Project: t.Project}
 	case 1:
 		if info, err := os.Stat(own[0].Path); err != nil || !info.IsDir() {
-			return "", fmt.Errorf("%w: the workspace %s of %s no longer exists; remove it with: taskship workspace remove %s", core.ErrNotFound, own[0].Path, t.Project, own[0].Path)
+			return "", &NoFolderError{Project: t.Project, Missing: own[0].Path}
 		}
 		if out, _ := gitOutput(ctx, own[0].Path, "rev-parse", "--is-bare-repository"); out == "true" {
 			return "", fmt.Errorf("%w: %s is a bare repository, with no files to work on; run this from one of its worktrees, or pass --workspace PATH", core.ErrInvalid, own[0].Path)

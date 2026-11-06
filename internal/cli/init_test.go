@@ -53,7 +53,7 @@ func mkdirs(t *testing.T, paths ...string) {
 func runInput(t *testing.T, input string, args ...string) result {
 	t.Helper()
 	orig := inputIsTerminal
-	t.Cleanup(func() { inputIsTerminal = orig })
+	defer func() { inputIsTerminal = orig }()
 	inputIsTerminal = func(io.Reader) bool { return true }
 	cmd := NewRootCmd("")
 	var out, errb bytes.Buffer
@@ -399,5 +399,64 @@ func TestChangedAgo(t *testing.T) {
 		if got := changedAgo(now.Add(-d), now); got != want {
 			t.Errorf("changedAgo(-%v) = %q, want %q", d, got, want)
 		}
+	}
+}
+
+func TestAddOffersSetupWithoutProjects(t *testing.T) {
+	home := initHome(t)
+	repo := filepath.Join(home, "code", "myproject")
+	newRepo(t, repo)
+	t.Chdir(repo)
+
+	// Declining adds nothing.
+	r := runInput(t, "n\n", "add", "Fix export")
+	if r.code != exitFailure || r.stderr != "? Set up Taskship now? (Y/n): taskship: no task added; run \"taskship init\" to set up this repository, or pass --project NAME\n" {
+		t.Errorf("declined: exit %d, stderr %q", r.code, r.stderr)
+	}
+	// Without a terminal, it doesn't ask.
+	if r := run(t, "", "add", "Fix export"); r.code != exitInvalidInput || !strings.Contains(r.stderr, "isn't part of a Taskship project. Run \"taskship init\"") {
+		t.Errorf("no terminal: exit %d, stderr %q", r.code, r.stderr)
+	}
+	if out := mustRun(t, "project", "list"); out != "No projects yet. Run \"taskship init\" in a repository to set one up.\n" {
+		t.Errorf("project list = %q", out)
+	}
+	if out := mustRun(t, "tasks"); out != "No projects yet. Run \"taskship init\" in a repository to set one up.\n" {
+		t.Errorf("tasks = %q", out)
+	}
+
+	r = runInput(t, "\n\n\n", "add", "Fix export")
+	if r.code != 0 {
+		t.Fatalf("exit %d, stderr %q", r.code, r.stderr)
+	}
+	want := "This repository isn't set up with Taskship yet.\n" +
+		"Taskship doesn't write anything to this repository. Everything lives in ~/.taskship.\n" +
+		"\n" +
+		"✓ Created project myproject.\n" +
+		"✓ Created MYPT-1: Fix export\n" +
+		"Run \"taskship tasks\" to list this project's tasks.\n"
+	if r.stdout != want {
+		t.Errorf("stdout:\n%s\nwant:\n%s", r.stdout, want)
+	}
+	if want := "? Set up Taskship now? (Y/n): ? Project name (myproject): ? Task prefix (MYPT): "; r.stderr != want {
+		t.Errorf("stderr = %q, want %q", r.stderr, want)
+	}
+
+	// With a project, an unknown folder is an error, not an offer.
+	t.Chdir(home)
+	if r := runInput(t, "", "add", "x"); r.code != exitInvalidInput || r.stderr != "taskship: this folder isn't part of a Taskship project. Run \"taskship init\" to set it up, or pass --project NAME to use an existing project.\n" {
+		t.Errorf("unknown folder: exit %d, stderr %q", r.code, r.stderr)
+	}
+}
+
+func TestRunMissingFolderMessage(t *testing.T) {
+	home := initHome(t)
+	gone := filepath.Join(home, "code", "old")
+	mkdirs(t, gone)
+	mustRun(t, "init", gone, "--name", "myproject", "--prefix", "PROJ")
+	mustRun(t, "add", "x", "-p", "myproject")
+	os.RemoveAll(gone)
+	t.Chdir(home)
+	if r := run(t, "", "PROJ-1", "--dry-run"); r.code != exitNotFound || r.stderr != "taskship: myproject's folder ~/code/old no longer exists. If it moved, run \"taskship init\" in the new location to relink it.\n" {
+		t.Errorf("exit %d, stderr %q", r.code, r.stderr)
 	}
 }

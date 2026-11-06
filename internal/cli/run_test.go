@@ -13,8 +13,8 @@ func TestRunDryRun(t *testing.T) {
 	mustRun(t, "add", "Add weekly habit tracker", "-p", "myproject", "--description", "## Acceptance criteria\n\n- [ ] Weekly view")
 	mustRun(t, "add", "Elsewhere", "-p", "other")
 
-	// No workspace registered yet: setup guidance.
-	if r := run(t, "", "run", "PROJ-1", "--dry-run"); r.code != exitNotFound || !strings.Contains(r.stderr, "taskship workspace add myproject") {
+	// No folder set up yet: setup guidance.
+	if r := run(t, "", "run", "PROJ-1", "--dry-run"); r.code != exitNotFound || r.stderr != "taskship: myproject isn't linked to a folder on this machine. Run \"taskship init\" in its repository to link it.\n" {
 		t.Errorf("no workspace: exit %d, stderr %q", r.code, r.stderr)
 	}
 	mustRun(t, "workspace", "add", "myproject", "--path", repo)

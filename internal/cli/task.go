@@ -40,9 +40,9 @@ func newTaskAddCmd(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name + " TITLE [--project NAME]",
 		Short: "Create a task",
-		Long: `Create a task. Without --project, the project is the one whose registered
-workspace contains the current directory, directly or through a Git worktree of
-the same repository (see "taskship workspace").`,
+		Long: `Create a task. Without --project, the project is the one set up for the
+current folder, its repository, or any worktree of it (see "taskship init").
+If no project exists yet, add offers to set one up first.`,
 		Example: "  taskship " + name + " \"Fix export\"\n  taskship " + name + " \"Fix export\" --project myproject",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,12 +59,16 @@ the same repository (see "taskship workspace").`,
 				return err
 			}
 			defer s.Close()
+			setUp := false
 			if project == "" {
 				var ok bool
 				if project, ok, err = projectForCurrentDir(cmd.Context(), s); err != nil {
 					return err
 				} else if !ok {
-					return usageError{fmt.Errorf("no project is registered for this directory; pass --project NAME, or register this checkout with: taskship workspace add NAME")}
+					if project, err = offerSetup(cmd, s); err != nil {
+						return err
+					}
+					setUp = true
 				}
 			}
 			t, err := s.CreateTask(cmd.Context(), project, core.Task{
@@ -77,10 +81,13 @@ the same repository (see "taskship workspace").`,
 				return writeJSON(cmd, t)
 			}
 			success(cmd.OutOrStdout(), "Created %s: %s", t.Ref, t.Title)
+			if setUp {
+				fmt.Fprintln(cmd.OutOrStdout(), `Run "taskship tasks" to list this project's tasks.`)
+			}
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&project, "project", "p", "", "project name (default: the project of the current directory)")
+	cmd.Flags().StringVarP(&project, "project", "p", "", "project name (default: the project of the current folder)")
 	cmd.Flags().StringVar(&description, "description", "", "task description")
 	cmd.Flags().StringVar(&status, "status", string(core.StatusTodo), "initial status")
 	cmd.Flags().StringVar(&priority, "priority", string(core.PriorityNone), "priority: none, low, medium, high, urgent")
@@ -97,8 +104,8 @@ func newTaskListCmd(name string) *cobra.Command {
 		Short: "List tasks",
 		Long: `List tasks.
 
-By default, tasks are listed for the project of the current directory (see
-"taskship workspace"), or across all projects when the directory belongs to no
+By default, tasks are listed for the project of the current folder (see
+"taskship init"), or across all projects when the folder belongs to no
 project. --project and --all-projects choose explicitly. In a terminal, a
 first line says what is shown and how to change it.`,
 		Example: "  taskship " + name + "\n" +
@@ -139,6 +146,14 @@ first line says what is shown and how to change it.`,
 			}
 			out := cmd.OutOrStdout()
 			if len(tasks) == 0 {
+				if scope.project == "" {
+					if projects, err := s.ListProjects(cmd.Context(), true); err != nil {
+						return err
+					} else if len(projects) == 0 {
+						fmt.Fprintln(out, noProjectsYet)
+						return nil
+					}
+				}
 				fmt.Fprintln(out, scope.summary(filter, 0))
 				return nil
 			}
@@ -153,7 +168,7 @@ first line says what is shown and how to change it.`,
 			return w.Flush()
 		},
 	}
-	cmd.Flags().StringVarP(&project, "project", "p", "", "only tasks in this project (default: the project of the current directory)")
+	cmd.Flags().StringVarP(&project, "project", "p", "", "only tasks in this project (default: the project of the current folder)")
 	cmd.Flags().BoolVar(&allProjects, "all-projects", false, "tasks in all projects, wherever you are")
 	cmd.Flags().StringSliceVar(&statuses, "status", nil, "only tasks with these statuses (comma-separated or repeated)")
 	cmd.Flags().BoolVar(&archived, "archived", false, "include archived tasks and tasks in archived projects")
@@ -164,12 +179,12 @@ first line says what is shown and how to change it.`,
 // listScope records how a task list's project was chosen, to explain it.
 type listScope struct {
 	project       string // "" for all projects
-	inferred      bool   // project came from the current directory
-	noProjectHere bool   // all projects because the directory has no project
+	inferred      bool   // project came from the current folder
+	noProjectHere bool   // all projects because the folder has no project
 }
 
 // summary describes what a task list shows and how to change it, e.g.
-// "Showing 3 tasks in myproject (this directory). Use --all-projects to see every project."
+// "Showing 3 tasks in myproject (this folder). Use --all-projects to see every project."
 func (sc listScope) summary(f store.TaskFilter, n int) string {
 	what := "tasks"
 	if n == 1 {
@@ -182,7 +197,7 @@ func (sc listScope) summary(f store.TaskFilter, n int) string {
 	where, hint := " across all projects", ""
 	switch {
 	case sc.project != "" && sc.inferred:
-		where, hint = " in "+sc.project+" (this directory)", " Use --all-projects to see every project."
+		where, hint = " in "+sc.project+" (this folder)", " Use --all-projects to see every project."
 	case sc.project != "":
 		where, hint = " in "+sc.project, " Use --all-projects to see every project."
 	case sc.noProjectHere && n > 0:

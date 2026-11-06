@@ -14,7 +14,7 @@ func newExportCmd() *cobra.Command {
 	var project string
 	cmd := &cobra.Command{
 		Use:   "export DIR [--project NAME]",
-		Short: "Write tasks to a directory as Markdown files",
+		Short: "Write tasks to a folder as Markdown files",
 		Long: `Write each unarchived task to DIR/REF.md (for example DIR/PROJ-1.md) in the
 format shown by "taskship show --md". DIR is created if needed, and existing
 files with the same names are overwritten. The export is a snapshot: edits to

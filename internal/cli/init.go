@@ -59,7 +59,8 @@ questions, and -y accepts the defaults, so init can run without a terminal.`,
 			}
 			defer s.Close()
 			r.s = s
-			return r.run(cmd.Context(), dir, explicit)
+			_, err = r.run(cmd.Context(), dir, explicit)
+			return err
 		},
 	}
 	cmd.Flags().StringVar(&r.name, "name", "", "project name (default: from the remote or folder name)")
@@ -77,6 +78,7 @@ type initRun struct {
 	yes          bool
 	interactive  bool // stdin is a terminal
 	asked        bool // a question was asked
+	forAdd       bool // run by taskship add: no header or next steps
 }
 
 // initTarget is the folder init sets up.
@@ -94,48 +96,57 @@ func (t initTarget) kind() string {
 
 var errNeedTerminal = usageError{errors.New("init needs a terminal to ask questions; pass -y to accept the defaults, or --name and --prefix")}
 
-func (r *initRun) run(ctx context.Context, dir string, explicit bool) error {
+// run sets up dir and returns the project it was set up for, or a zero
+// Project if there was nothing to set up.
+func (r *initRun) run(ctx context.Context, dir string, explicit bool) (core.Project, error) {
 	ws, err := r.s.ListWorkspaces(ctx, "")
 	if err != nil {
-		return err
+		return core.Project{}, err
 	}
 	t, ok, err := r.target(ctx, dir, explicit, ws)
 	if err != nil || !ok {
-		return err
+		return core.Project{}, err
 	}
 
-	out := r.cmd.OutOrStdout()
-	fmt.Fprintf(out, "Setting up Taskship for %s\n", displayPath(t.path))
-	home, err := homeDir()
-	if err != nil {
-		return err
+	if !r.forAdd {
+		out := r.cmd.OutOrStdout()
+		fmt.Fprintf(out, "Setting up Taskship for %s\n", displayPath(t.path))
+		fmt.Fprintf(out, "%s\n\n", noTraceLine(t.kind()))
 	}
-	fmt.Fprintf(out, "Taskship doesn't write anything to this %s. Everything lives in %s.\n\n", t.kind(), displayPath(home))
 
 	def := defaultName(ctx, t)
 	for {
 		name, err := r.ask("Project name", r.name, def, "name", checkName)
 		if err != nil {
-			return err
+			return core.Project{}, err
 		}
 		p, err := r.s.GetProject(ctx, name)
 		if errors.Is(err, core.ErrNotFound) {
 			return r.create(ctx, t, name)
 		} else if err != nil {
-			return err
+			return core.Project{}, err
 		}
 		link, err := r.confirm(fmt.Sprintf("%s already exists (prefix %s). Link this folder to it?", p.Name, p.TaskPrefix), true)
 		if err != nil {
-			return err
+			return core.Project{}, err
 		}
 		if link {
-			return r.link(ctx, t, p)
+			return p, r.link(ctx, t, p)
 		}
 		if r.name != "" {
-			return fmt.Errorf("nothing changed; pass a different --name")
+			return core.Project{}, fmt.Errorf("nothing changed; pass a different --name")
 		}
 		def = ""
 	}
+}
+
+// noTraceLine says that Taskship leaves the repository or folder alone.
+func noTraceLine(kind string) string {
+	home, err := homeDir()
+	if err != nil {
+		home = "~/.taskship"
+	}
+	return fmt.Sprintf("Taskship doesn't write anything to this %s. Everything lives in %s.", kind, displayPath(home))
 }
 
 // target works out the folder to set up from dir: a repository's main
@@ -404,10 +415,10 @@ func (r *initRun) confirm(label string, def bool) (bool, error) {
 	return r.p.confirm(label, def)
 }
 
-func (r *initRun) create(ctx context.Context, t initTarget, name string) error {
+func (r *initRun) create(ctx context.Context, t initTarget, name string) (core.Project, error) {
 	projects, err := r.s.ListProjects(ctx, true)
 	if err != nil {
-		return err
+		return core.Project{}, err
 	}
 	owners := map[string]string{}
 	for _, p := range projects {
@@ -425,14 +436,18 @@ func (r *initRun) create(ctx context.Context, t initTarget, name string) error {
 		return s, nil
 	})
 	if err != nil {
-		return err
+		return core.Project{}, err
 	}
 	p, _, err := r.s.CreateProjectWithWorkspace(ctx, core.Project{Name: name, TaskPrefix: prefix}, core.Workspace{Path: t.path, GitCommonDir: t.gitCommonDir})
 	if err != nil {
-		return err
+		return core.Project{}, err
 	}
-	r.done(t, p, "Created project %s. Tasks will be numbered %s-1, %s-2, and so on.", p.Name, p.TaskPrefix, p.TaskPrefix)
-	return nil
+	if r.forAdd {
+		r.done(t, p, "Created project %s.", p.Name)
+	} else {
+		r.done(t, p, "Created project %s. Tasks will be numbered %s-1, %s-2, and so on.", p.Name, p.TaskPrefix, p.TaskPrefix)
+	}
+	return p, nil
 }
 
 // link adds t to existing project p, replacing p's workspaces that no
@@ -466,6 +481,9 @@ func (r *initRun) done(t initTarget, p core.Project, format string, a ...any) {
 		fmt.Fprintln(out)
 	}
 	success(out, format, a...)
+	if r.forAdd {
+		return
+	}
 	fmt.Fprintln(out, "\nNext steps:")
 	ref := p.TaskPrefix + "-1"
 	tw := tabwriter.NewWriter(out, 0, 0, 3, ' ', 0)
@@ -551,4 +569,46 @@ func changedAgo(t, now time.Time) string {
 	default:
 		return fmt.Sprintf("changed in %s %d", t.Month(), t.Year())
 	}
+}
+
+const noProjectsYet = `No projects yet. Run "taskship init" in a repository to set one up.`
+
+var errNotSetUp = usageError{errors.New(`this folder isn't part of a Taskship project. Run "taskship init" to set it up, or pass --project NAME to use an existing project.`)}
+
+// offerSetup is called by taskship add in a folder with no project. If no
+// project exists yet and there's a terminal, it offers to set one up here,
+// as init would, and returns its name.
+func offerSetup(cmd *cobra.Command, s *store.Store) (string, error) {
+	ctx := cmd.Context()
+	projects, err := s.ListProjects(ctx, true)
+	if err != nil {
+		return "", err
+	}
+	if len(projects) > 0 || !inputIsTerminal(cmd.InOrStdin()) {
+		return "", errNotSetUp
+	}
+	loc, err := workspace.Inspect(ctx, ".")
+	if err != nil {
+		return "", err
+	}
+	kind := "folder"
+	if loc.GitCommonDir != "" {
+		kind = "repository"
+	}
+	out := cmd.OutOrStdout()
+	fmt.Fprintf(out, "This %s isn't set up with Taskship yet.\n%s\n", kind, noTraceLine(kind))
+	r := initRun{cmd: cmd, s: s, p: newPrompter(cmd), interactive: true, forAdd: true}
+	if yes, err := r.confirm("Set up Taskship now?", true); err != nil {
+		return "", err
+	} else if !yes {
+		return "", fmt.Errorf(`no task added; run "taskship init" to set up this %s, or pass --project NAME`, kind)
+	}
+	p, err := r.run(ctx, ".", false)
+	if err != nil {
+		return "", err
+	}
+	if p.Name == "" {
+		return "", errNotSetUp
+	}
+	return p.Name, nil
 }

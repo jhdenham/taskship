@@ -82,7 +82,7 @@ func newProjectListCmd() *cobra.Command {
 				return writeJSON(cmd, projects)
 			}
 			if len(projects) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No projects. Create one with: taskship project add NAME --prefix PREFIX")
+				fmt.Fprintln(cmd.OutOrStdout(), noProjectsYet)
 				return nil
 			}
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)

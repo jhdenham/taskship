@@ -26,7 +26,7 @@ launches nothing.
 
 The agent runs at the root of a workspace, never in a subfolder. The workspace
 is the one containing --workspace if given (it must belong to the task's
-project), otherwise the one containing the current directory if that belongs
+project), otherwise the one containing the current folder if that belongs
 to the task's project, otherwise the project's only registered workspace. In a
 Git worktree of a registered checkout, the agent runs at the worktree's
 corresponding folder, usually its top level.`,
@@ -62,6 +62,13 @@ corresponding folder, usually its top level.`,
 				return err
 			}
 			if dir, err = workspace.ForTask(ctx, t, loc, workspacePath != "", ws); err != nil {
+				var nf *workspace.NoFolderError
+				switch {
+				case errors.As(err, &nf) && nf.Missing != "":
+					return kindError{fmt.Sprintf(`%s's folder %s no longer exists. If it moved, run "taskship init" in the new location to relink it.`, nf.Project, displayPath(nf.Missing)), err}
+				case errors.As(err, &nf):
+					return kindError{fmt.Sprintf(`%s isn't linked to a folder on this machine. Run "taskship init" in its repository to link it.`, nf.Project), err}
+				}
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(dir), dispatch.BuildPrompt(t))

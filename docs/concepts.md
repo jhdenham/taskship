@@ -63,30 +63,35 @@ Taskship's internal SQLite/PostgreSQL store is one source. Future sources includ
 
 A run records an attempt to work on a task, including agent, machine, plan, and outcome where available. Runs are separate from task workflow status.
 
-## Workspace mappings
+## Which project a folder belongs to
 
-Each machine maps a project to its local checkouts, called workspaces. A shared task does not imply a shared filesystem path: workspaces are stored only in the machine's local database and are never synced, so the same project can live at different paths on different machines.
+Without `--project`, `taskship add` uses the project of the current folder:
 
-```sh
-taskship workspace add myproject --path ~/code/myproject   # --path defaults to the current directory
-taskship workspace list                                   # paths that no longer exist are marked (missing)
-taskship workspace remove ~/code/myproject                # unregisters; files are not touched
-```
+1. Inside a Git repository, only folders set up for the same repository match, including from a nested folder or a linked worktree elsewhere on disk. A folder that isn't a repository never claims a repository inside it.
+2. Outside a Git repository, a set-up folder matches if the current folder is inside it.
+3. If several projects match, the most specific folder wins. In a linked worktree, the current folder also counts as its position in the main checkout, so `~/worktrees/feature/api` belongs to the project set up for `~/code/mono/api`. If that still leaves several projects, the command fails with exit code 4 and asks for `--project`.
+4. If nothing matches and you have no projects yet, `add` offers to set one up first:
 
-Register a repository's main checkout once. Taskship identifies the repository by its common Git directory, so every linked worktree of it is recognized from Git metadata when you use it. Worktrees are never stored, so creating and deleting them, by hand or with a tool, leaves nothing to clean up. A non-Git folder can be registered too, and covers everything below it except Git repositories inside it, which are separate projects.
+   ```text
+   $ taskship add "Fix export"
+   This repository isn't set up with Taskship yet.
+   Taskship doesn't write anything to this repository. Everything lives in ~/.taskship.
+   ? Set up Taskship now? (Y/n):
+   ? Project name (myproject):
+   ? Task prefix (MYPT):
 
-Without `--project`, `taskship add` uses the project of the current directory:
+   ✓ Created project myproject.
+   ✓ Created MYPT-1: Fix export
+   Run "taskship tasks" to list this project's tasks.
+   ```
 
-1. Inside a Git repository, only workspaces of the same repository match, including from a nested folder or a linked worktree elsewhere on disk. A non-Git workspace never matches a repository inside it.
-2. Outside a Git repository, a workspace matches if the current directory is inside it.
-3. If several projects match, the most specific workspace containing the current directory wins. In a linked worktree, the current directory also counts as its position in the main checkout, so `~/worktrees/feature/api` belongs to the project registered for `~/code/mono/api`. If no workspace contains it either way, and the matches belong to different projects, the command fails with exit code 4 and asks for `--project`.
-4. If nothing matches, the command fails and suggests `--project` or `taskship workspace add`. Taskship never falls back to a default project.
+   Otherwise, or without a terminal, it fails and suggests `taskship init` or `--project`. Taskship never falls back to a default project.
 
-`taskship tasks` (or `taskship task list`) uses the same rules to list only the current directory's project. Outside any project it lists all projects, and `--all-projects` does so from anywhere. In a terminal, the first line says what is shown and how to change it:
+`taskship tasks` (or `taskship task list`) uses the same rules to list only the current folder's project. Outside any project it lists all projects, and `--all-projects` does so from anywhere. In a terminal, the first line says what is shown and how to change it:
 
 ```text
 $ taskship tasks
-Showing 2 tasks in myproject (this directory). Use --all-projects to see every project.
+Showing 2 tasks in myproject (this folder). Use --all-projects to see every project.
 
 REF     STATUS       PRIORITY  TITLE
 PROJ-1  todo         high      Build a weekly habit tracker
@@ -99,22 +104,36 @@ When the output is piped, that line is left out so scripts get only the table; `
 
 The default agent workflow reviews task readiness and proposes a plan before code changes. Explicit approval is required; agent-native permissions remain important.
 
-`taskship PROJ-1 --dry-run` (short for `taskship run PROJ-1 --dry-run`) shows what a run would do without launching anything: the agent (`--agent`, `-a`; only `claude` for now), the workspace it would run in, and the exact prompt it would receive. Launching agents is not implemented yet, so `--dry-run` is required.
+`taskship PROJ-1 --dry-run` (short for `taskship run PROJ-1 --dry-run`) shows what a run would do without launching anything: the agent (`--agent`, `-a`; only `claude` for now), the folder it would start in, and the exact prompt it would receive. Launching agents is not implemented yet, so `--dry-run` is required.
 
-The agent always runs at the root of a workspace, never in a subfolder, so it can see the whole checkout. The workspace is chosen in this order:
+The agent always starts at the project's folder, never in a deeper subfolder, so it can see the whole checkout. The folder is chosen in this order:
 
-1. The one containing `--workspace PATH`, which must belong to the task's project.
-2. The one containing the current directory, if it belongs to the task's project.
-3. The project's only registered workspace. If the project has several, the command fails with exit code 4 and asks for `--workspace`. If it has none, it says how to register one.
+1. `--workspace PATH`, which must be in the task's project, or anywhere in a repository the project is set up in.
+2. The current folder, under the same condition.
+3. The project's only folder on this machine. If the project has several, the command fails with exit code 4 and asks for `--workspace`. If it has none, it says to run `taskship init` in the project's repository.
 
-In a Git worktree of a registered checkout, the agent runs at the same position in the worktree as the registered path has in its own checkout. That is usually the worktree's top level. For a project registered at a monorepo subfolder such as `~/code/mono/api`, it is that subfolder of the worktree.
+In a Git worktree, the agent starts at the same position in the worktree as the project's folder has in the main checkout. That is usually the worktree's top level. For a project set up at a monorepo subfolder such as `~/code/mono/api`, it is that subfolder of the worktree. A bare repository has no files to work on, so from outside its worktrees the command fails and says to run it from one of them.
 
 The prompt contains only the task's ref, project, title, and description (acceptance criteria are part of the description), never configuration or environment variables, so it can't carry credentials. The title and description are fenced and marked as untrusted requirements, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. This is a request to the agent, not an enforcement mechanism.
 
 ## Leave no trace and worktree discovery
 
-Taskship does not add metadata files to repositories. Projects are registered explicitly. Per-machine paths are stored outside repositories under `~/.taskship/`. When launched from an existing Git worktree of a registered project, Taskship recognizes it from Git metadata (`git rev-parse --git-common-dir`), which is read-only and runs no repository hooks.
+Taskship does not add metadata files to repositories. Projects are set up explicitly, normally with `taskship init`. Per-machine paths are stored outside repositories under `~/.taskship/`. When used from an existing Git worktree of a set-up repository, Taskship recognizes it from Git metadata (`git rev-parse --git-common-dir`), which is read-only and runs no repository hooks.
 
-## Initialization and skills
+## Storage and skills
 
-Taskship initializes its local SQLite database on first stateful use. `taskship init` is optional onboarding, not a required setup step. Agent skills are optional user-level installations: Taskship can dispatch a self-contained plan-first prompt even without a skill.
+Taskship creates its local SQLite database on first use; there is no separate storage setup. Agent skills (planned) are optional user-level installations: Taskship can dispatch a self-contained plan-first prompt even without a skill.
+
+## Advanced: managing workspaces
+
+`taskship init` covers most setups. Underneath, each machine maps a project to its local folders, called workspaces. A shared task does not imply a shared filesystem path: workspaces are stored only in the machine's local database and are never synced, so the same project can live at different paths on different machines.
+
+The `workspace` commands manage these mappings directly, for cases such as two separate clones of one project, or a folder linked without `init`:
+
+```sh
+taskship workspace add myproject --path ~/code/myproject   # --path defaults to the current folder
+taskship workspace list                                   # paths that no longer exist are marked (missing)
+taskship workspace remove ~/code/myproject                # unregisters; files are not touched
+```
+
+Register a repository's main checkout once. Taskship identifies the repository by its common Git directory, so every linked worktree of it is recognized from Git metadata when you use it. Worktrees are never stored, so creating and deleting them, by hand or with a tool, leaves nothing to clean up. A folder that isn't a Git repository can be registered too, and covers everything below it except Git repositories inside it, which are separate projects.

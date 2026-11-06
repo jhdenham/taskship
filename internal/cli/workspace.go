@@ -67,7 +67,7 @@ func newWorkspaceAddCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&path, "path", ".", "directory to register")
+	cmd.Flags().StringVar(&path, "path", ".", "folder to register")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
 }
@@ -150,7 +150,7 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 }
 
 // projectForCurrentDir returns the name of the project whose registered
-// workspace contains the current directory, directly or through a Git
+// workspace contains the current folder, directly or through a Git
 // worktree of the same repository. ok is false if no project matches.
 func projectForCurrentDir(ctx context.Context, s *store.Store) (name string, ok bool, err error) {
 	loc, err := workspace.Inspect(ctx, ".")

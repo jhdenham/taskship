@@ -62,6 +62,16 @@ func shortcut(root *cobra.Command, args []string) []string {
 	return append([]string{"run"}, args...)
 }
 
+// kindError is an error with its own message that is classified, for the
+// exit code, like the error it wraps.
+type kindError struct {
+	msg string
+	err error
+}
+
+func (e kindError) Error() string { return e.msg }
+func (e kindError) Unwrap() error { return e.err }
+
 // usageError marks bad command-line usage (wrong args, unknown flags).
 type usageError struct{ error }
 
