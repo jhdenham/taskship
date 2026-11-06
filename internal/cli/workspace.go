@@ -43,7 +43,7 @@ func newWorkspaceAddCmd() *cobra.Command {
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			abs, commonDir, err := workspace.Inspect(ctx, path)
+			loc, err := workspace.Inspect(ctx, path)
 			if err != nil {
 				return err
 			}
@@ -52,7 +52,7 @@ func newWorkspaceAddCmd() *cobra.Command {
 				return err
 			}
 			defer s.Close()
-			w, err := s.AddWorkspace(ctx, args[0], core.Workspace{Path: abs, GitCommonDir: commonDir})
+			w, err := s.AddWorkspace(ctx, args[0], core.Workspace{Path: loc.Path, GitCommonDir: loc.GitCommonDir})
 			if err != nil {
 				return err
 			}
@@ -153,7 +153,7 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 // workspace contains the current directory, directly or through a Git
 // worktree of the same repository. ok is false if no project matches.
 func projectForCurrentDir(ctx context.Context, s *store.Store) (name string, ok bool, err error) {
-	path, commonDir, err := workspace.Inspect(ctx, ".")
+	loc, err := workspace.Inspect(ctx, ".")
 	if err != nil {
 		return "", false, err
 	}
@@ -161,7 +161,7 @@ func projectForCurrentDir(ctx context.Context, s *store.Store) (name string, ok 
 	if err != nil {
 		return "", false, err
 	}
-	w, ok, err := workspace.Resolve(path, commonDir, ws)
+	w, ok, err := workspace.Resolve(loc, ws)
 	if errors.Is(err, core.ErrAmbiguous) {
 		return "", false, fmt.Errorf("%w; pass --project", err)
 	}

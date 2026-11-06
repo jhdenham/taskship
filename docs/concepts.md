@@ -78,7 +78,7 @@ Without `--project`, `taskship add` uses the project of the current directory:
 
 1. Inside a Git repository, only workspaces of the same repository match, including from a nested folder or a linked worktree elsewhere on disk. A non-Git workspace never matches a repository inside it.
 2. Outside a Git repository, a workspace matches if the current directory is inside it.
-3. If several projects match, the most specific workspace containing the current directory wins. If none contains it (for example, a worktree of a repository registered for two projects), the command fails with exit code 4 and asks for `--project`.
+3. If several projects match, the most specific workspace containing the current directory wins. In a linked worktree, the current directory also counts as its position in the main checkout, so `~/worktrees/feature/api` belongs to the project registered for `~/code/mono/api`. If no workspace contains it either way, and the matches belong to different projects, the command fails with exit code 4 and asks for `--project`.
 4. If nothing matches, the command fails and suggests `--project` or `taskship workspace add`. Taskship never falls back to a default project.
 
 `taskship tasks` (or `taskship task list`) uses the same rules to list only the current directory's project. Outside any project it lists all projects, and `--all-projects` does so from anywhere. In a terminal, the first line says what is shown and how to change it:

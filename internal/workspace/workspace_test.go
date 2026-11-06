@@ -29,6 +29,8 @@ func TestResolve(t *testing.T) {
 		{"linked worktree elsewhere", "/worktrees/myproject/feature", "/code/myproject/.git", "myproject", false},
 		{"monorepo root", "/code/mono/web", "/code/mono/.git", "mono-web", false},
 		{"monorepo most specific", "/code/mono/api/handlers", "/code/mono/.git", "mono-api", false},
+		// Without its position in the main checkout, a worktree of a repository
+		// registered for several projects is ambiguous.
 		{"monorepo worktree elsewhere", "/worktrees/mono/feature", "/code/mono/.git", "", true},
 		{"non-git most specific", "/docs/notes/2026", "", "notes", false},
 		{"non-git parent", "/docs/other", "", "everything", false},
@@ -42,7 +44,7 @@ func TestResolve(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			w, ok, err := Resolve(tt.path, tt.commonDir, ws)
+			w, ok, err := Resolve(Location{Path: tt.path, GitCommonDir: tt.commonDir}, ws)
 			if tt.ambiguous {
 				if !errors.Is(err, core.ErrAmbiguous) {
 					t.Errorf("err = %v, want ErrAmbiguous", err)
@@ -61,6 +63,33 @@ func git(t *testing.T, dir string, args ...string) {
 	cmd := exec.Command("git", append([]string{"-C", dir, "-c", "user.name=t", "-c", "user.email=t@example.com"}, args...)...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+// In a linked worktree, a folder matches by its position in the main
+// checkout too, so worktrees of a repository split into several projects
+// resolve like the main checkout does.
+func TestResolveWorktreeByPosition(t *testing.T) {
+	ws := []core.Workspace{
+		{Project: "mono-web", Path: "/code/mono", GitCommonDir: "/code/mono/.git"},
+		{Project: "mono-api", Path: "/code/mono/api", GitCommonDir: "/code/mono/.git"},
+		{Project: "solo", Path: "/worktrees/solo", GitCommonDir: "/code/solo/.git"},
+	}
+	for _, tt := range []struct{ path, mainPath, want string }{
+		{"/worktrees/mono", "/code/mono", "mono-web"},
+		{"/worktrees/mono/web", "/code/mono/web", "mono-web"},
+		{"/worktrees/mono/api/handlers", "/code/mono/api/handlers", "mono-api"},
+		// A registered worktree still matches by its own path.
+		{"/worktrees/solo/x", "/code/solo/x", "solo"},
+	} {
+		commonDir := "/code/mono/.git"
+		if tt.want == "solo" {
+			commonDir = "/code/solo/.git"
+		}
+		w, ok, err := Resolve(Location{Path: tt.path, GitCommonDir: commonDir, MainPath: tt.mainPath}, ws)
+		if err != nil || !ok || w.Project != tt.want {
+			t.Errorf("Resolve(%s) = %q, %v, %v; want %q", tt.path, w.Project, ok, err, tt.want)
+		}
 	}
 }
 
@@ -88,26 +117,36 @@ func TestInspect(t *testing.T) {
 
 	want := filepath.Join(repo, ".git")
 	for _, dir := range []string{repo, nested, worktree, filepath.Join(root, "link")} {
-		_, common, err := Inspect(ctx, dir)
-		if err != nil || common != want {
-			t.Errorf("Inspect(%s) common dir = %q, %v; want %q", dir, common, err, want)
+		loc, err := Inspect(ctx, dir)
+		if err != nil || loc.GitCommonDir != want {
+			t.Errorf("Inspect(%s) common dir = %q, %v; want %q", dir, loc.GitCommonDir, err, want)
 		}
 	}
-	if path, _, _ := Inspect(ctx, filepath.Join(root, "link")); path != repo {
-		t.Errorf("symlink path = %q, want %q", path, repo)
+	if loc, _ := Inspect(ctx, filepath.Join(root, "link")); loc.Path != repo {
+		t.Errorf("symlink path = %q, want %q", loc.Path, repo)
 	}
-	if path, common, err := Inspect(ctx, plain); err != nil || path != plain || common != "" {
-		t.Errorf("Inspect(plain) = %q, %q, %v", path, common, err)
+	if loc, err := Inspect(ctx, plain); err != nil || loc != (Location{Path: plain}) {
+		t.Errorf("Inspect(plain) = %+v, %v", loc, err)
 	}
-	if _, _, err := Inspect(ctx, filepath.Join(root, "missing")); !errors.Is(err, core.ErrInvalid) {
+	// A folder in a linked worktree knows its position in the main checkout.
+	if err := os.MkdirAll(filepath.Join(worktree, "x", "y"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if loc, _ := Inspect(ctx, filepath.Join(worktree, "x", "y")); loc.MainPath != filepath.Join(repo, "x", "y") {
+		t.Errorf("worktree MainPath = %q", loc.MainPath)
+	}
+	if loc, _ := Inspect(ctx, nested); loc.MainPath != "" {
+		t.Errorf("main checkout MainPath = %q, want none", loc.MainPath)
+	}
+	if _, err := Inspect(ctx, filepath.Join(root, "missing")); !errors.Is(err, core.ErrInvalid) {
 		t.Errorf("missing dir: err = %v, want ErrInvalid", err)
 	}
 
 	// Deleting the worktree leaves nothing to clean up: the repository's
 	// identity is unchanged.
 	git(t, repo, "worktree", "remove", worktree)
-	if _, common, _ := Inspect(ctx, repo); common != want {
-		t.Errorf("after worktree removal common dir = %q", common)
+	if loc, _ := Inspect(ctx, repo); loc.GitCommonDir != want {
+		t.Errorf("after worktree removal common dir = %q", loc.GitCommonDir)
 	}
 }
 
@@ -155,7 +194,9 @@ func TestForTask(t *testing.T) {
 		{ProjectID: "p8", Project: "bare", Path: p("bare/.bare")},
 	}
 	for i, w := range ws {
-		if _, ws[i].GitCommonDir, _ = Inspect(ctx, w.Path); w.Project == "gone" {
+		if loc, _ := Inspect(ctx, w.Path); w.Project != "gone" {
+			ws[i].GitCommonDir = loc.GitCommonDir
+		} else {
 			ws[i].GitCommonDir = ""
 		}
 	}
@@ -190,14 +231,16 @@ func TestForTask(t *testing.T) {
 		{"explicit worktree", task("p1", "myproject"), "wt/feature/docs", true, "wt/feature", nil},
 		{"explicit one of several", task("p4", "notes"), "notes-2/sub", true, "notes-2", nil},
 		{"explicit other project", task("p1", "myproject"), "notes", true, "", core.ErrInvalid},
+		// In the same repository, the project's folder in that checkout is used.
+		{"explicit other project's folder in the repo", task("p3", "mono-api"), "mono/web", true, "mono/api", nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir, commonDir, err := Inspect(ctx, p(tt.dir))
+			loc, err := Inspect(ctx, p(tt.dir))
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := ForTask(ctx, tt.task, dir, commonDir, tt.explicit, ws)
+			got, err := ForTask(ctx, tt.task, loc, tt.explicit, ws)
 			if tt.err != nil {
 				if !errors.Is(err, tt.err) {
 					t.Errorf("err = %v, want %v", err, tt.err)

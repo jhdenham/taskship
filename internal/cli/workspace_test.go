@@ -113,15 +113,15 @@ func TestAddInfersProject(t *testing.T) {
 		t.Errorf("list after worktree removal:\n%s", out)
 	}
 
-	// The same repository registered for two projects: a worktree outside
-	// both paths is ambiguous.
+	// The same repository registered for two projects: a worktree matches
+	// by its position in the main checkout.
 	mustRun(t, "workspace", "add", "other", "--path", filepath.Join(repo, "internal"))
 	if out, err := exec.Command("git", "-C", repo, "worktree", "add", "-q", worktree).CombinedOutput(); err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
 	t.Chdir(worktree)
-	if r := run(t, "", "add", "x"); r.code != exitAmbiguous || !strings.Contains(r.stderr, "--project") {
-		t.Errorf("ambiguous: exit %d, stderr %q", r.code, r.stderr)
+	if out := mustRun(t, "add", "x"); !strings.HasPrefix(out, "✓ Created PROJ-") {
+		t.Errorf("worktree root: %q", out)
 	}
 	t.Chdir(filepath.Join(repo, "internal"))
 	if out := mustRun(t, "add", "most specific"); !strings.HasPrefix(out, "✓ Created OTH-") {
@@ -193,5 +193,26 @@ func TestTasksScope(t *testing.T) {
 	}
 	if r := run(t, "", "tasks", "-p", "other", "--all-projects"); r.code != exitInvalidInput {
 		t.Errorf("--project with --all-projects: exit %d", r.code)
+	}
+}
+
+// In a worktree of a repository split into two projects, a task goes to the
+// project of the folder's position in the main checkout.
+func TestAddInWorktreeOfSplitRepository(t *testing.T) {
+	seedCLIProjects(t)
+	repo, worktree := gitRepo(t)
+	mustRun(t, "workspace", "add", "myproject", "--path", repo)
+	mustRun(t, "workspace", "add", "other", "--path", filepath.Join(repo, "internal"))
+	if err := os.MkdirAll(filepath.Join(worktree, "internal", "cli"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Chdir(filepath.Join(worktree, "internal", "cli"))
+	if out := mustRun(t, "add", "in internal"); out != "✓ Created OTH-1: in internal\n" {
+		t.Errorf("add in worktree subfolder = %q", out)
+	}
+	t.Chdir(worktree)
+	if out := mustRun(t, "add", "at the root"); out != "✓ Created PROJ-1: at the root\n" {
+		t.Errorf("add at worktree root = %q", out)
 	}
 }

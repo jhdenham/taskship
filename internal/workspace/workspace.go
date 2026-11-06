@@ -15,20 +15,42 @@ import (
 	"github.com/jhdenham/taskship/internal/core"
 )
 
-// Inspect returns dir as an absolute, symlink-free path and, if dir is inside
-// a Git repository, the repository's common Git directory. Every linked
-// worktree of a repository shares the same common directory.
-func Inspect(ctx context.Context, dir string) (path, gitCommonDir string, err error) {
-	if path, err = filepath.Abs(dir); err != nil {
-		return "", "", err
+// Location is a folder as Inspect found it.
+type Location struct {
+	// Path is absolute and symlink-free.
+	Path string
+	// GitCommonDir is the common Git directory of the repository containing
+	// Path, shared by all its linked worktrees; "" outside a repository.
+	GitCommonDir string
+	// MainPath is, for a folder in a linked worktree, the same folder in the
+	// repository's main checkout, so worktrees match workspaces registered
+	// there by position; "" otherwise.
+	MainPath string
+}
+
+// Inspect returns the Location of dir.
+func Inspect(ctx context.Context, dir string) (Location, error) {
+	path, err := filepath.Abs(dir)
+	if err != nil {
+		return Location{}, err
 	}
 	if path, err = filepath.EvalSymlinks(path); err != nil {
-		return "", "", fmt.Errorf("%w: %v", core.ErrInvalid, err)
+		return Location{}, fmt.Errorf("%w: %v", core.ErrInvalid, err)
 	}
 	if info, err := os.Stat(path); err != nil || !info.IsDir() {
-		return "", "", fmt.Errorf("%w: %s is not a directory", core.ErrInvalid, path)
+		return Location{}, fmt.Errorf("%w: %s is not a directory", core.ErrInvalid, path)
 	}
-	return path, commonDir(ctx, path), nil
+	loc := Location{Path: path, GitCommonDir: commonDir(ctx, path)}
+	if loc.GitCommonDir != "" {
+		top := toplevel(ctx, path)
+		main, _ := MainCheckout(ctx, path)
+		if top != "" && main != "" && top != main {
+			if rel, err := filepath.Rel(top, path); err == nil {
+				loc.MainPath = filepath.Join(main, rel)
+			}
+		}
+	}
+	return loc, nil
 }
 
 // commonDir returns the common Git directory for dir, or "" if dir is not in
@@ -46,18 +68,22 @@ func commonDir(ctx context.Context, dir string) string {
 	return d
 }
 
-// Resolve returns the registered workspace that path belongs to, given
-// path's common Git directory from Inspect. Inside a Git repository, only
-// workspaces of the same repository match, so linked worktrees are
-// recognized without being registered and a plain folder never claims a
-// repository inside it. Outside one, a workspace matches if it contains path. Among matches, the most specific workspace containing path
-// wins; if none contains it and the matches belong to different projects,
-// the result is ambiguous. ok is false if nothing matches.
-func Resolve(path, gitCommonDir string, workspaces []core.Workspace) (w core.Workspace, ok bool, err error) {
+// Resolve returns the registered workspace that loc belongs to. Inside a
+// Git repository, only workspaces of the same repository match, so linked
+// worktrees are recognized without being registered and a plain folder
+// never claims a repository inside it. Outside one, a workspace matches if
+// it contains loc. Among matches, the most specific workspace containing loc
+// (or, in a linked worktree, its position in the main checkout) wins; if
+// none contains it and the matches belong to different projects, the result
+// is ambiguous. ok is false if nothing matches.
+func Resolve(loc Location, workspaces []core.Workspace) (w core.Workspace, ok bool, err error) {
+	holds := func(w core.Workspace) bool {
+		return contains(w.Path, loc.Path) || loc.MainPath != "" && contains(w.Path, loc.MainPath)
+	}
 	var matches []core.Workspace
 	for _, w := range workspaces {
-		if gitCommonDir != "" && w.GitCommonDir == gitCommonDir ||
-			gitCommonDir == "" && contains(w.Path, path) {
+		if loc.GitCommonDir != "" && w.GitCommonDir == loc.GitCommonDir ||
+			loc.GitCommonDir == "" && holds(w) {
 			matches = append(matches, w)
 		}
 	}
@@ -67,7 +93,7 @@ func Resolve(path, gitCommonDir string, workspaces []core.Workspace) (w core.Wor
 
 	best := -1
 	for i, w := range matches {
-		if contains(w.Path, path) && (best < 0 || len(w.Path) > len(matches[best].Path)) {
+		if holds(w) && (best < 0 || len(w.Path) > len(matches[best].Path)) {
 			best = i
 		}
 	}
@@ -81,7 +107,7 @@ func Resolve(path, gitCommonDir string, workspaces []core.Workspace) (w core.Wor
 		}
 	}
 	if len(projects) > 1 {
-		return core.Workspace{}, false, fmt.Errorf("%w: %s is a worktree of a repository registered for several projects (%s)", core.ErrAmbiguous, path, strings.Join(projects, ", "))
+		return core.Workspace{}, false, fmt.Errorf("%w: %s is a worktree of a repository registered for several projects (%s)", core.ErrAmbiguous, loc.Path, strings.Join(projects, ", "))
 	}
 	return matches[0], true, nil
 }
@@ -92,35 +118,38 @@ func contains(base, path string) bool {
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
-// ForTask chooses the directory to run task t in, given a directory and its
-// common Git directory from Inspect. If explicit is true, dir was passed by
-// the user and must belong to the task's project. Otherwise dir is the
-// current directory: if it belongs to the task's project, its workspace root
-// is used (see root), and failing that, the project's only registered
-// workspace is, unless it is a bare repository. With several workspaces, the choice is ambiguous; with none,
-// the error says how to register one.
-func ForTask(ctx context.Context, t core.Task, dir, gitCommonDir string, explicit bool, all []core.Workspace) (string, error) {
+// ForTask chooses the directory to run task t in, given the Location of a
+// directory. If explicit is true, the directory was passed by the user and
+// must belong to the task's project. Otherwise it is the current directory.
+// If it belongs to the task's project, or is anywhere in a repository the
+// project is registered in, the project's folder in that checkout is used
+// (see root). Failing that, the project's only registered workspace is,
+// unless it is a bare repository. With several workspaces, the choice is
+// ambiguous; with none, the error says how to register one.
+func ForTask(ctx context.Context, t core.Task, loc Location, explicit bool, all []core.Workspace) (string, error) {
 	var own []core.Workspace
 	for _, w := range all {
 		if w.ProjectID == t.ProjectID {
 			own = append(own, w)
 		}
 	}
-	// Match against every project first, so a directory that most
-	// specifically belongs to another project isn't claimed. If that is
-	// ambiguous, the task's project settles it.
-	w, ok, err := Resolve(dir, gitCommonDir, all)
-	if errors.Is(err, core.ErrAmbiguous) {
-		w, ok, err = Resolve(dir, gitCommonDir, own)
-	}
-	if err != nil {
+	// Match against every project first, so a folder that belongs to
+	// another project isn't claimed. In the same repository as the task's
+	// project, though, the project's own workspaces settle it.
+	w, ok, err := Resolve(loc, all)
+	if err != nil && !errors.Is(err, core.ErrAmbiguous) {
 		return "", err
 	}
+	if !(ok && w.ProjectID == t.ProjectID) && loc.GitCommonDir != "" {
+		if w, ok, err = Resolve(loc, own); err != nil {
+			return "", err
+		}
+	}
 	if ok && w.ProjectID == t.ProjectID {
-		return root(ctx, dir, gitCommonDir, w), nil
+		return root(ctx, loc.Path, loc.GitCommonDir, w), nil
 	}
 	if explicit {
-		return "", fmt.Errorf("%w: %s is not a workspace of %s (see: taskship workspace list -p %s)", core.ErrInvalid, dir, t.Project, t.Project)
+		return "", fmt.Errorf("%w: %s is not a workspace of %s (see: taskship workspace list -p %s)", core.ErrInvalid, loc.Path, t.Project, t.Project)
 	}
 
 	switch len(own) {

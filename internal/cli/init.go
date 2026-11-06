@@ -99,7 +99,7 @@ func (r *initRun) run(ctx context.Context, dir string, explicit bool) error {
 	if err != nil {
 		return err
 	}
-	if w, ok, err := workspace.Resolve(t.path, t.gitCommonDir, ws); err != nil {
+	if w, ok, err := workspace.Resolve(workspace.Location{Path: t.path, GitCommonDir: t.gitCommonDir}, ws); err != nil {
 		return err
 	} else if ok {
 		return r.alreadySetUp(ctx, t, w.Project)
@@ -142,10 +142,11 @@ func (r *initRun) run(ctx context.Context, dir string, explicit bool) error {
 // target works out the folder to set up from dir: the main checkout of a Git
 // repository, a repository chosen from those in dir, or dir itself.
 func (r *initRun) target(ctx context.Context, dir string, explicit bool, ws []core.Workspace) (initTarget, error) {
-	path, commonDir, err := workspace.Inspect(ctx, dir)
+	loc, err := workspace.Inspect(ctx, dir)
 	if err != nil {
 		return initTarget{}, err
 	}
+	path, commonDir := loc.Path, loc.GitCommonDir
 	if commonDir != "" {
 		if main, _ := workspace.MainCheckout(ctx, path); main != "" {
 			path = main
@@ -155,7 +156,7 @@ func (r *initRun) target(ctx context.Context, dir string, explicit bool, ws []co
 	if err := checkInitPath(path); err != nil {
 		return initTarget{}, err
 	}
-	if _, ok, _ := workspace.Resolve(path, "", ws); !ok && !explicit {
+	if _, ok, _ := workspace.Resolve(loc, ws); !ok && !explicit {
 		repos, total := childRepos(ctx, path, ws)
 		if total > 0 {
 			return r.choose(ctx, path, repos, total, ws)
@@ -202,14 +203,14 @@ func childRepos(ctx context.Context, dir string, ws []core.Workspace) (repos []c
 			continue
 		}
 		total++
-		path, commonDir, err := workspace.Inspect(ctx, path)
-		if err != nil || commonDir == "" {
+		loc, err := workspace.Inspect(ctx, path)
+		if err != nil || loc.GitCommonDir == "" {
 			continue
 		}
-		if _, ok, err := workspace.Resolve(path, commonDir, ws); ok || err != nil {
+		if _, ok, err := workspace.Resolve(loc, ws); ok || err != nil {
 			continue
 		}
-		repos = append(repos, childRepo{path, info.ModTime()})
+		repos = append(repos, childRepo{loc.Path, info.ModTime()})
 	}
 	slices.SortStableFunc(repos, func(a, b childRepo) int { return b.changed.Compare(a.changed) })
 	return repos, total
