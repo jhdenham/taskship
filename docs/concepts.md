@@ -58,6 +58,19 @@ Without `--project`, `taskship add` uses the project of the current directory:
 3. If several projects match, the most specific workspace containing the current directory wins. If none contains it (for example, a worktree of a repository registered for two projects), the command fails with exit code 4 and asks for `--project`.
 4. If nothing matches, the command fails and suggests `--project` or `taskship workspace add`. Taskship never falls back to a default project.
 
+`taskship tasks` (or `taskship task list`) uses the same rules to list only the current directory's project. Outside any project it lists all projects, and `--all-projects` does so from anywhere. In a terminal, the first line says what is shown and how to change it:
+
+```text
+$ taskship tasks
+Showing 2 tasks in myproject (this directory). Use --all-projects to see every project.
+
+REF     STATUS       PRIORITY  TITLE
+PROJ-1  todo         high      Build a weekly habit tracker
+PROJ-2  in_progress  none      Fix export
+```
+
+When the output is piped, that line is left out so scripts get only the table; `--json` is never affected.
+
 ## Plan-first dispatch
 
 The default agent workflow reviews task readiness and proposes a plan before code changes. Explicit approval is required; agent-native permissions remain important.

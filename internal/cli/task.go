@@ -60,8 +60,11 @@ the same repository (see "taskship workspace").`,
 			}
 			defer s.Close()
 			if project == "" {
-				if project, err = projectForCurrentDir(cmd.Context(), s); err != nil {
+				var ok bool
+				if project, ok, err = projectForCurrentDir(cmd.Context(), s); err != nil {
 					return err
+				} else if !ok {
+					return usageError{fmt.Errorf("no project is registered for this directory; pass --project SLUG, or register this checkout with: taskship workspace add SLUG")}
 				}
 			}
 			t, err := s.CreateTask(cmd.Context(), project, core.Task{
@@ -88,13 +91,24 @@ the same repository (see "taskship workspace").`,
 func newTaskListCmd(name string) *cobra.Command {
 	var project string
 	var statuses []string
-	var asJSON, archived bool
+	var asJSON, archived, allProjects bool
 	cmd := &cobra.Command{
-		Use:     name,
-		Short:   "List tasks",
-		Example: "  taskship " + name + " --project myproject --status todo,in_progress",
-		Args:    exactArgs(0),
+		Use:   name + " [--project SLUG | --all-projects]",
+		Short: "List tasks",
+		Long: `List tasks.
+
+By default, tasks are listed for the project of the current directory (see
+"taskship workspace"), or across all projects when the directory belongs to no
+project. --project and --all-projects choose explicitly. In a terminal, a
+first line says what is shown and how to change it.`,
+		Example: "  taskship " + name + "\n" +
+			"  taskship " + name + " --all-projects\n" +
+			"  taskship " + name + " --project myproject --status todo,in_progress",
+		Args: exactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if project != "" && allProjects {
+				return usageError{fmt.Errorf("--project and --all-projects cannot be used together")}
+			}
 			filter := store.TaskFilter{ProjectSlug: project, IncludeArchived: archived}
 			for _, s := range statuses {
 				st, err := core.ParseStatus(s)
@@ -108,6 +122,14 @@ func newTaskListCmd(name string) *cobra.Command {
 				return err
 			}
 			defer s.Close()
+			scope := listScope{project: project}
+			if project == "" && !allProjects {
+				if filter.ProjectSlug, scope.inferred, err = projectForCurrentDir(cmd.Context(), s); err != nil {
+					return err
+				}
+				scope.project = filter.ProjectSlug
+				scope.noProjectHere = !scope.inferred
+			}
 			tasks, err := s.ListTasks(cmd.Context(), filter)
 			if err != nil {
 				return err
@@ -115,11 +137,15 @@ func newTaskListCmd(name string) *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, tasks)
 			}
+			out := cmd.OutOrStdout()
 			if len(tasks) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No tasks.")
+				fmt.Fprintln(out, scope.summary(filter, 0))
 				return nil
 			}
-			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+			if isTerminal(out) {
+				fmt.Fprintf(out, "%s\n\n", scope.summary(filter, len(tasks)))
+			}
+			w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
 			fmt.Fprintln(w, "REF\tSTATUS\tPRIORITY\tTITLE")
 			for _, t := range tasks {
 				fmt.Fprintf(w, "%s\t%s\t%s\t%s%s\n", t.Ref, t.Status, t.Priority, t.Title, archivedMark(t.ArchivedAt))
@@ -127,11 +153,71 @@ func newTaskListCmd(name string) *cobra.Command {
 			return w.Flush()
 		},
 	}
-	cmd.Flags().StringVarP(&project, "project", "p", "", "only tasks in this project")
+	cmd.Flags().StringVarP(&project, "project", "p", "", "only tasks in this project (default: the project of the current directory)")
+	cmd.Flags().BoolVar(&allProjects, "all-projects", false, "tasks in all projects, wherever you are")
 	cmd.Flags().StringSliceVar(&statuses, "status", nil, "only tasks with these statuses (comma-separated or repeated)")
 	cmd.Flags().BoolVar(&archived, "archived", false, "include archived tasks and tasks in archived projects")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
+}
+
+// listScope records how a task list's project was chosen, to explain it.
+type listScope struct {
+	project       string // "" for all projects
+	inferred      bool   // project came from the current directory
+	noProjectHere bool   // all projects because the directory has no project
+}
+
+// summary describes what a task list shows and how to change it, e.g.
+// "Showing 3 tasks in myproject (this directory). Use --all-projects to see every project."
+func (sc listScope) summary(f store.TaskFilter, n int) string {
+	what := "tasks"
+	if n == 1 {
+		what = "task"
+	}
+	shown := fmt.Sprintf("Showing %d %s", n, what)
+	if n == 0 {
+		shown = "No tasks"
+	}
+	where, hint := " across all projects", ""
+	switch {
+	case sc.project != "" && sc.inferred:
+		where, hint = " in "+sc.project+" (this directory)", " Use --all-projects to see every project."
+	case sc.project != "":
+		where, hint = " in "+sc.project, " Use --all-projects to see every project."
+	case sc.noProjectHere && n > 0:
+		hint = " Use --project SLUG for one project."
+	}
+	var filters []string
+	if len(f.Statuses) > 0 {
+		filters = append(filters, "with status "+strings.Join(statusNames(f.Statuses), ", "))
+	}
+	if f.IncludeArchived {
+		filters = append(filters, "including archived")
+	}
+	if len(filters) > 0 {
+		where += ", " + strings.Join(filters, ", ")
+	}
+	return shown + where + "." + hint
+}
+
+func statusNames(sts []core.Status) []string {
+	out := make([]string, len(sts))
+	for i, st := range sts {
+		out[i] = string(st)
+	}
+	return out
+}
+
+// isTerminal reports whether w is a terminal. The task list summary line is
+// shown only in terminals, so piped output stays plain rows. Tests override it.
+var isTerminal = func(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := f.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
 func newTaskShowCmd(name string) *cobra.Command {

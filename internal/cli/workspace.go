@@ -151,24 +151,19 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 
 // projectForCurrentDir returns the slug of the project whose registered
 // workspace contains the current directory, directly or through a Git
-// worktree of the same repository.
-func projectForCurrentDir(ctx context.Context, s *store.Store) (string, error) {
+// worktree of the same repository. ok is false if no project matches.
+func projectForCurrentDir(ctx context.Context, s *store.Store) (slug string, ok bool, err error) {
 	path, commonDir, err := workspace.Inspect(ctx, ".")
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	ws, err := s.ListWorkspaces(ctx, "")
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	w, ok, err := workspace.Resolve(path, commonDir, ws)
 	if errors.Is(err, core.ErrAmbiguous) {
-		return "", fmt.Errorf("%w; pass --project", err)
-	} else if err != nil {
-		return "", err
+		return "", false, fmt.Errorf("%w; pass --project", err)
 	}
-	if !ok {
-		return "", usageError{fmt.Errorf("no project is registered for %s; pass --project SLUG, or register this checkout with: taskship workspace add SLUG", path)}
-	}
-	return w.Project, nil
+	return w.Project, ok, err
 }

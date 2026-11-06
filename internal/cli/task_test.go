@@ -113,7 +113,7 @@ func TestTaskListFilters(t *testing.T) {
 
 func TestTaskEmptyList(t *testing.T) {
 	seedCLIProjects(t)
-	if out := mustRun(t, "tasks"); out != "No tasks.\n" {
+	if out := mustRun(t, "tasks"); out != "No tasks across all projects.\n" {
 		t.Errorf("empty list = %q", out)
 	}
 	if out := mustRun(t, "tasks", "--json"); strings.TrimSpace(out) != "[]" {

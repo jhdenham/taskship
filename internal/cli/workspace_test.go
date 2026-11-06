@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -140,4 +141,57 @@ func mustEval(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return p
+}
+
+func TestTasksScope(t *testing.T) {
+	seedCLIProjects(t)
+	repo, worktree := gitRepo(t)
+	mustRun(t, "workspace", "add", "myproject", "--path", repo)
+	mustRun(t, "add", "a", "-p", "myproject")
+	mustRun(t, "add", "b", "-p", "myproject", "--status", "done")
+	mustRun(t, "add", "c", "-p", "other")
+
+	orig := isTerminal
+	t.Cleanup(func() { isTerminal = orig })
+	isTerminal = func(io.Writer) bool { return true }
+
+	firstLine := func(args ...string) string {
+		t.Helper()
+		out := mustRun(t, args...)
+		line, _, _ := strings.Cut(out, "\n")
+		return line
+	}
+	t.Chdir(worktree)
+	tests := []struct {
+		args []string
+		want string
+	}{
+		{[]string{"tasks"}, "Showing 2 tasks in myproject (this directory). Use --all-projects to see every project."},
+		{[]string{"tasks", "--status", "todo"}, "Showing 1 task in myproject (this directory), with status todo. Use --all-projects to see every project."},
+		{[]string{"tasks", "-p", "other"}, "Showing 1 task in other. Use --all-projects to see every project."},
+		{[]string{"tasks", "--all-projects", "--archived"}, "Showing 3 tasks across all projects, including archived."},
+		{[]string{"task", "list", "--status", "canceled"}, "No tasks in myproject (this directory), with status canceled. Use --all-projects to see every project."},
+	}
+	for _, tt := range tests {
+		if got := firstLine(tt.args...); got != tt.want {
+			t.Errorf("%v first line =\n  %q\nwant\n  %q", tt.args, got, tt.want)
+		}
+	}
+	if out := mustRun(t, "tasks"); strings.Contains(out, "OTH-1") || !strings.Contains(out, "PROJ-2") {
+		t.Errorf("tasks in worktree:\n%s", out)
+	}
+
+	t.Chdir(t.TempDir())
+	if got := firstLine("tasks"); got != "Showing 3 tasks across all projects. Use --project SLUG for one project." {
+		t.Errorf("outside any project: %q", got)
+	}
+
+	// Piped output has no summary line, and JSON is unaffected.
+	isTerminal = func(io.Writer) bool { return false }
+	if got := firstLine("tasks"); !strings.HasPrefix(got, "REF") {
+		t.Errorf("piped first line = %q", got)
+	}
+	if r := run(t, "", "tasks", "-p", "other", "--all-projects"); r.code != exitInvalidInput {
+		t.Errorf("--project with --all-projects: exit %d", r.code)
+	}
 }
