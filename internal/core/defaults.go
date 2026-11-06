@@ -44,8 +44,9 @@ var (
 // Numbers and versions (2024, v2) are dropped first. Several words give their
 // initials, up to four; a word of up to four characters is used whole; a
 // longer word gives its consonant skeleton (see skeleton). If taken reports
-// the prefix as used, 2, 3, and so on are appended. It returns "" if no
-// prefix starting with a letter can be made.
+// the prefix as used, 2, 3, and so on are appended. A prefix on the blocklist
+// is shortened until it isn't. It returns "" if no prefix starting with a
+// letter can be made.
 func DefaultPrefix(name string, taken func(string) bool) string {
 	words := strings.Split(name, "-")
 	var kept []string
@@ -61,6 +62,9 @@ func DefaultPrefix(name string, taken func(string) bool) string {
 	}
 	if !prefixRE.MatchString(prefix) {
 		return ""
+	}
+	for blockedPrefixes[prefix] {
+		prefix = prefix[:len(prefix)-1]
 	}
 	if !taken(prefix) {
 		return prefix

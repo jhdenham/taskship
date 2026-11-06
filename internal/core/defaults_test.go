@@ -97,3 +97,33 @@ func TestDefaultPrefixSkipsTakenPrefixes(t *testing.T) {
 		t.Errorf("DefaultPrefix with TSKP and TSKP2 taken = %q, want TSKP3", got)
 	}
 }
+
+// Suggestions on the blocklist are shortened until they're not. The inputs
+// are innocent words whose default prefix would be blocked.
+func TestDefaultPrefixAvoidsBlocklist(t *testing.T) {
+	none := func(string) bool { return false }
+	for name, want := range map[string]string{
+		"batch":           "BTC",
+		"spice":           "SPI",
+		"chinook":         "CHN",
+		"app-service-sdk": "AS",
+	} {
+		if got := DefaultPrefix(name, none); got != want {
+			t.Errorf("DefaultPrefix(%q) = %q, want %q", name, got, want)
+		}
+	}
+}
+
+func TestBlocklistEntries(t *testing.T) {
+	if len(blockedPrefixes) < 50 {
+		t.Fatalf("blocklist has %d entries; did decoding fail?", len(blockedPrefixes))
+	}
+	for p := range blockedPrefixes {
+		if !prefixRE.MatchString(p) || len(p) < 2 || len(p) > 4 {
+			t.Errorf("blocklist entry %q (ROT13) is not a 2-4 letter prefix", rot13(p))
+		}
+	}
+	if rot13("TASKSHIP") != "GNFXFUVC" || rot13(rot13("Taskship")) != "Taskship" {
+		t.Error("rot13 is not ROT13")
+	}
+}
