@@ -103,7 +103,16 @@ func (r *initRun) run(ctx context.Context, dir string, explicit bool) (core.Proj
 	if err != nil {
 		return core.Project{}, err
 	}
-	t, ok, err := r.target(ctx, dir, explicit, ws)
+	pl, err := locate(ctx, dir)
+	if err != nil {
+		return core.Project{}, err
+	}
+	return r.runAt(ctx, pl, explicit, ws)
+}
+
+// runAt is run for a folder already located, given every workspace.
+func (r *initRun) runAt(ctx context.Context, pl place, explicit bool, ws []core.Workspace) (core.Project, error) {
+	t, ok, err := r.targetAt(ctx, pl, explicit, ws)
 	if err != nil || !ok {
 		return core.Project{}, err
 	}
@@ -154,25 +163,51 @@ func noTraceLine(kind string) string {
 // already part of a project, or a folder of repositories. ok is false if
 // there is nothing to set up, and init has said why.
 func (r *initRun) target(ctx context.Context, dir string, explicit bool, ws []core.Workspace) (t initTarget, ok bool, err error) {
-	loc, err := workspace.Inspect(ctx, dir)
+	pl, err := locate(ctx, dir)
 	if err != nil {
 		return initTarget{}, false, err
 	}
-	// pos is the folder's position in the main checkout. A bare repository
-	// has no folders of its own, so its worktrees count as a whole.
-	pos, main := loc.Path, ""
+	return r.targetAt(ctx, pl, explicit, ws)
+}
+
+// place is where a folder is: its Location, its position in the main
+// checkout (pos), and the main checkout ("" outside a repository).
+type place struct {
+	loc       workspace.Location
+	pos, main string
+}
+
+// whole reports whether the folder is a whole repository's main checkout.
+func (pl place) whole() bool { return pl.loc.GitCommonDir != "" && pl.pos == pl.main }
+
+func locate(ctx context.Context, dir string) (place, error) {
+	loc, err := workspace.Inspect(ctx, dir)
+	if err != nil {
+		return place{}, err
+	}
+	return placeOf(ctx, loc), nil
+}
+
+func placeOf(ctx context.Context, loc workspace.Location) place {
+	// A bare repository has no folders of its own, so its worktrees count
+	// as a whole.
+	pl := place{loc: loc, pos: loc.Path}
 	if loc.MainPath != "" {
-		pos = loc.MainPath
+		pl.pos = loc.MainPath
 	}
 	if loc.GitCommonDir != "" {
 		var bare bool
-		if main, bare = workspace.MainCheckout(ctx, loc.Path); main == "" {
-			main = pos
+		if pl.main, bare = workspace.MainCheckout(ctx, loc.Path); pl.main == "" {
+			pl.main = pl.pos
 		} else if bare {
-			pos = main
+			pl.pos = pl.main
 		}
 	}
+	return pl
+}
 
+func (r *initRun) targetAt(ctx context.Context, pl place, explicit bool, ws []core.Workspace) (t initTarget, ok bool, err error) {
+	loc, pos, main := pl.loc, pl.pos, pl.main
 	if w, set, err := workspace.Resolve(loc, ws); err != nil {
 		return initTarget{}, false, err
 	} else if set {
@@ -575,10 +610,11 @@ const noProjectsYet = `No projects yet. Run "taskship init" in a repository to s
 
 var errNotSetUp = usageError{errors.New(`this folder isn't part of a Taskship project. Run "taskship init" to set it up, or pass --project NAME to use an existing project.`)}
 
-// offerSetup is called by taskship add in a folder with no project. If no
-// project exists yet and there's a terminal, it offers to set one up here,
-// as init would, and returns its name.
-func offerSetup(cmd *cobra.Command, s *store.Store) (string, error) {
+// offerSetup is called by taskship add in a folder with no project, given
+// the folder's Location and every workspace. If no project exists yet and
+// there's a terminal, it offers to set one up here, as init would, and
+// returns its name.
+func offerSetup(cmd *cobra.Command, s *store.Store, loc workspace.Location, ws []core.Workspace) (string, error) {
 	ctx := cmd.Context()
 	projects, err := s.ListProjects(ctx, true)
 	if err != nil {
@@ -587,12 +623,12 @@ func offerSetup(cmd *cobra.Command, s *store.Store) (string, error) {
 	if len(projects) > 0 || !inputIsTerminal(cmd.InOrStdin()) {
 		return "", errNotSetUp
 	}
-	loc, err := workspace.Inspect(ctx, ".")
-	if err != nil {
+	pl := placeOf(ctx, loc)
+	if err := checkInitPath(pl.pos); err != nil {
 		return "", err
 	}
 	kind := "folder"
-	if loc.GitCommonDir != "" {
+	if pl.whole() {
 		kind = "repository"
 	}
 	out := cmd.OutOrStdout()
@@ -601,9 +637,9 @@ func offerSetup(cmd *cobra.Command, s *store.Store) (string, error) {
 	if yes, err := r.confirm("Set up Taskship now?", true); err != nil {
 		return "", err
 	} else if !yes {
-		return "", fmt.Errorf(`no task added; run "taskship init" to set up this %s, or pass --project NAME`, kind)
+		return "", usageError{fmt.Errorf(`no task added; run "taskship init" to set up this %s, or pass --project NAME`, kind)}
 	}
-	p, err := r.run(ctx, ".", false)
+	p, err := r.runAt(ctx, pl, false, ws)
 	if err != nil {
 		return "", err
 	}

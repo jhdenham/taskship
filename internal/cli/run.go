@@ -63,13 +63,13 @@ corresponding folder, usually its top level.`,
 			}
 			if dir, err = workspace.ForTask(ctx, t, loc, workspacePath != "", ws); err != nil {
 				var nf *workspace.NoFolderError
-				switch {
-				case errors.As(err, &nf) && nf.Missing != "":
-					return kindError{fmt.Sprintf(`%s's folder %s no longer exists. If it moved, run "taskship init" in the new location to relink it.`, nf.Project, displayPath(nf.Missing)), err}
-				case errors.As(err, &nf):
-					return kindError{fmt.Sprintf(`%s isn't linked to a folder on this machine. Run "taskship init" in its repository to link it.`, nf.Project), err}
+				if !errors.As(err, &nf) {
+					return err
 				}
-				return err
+				if nf.Missing != "" {
+					return kindError{fmt.Sprintf(`%s's folder %s no longer exists. If it moved, run "taskship init" in the new location to relink it.`, nf.Project, displayPath(nf.Missing)), err}
+				}
+				return kindError{fmt.Sprintf(`%s isn't linked to a folder on this machine. Run "taskship init" in its repository to link it.`, nf.Project), err}
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(dir), dispatch.BuildPrompt(t))
 			return nil

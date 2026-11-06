@@ -82,7 +82,15 @@ func newProjectListCmd() *cobra.Command {
 				return writeJSON(cmd, projects)
 			}
 			if len(projects) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), noProjectsYet)
+				msg := noProjectsYet
+				if !archived {
+					if all, err := s.ListProjects(cmd.Context(), true); err != nil {
+						return err
+					} else if len(all) > 0 {
+						msg = "All projects are archived. Use --archived to list them."
+					}
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), msg)
 				return nil
 			}
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)

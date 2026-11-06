@@ -141,7 +141,8 @@ func (e *NoFolderError) Unwrap() error { return core.ErrNotFound }
 // project is registered in, the project's folder in that checkout is used
 // (see root). Failing that, the project's only registered workspace is,
 // unless it is a bare repository. With several workspaces, the choice is
-// ambiguous; with none, the error says how to register one.
+// ambiguous; with none, or with one that no longer exists, the error is a
+// *NoFolderError.
 func ForTask(ctx context.Context, t core.Task, loc Location, explicit bool, all []core.Workspace) (string, error) {
 	var own []core.Workspace
 	for _, w := range all {

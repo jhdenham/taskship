@@ -85,7 +85,7 @@ Without `--project`, `taskship add` uses the project of the current folder:
    Run "taskship tasks" to list this project's tasks.
    ```
 
-   Otherwise, or without a terminal, it fails and suggests `taskship init` or `--project`. Taskship never falls back to a default project.
+   Otherwise, without a terminal, or with `--json`, it fails with exit code 2 and suggests `taskship init` or `--project`. Declining the offer fails the same way. Taskship never falls back to a default project.
 
 `taskship tasks` (or `taskship task list`) uses the same rules to list only the current folder's project. Outside any project it lists all projects, and `--all-projects` does so from anywhere. In a terminal, the first line says what is shown and how to change it:
 

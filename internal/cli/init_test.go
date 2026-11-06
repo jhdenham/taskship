@@ -410,13 +410,29 @@ func TestAddOffersSetupWithoutProjects(t *testing.T) {
 
 	// Declining adds nothing.
 	r := runInput(t, "n\n", "add", "Fix export")
-	if r.code != exitFailure || r.stderr != "? Set up Taskship now? (Y/n): taskship: no task added; run \"taskship init\" to set up this repository, or pass --project NAME\n" {
+	if r.code != exitInvalidInput || r.stderr != "? Set up Taskship now? (Y/n): taskship: no task added; run \"taskship init\" to set up this repository, or pass --project NAME\n" {
 		t.Errorf("declined: exit %d, stderr %q", r.code, r.stderr)
 	}
 	// Without a terminal, it doesn't ask.
 	if r := run(t, "", "add", "Fix export"); r.code != exitInvalidInput || !strings.Contains(r.stderr, "isn't part of a Taskship project. Run \"taskship init\"") {
 		t.Errorf("no terminal: exit %d, stderr %q", r.code, r.stderr)
 	}
+	// With --json, it doesn't ask either, so stdout stays JSON.
+	if r := runInput(t, "", "add", "Fix export", "--json"); r.code != exitInvalidInput || r.stdout != "" || !strings.Contains(r.stderr, "isn't part of a Taskship project") {
+		t.Errorf("--json: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	// In a subfolder, it's a folder, and init asks which to set up.
+	mkdirs(t, filepath.Join(repo, "docs"))
+	t.Chdir(filepath.Join(repo, "docs"))
+	if r := runInput(t, "n\n", "add", "Fix export"); !strings.HasPrefix(r.stdout, "This folder isn't set up with Taskship yet.\nTaskship doesn't write anything to this folder.") {
+		t.Errorf("subfolder: stdout %q", r.stdout)
+	}
+	// In the home folder, it fails before asking.
+	t.Chdir(home)
+	if r := runInput(t, "", "add", "Fix export"); r.code != exitInvalidInput || r.stdout != "" || !strings.Contains(r.stderr, "not your home folder") {
+		t.Errorf("home: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	t.Chdir(repo)
 	if out := mustRun(t, "project", "list"); out != "No projects yet. Run \"taskship init\" in a repository to set one up.\n" {
 		t.Errorf("project list = %q", out)
 	}
@@ -445,6 +461,18 @@ func TestAddOffersSetupWithoutProjects(t *testing.T) {
 	t.Chdir(home)
 	if r := runInput(t, "", "add", "x"); r.code != exitInvalidInput || r.stderr != "taskship: this folder isn't part of a Taskship project. Run \"taskship init\" to set it up, or pass --project NAME to use an existing project.\n" {
 		t.Errorf("unknown folder: exit %d, stderr %q", r.code, r.stderr)
+	}
+}
+
+func TestProjectListAllArchived(t *testing.T) {
+	initHome(t)
+	mustRun(t, "project", "add", "myproject", "--prefix", "PROJ")
+	mustRun(t, "project", "archive", "myproject")
+	if out := mustRun(t, "project", "list"); out != "All projects are archived. Use --archived to list them.\n" {
+		t.Errorf("project list = %q", out)
+	}
+	if out := mustRun(t, "project", "list", "--archived"); !strings.Contains(out, "myproject") {
+		t.Errorf("project list --archived = %q", out)
 	}
 }
 

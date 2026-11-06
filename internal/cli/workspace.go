@@ -153,14 +153,25 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 // workspace contains the current folder, directly or through a Git
 // worktree of the same repository. ok is false if no project matches.
 func projectForCurrentDir(ctx context.Context, s *store.Store) (name string, ok bool, err error) {
+	loc, ws, err := currentDir(ctx, s)
+	if err != nil {
+		return "", false, err
+	}
+	return projectAt(loc, ws)
+}
+
+// currentDir returns the Location of the current folder and every workspace.
+func currentDir(ctx context.Context, s *store.Store) (workspace.Location, []core.Workspace, error) {
 	loc, err := workspace.Inspect(ctx, ".")
 	if err != nil {
-		return "", false, err
+		return workspace.Location{}, nil, err
 	}
 	ws, err := s.ListWorkspaces(ctx, "")
-	if err != nil {
-		return "", false, err
-	}
+	return loc, ws, err
+}
+
+// projectAt is projectForCurrentDir for a Location, given every workspace.
+func projectAt(loc workspace.Location, ws []core.Workspace) (name string, ok bool, err error) {
 	w, ok, err := workspace.Resolve(loc, ws)
 	if errors.Is(err, core.ErrAmbiguous) {
 		return "", false, fmt.Errorf("%w; pass --project", err)

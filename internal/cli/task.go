@@ -61,11 +61,18 @@ If no project exists yet, add offers to set one up first.`,
 			defer s.Close()
 			setUp := false
 			if project == "" {
+				loc, ws, err := currentDir(cmd.Context(), s)
+				if err != nil {
+					return err
+				}
 				var ok bool
-				if project, ok, err = projectForCurrentDir(cmd.Context(), s); err != nil {
+				if project, ok, err = projectAt(loc, ws); err != nil {
 					return err
 				} else if !ok {
-					if project, err = offerSetup(cmd, s); err != nil {
+					if asJSON {
+						return errNotSetUp
+					}
+					if project, err = offerSetup(cmd, s, loc, ws); err != nil {
 						return err
 					}
 					setUp = true
