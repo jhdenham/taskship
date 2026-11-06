@@ -24,14 +24,17 @@ func newInitCmd() *cobra.Command {
 	var r initRun
 	cmd := &cobra.Command{
 		Use:   "init [PATH] [--name NAME] [--prefix PREFIX] [-y]",
-		Short: "Set up Taskship for a repository or folder",
-		Long: `Set up Taskship for the repository or folder at PATH (default: the current
-directory): create a project for it, or link it to an existing project of the
-same name. Taskship doesn't write anything to the repository or folder.
+		Short: "Set up a Taskship project or link to an existing one",
+		Long: `Set up a Taskship project for the repository or folder at PATH (default:
+the current folder), or link it to an existing project of the same name.
+Taskship doesn't write anything to the repository or folder.
 
 In a Git repository, its main checkout is set up, and every worktree of it is
-recognized. Run in a folder that contains repositories, init asks which one
-to set up.
+recognized. In a subfolder of a repository, init asks whether to set up the
+whole repository or only that folder, and in a folder that is already part of
+a project, whether to set up a separate project for it. In a folder that
+contains repositories, it asks whether to set up the folder as one project
+or which repository in it to set up.
 
 init asks for the project name and task prefix, suggesting defaults from the
 repository's remote or the folder's name. --name and --prefix answer those
@@ -79,10 +82,11 @@ type initRun struct {
 // initTarget is the folder init sets up.
 type initTarget struct {
 	path, gitCommonDir string
+	subfolder          bool // a folder inside a repository, not its checkout
 }
 
 func (t initTarget) kind() string {
-	if t.gitCommonDir != "" {
+	if t.gitCommonDir != "" && !t.subfolder {
 		return "repository"
 	}
 	return "folder"
@@ -95,14 +99,9 @@ func (r *initRun) run(ctx context.Context, dir string, explicit bool) error {
 	if err != nil {
 		return err
 	}
-	t, err := r.target(ctx, dir, explicit, ws)
-	if err != nil {
+	t, ok, err := r.target(ctx, dir, explicit, ws)
+	if err != nil || !ok {
 		return err
-	}
-	if w, ok, err := workspace.Resolve(workspace.Location{Path: t.path, GitCommonDir: t.gitCommonDir}, ws); err != nil {
-		return err
-	} else if ok {
-		return r.alreadySetUp(ctx, t, w.Project)
 	}
 
 	out := r.cmd.OutOrStdout()
@@ -125,7 +124,7 @@ func (r *initRun) run(ctx context.Context, dir string, explicit bool) error {
 		} else if err != nil {
 			return err
 		}
-		link, err := r.confirm(fmt.Sprintf("%s already exists (prefix %s). Link this folder to it?", p.Name, p.TaskPrefix))
+		link, err := r.confirm(fmt.Sprintf("%s already exists (prefix %s). Link this folder to it?", p.Name, p.TaskPrefix), true)
 		if err != nil {
 			return err
 		}
@@ -139,30 +138,101 @@ func (r *initRun) run(ctx context.Context, dir string, explicit bool) error {
 	}
 }
 
-// target works out the folder to set up from dir: the main checkout of a Git
-// repository, a repository chosen from those in dir, or dir itself.
-func (r *initRun) target(ctx context.Context, dir string, explicit bool, ws []core.Workspace) (initTarget, error) {
+// target works out the folder to set up from dir: a repository's main
+// checkout, or a folder. It asks when dir is a subfolder of a repository,
+// already part of a project, or a folder of repositories. ok is false if
+// there is nothing to set up, and init has said why.
+func (r *initRun) target(ctx context.Context, dir string, explicit bool, ws []core.Workspace) (t initTarget, ok bool, err error) {
 	loc, err := workspace.Inspect(ctx, dir)
 	if err != nil {
-		return initTarget{}, err
+		return initTarget{}, false, err
 	}
-	path, commonDir := loc.Path, loc.GitCommonDir
-	if commonDir != "" {
-		if main, _ := workspace.MainCheckout(ctx, path); main != "" {
-			path = main
-		}
-		return initTarget{path, commonDir}, checkInitPath(path)
+	// pos is the folder's position in the main checkout. A bare repository
+	// has no folders of its own, so its worktrees count as a whole.
+	pos, main := loc.Path, ""
+	if loc.MainPath != "" {
+		pos = loc.MainPath
 	}
-	if err := checkInitPath(path); err != nil {
-		return initTarget{}, err
-	}
-	if _, ok, _ := workspace.Resolve(loc, ws); !ok && !explicit {
-		repos, total := childRepos(ctx, path, ws)
-		if total > 0 {
-			return r.choose(ctx, path, repos, total, ws)
+	if loc.GitCommonDir != "" {
+		var bare bool
+		if main, bare = workspace.MainCheckout(ctx, loc.Path); main == "" {
+			main = pos
+		} else if bare {
+			pos = main
 		}
 	}
-	return initTarget{path: path}, nil
+
+	if w, set, err := workspace.Resolve(loc, ws); err != nil {
+		return initTarget{}, false, err
+	} else if set {
+		if w.Path == pos {
+			return initTarget{}, false, r.alreadySetUp(ctx, initTarget{w.Path, loc.GitCommonDir, w.Path != main}, w.Project)
+		}
+		return r.separate(ctx, loc, pos, w)
+	}
+	if loc.GitCommonDir != "" {
+		if pos == main {
+			return initTarget{path: main, gitCommonDir: loc.GitCommonDir}, true, checkInitPath(main)
+		}
+		return r.wholeOrFolder(loc, pos, main, explicit)
+	}
+	if err := checkInitPath(loc.Path); err != nil {
+		return initTarget{}, false, err
+	}
+	if !explicit {
+		if repos, total := childRepos(ctx, loc.Path, ws); total > 0 {
+			return r.inFolderOfRepos(ctx, loc.Path, repos, total, ws)
+		}
+	}
+	return initTarget{path: loc.Path}, true, nil
+}
+
+// separate offers a separate project for a folder inside project w's folder.
+func (r *initRun) separate(ctx context.Context, loc workspace.Location, pos string, w core.Workspace) (initTarget, bool, error) {
+	p, err := r.s.GetProject(ctx, w.Project)
+	if err != nil {
+		return initTarget{}, false, err
+	}
+	out := r.cmd.OutOrStdout()
+	fmt.Fprintf(out, "This folder is already part of a project (name: %s, prefix: %s).\n", p.Name, p.TaskPrefix)
+	yes, err := r.confirm("Set up a separate project for this folder?", false)
+	if err != nil {
+		return initTarget{}, false, err
+	}
+	if !yes {
+		fmt.Fprintln(out, `Run "taskship tasks" to see its tasks.`)
+		return initTarget{}, false, nil
+	}
+	return initTarget{pos, loc.GitCommonDir, loc.GitCommonDir != ""}, true, checkInitPath(pos)
+}
+
+// wholeOrFolder asks whether to set up a whole repository or only the
+// subfolder of it at pos.
+func (r *initRun) wholeOrFolder(loc workspace.Location, pos, main string, explicit bool) (initTarget, bool, error) {
+	whole := initTarget{path: main, gitCommonDir: loc.GitCommonDir}
+	if r.yes {
+		return whole, true, checkInitPath(main)
+	}
+	if !r.interactive {
+		return initTarget{}, false, errNeedTerminal
+	}
+	w := r.p.out
+	which := "The current folder"
+	if explicit {
+		which = "The folder"
+	}
+	fmt.Fprintf(w, "%s (%s) is part of a repository (%s).\n", which, displayPath(loc.Path), displayPath(main))
+	fmt.Fprintln(w, "Where do you want to set up a Taskship project?")
+	fmt.Fprintf(w, "  1) The whole repository (%s)\n", displayPath(main))
+	fmt.Fprintf(w, "  2) Only this folder (%s)\n", displayPath(pos))
+	choice, err := r.ask("Enter your choice", "", "1", "", numberIn(2))
+	if err != nil {
+		return initTarget{}, false, err
+	}
+	if choice == "1" {
+		return whole, true, checkInitPath(main)
+	}
+	return initTarget{pos, loc.GitCommonDir, true}, true, checkInitPath(pos)
 }
 
 // checkInitPath refuses the home folder and the filesystem root, which would
@@ -216,26 +286,42 @@ func childRepos(ctx context.Context, dir string, ws []core.Workspace) (repos []c
 	return repos, total
 }
 
-// maxChoices is how many repositories the chooser lists.
+// maxChoices is how many repositories are listed to choose from.
 const maxChoices = 8
 
-// choose asks which repository in dir to set up, offering another folder or
-// dir itself too.
-func (r *initRun) choose(ctx context.Context, dir string, repos []childRepo, total int, ws []core.Workspace) (initTarget, error) {
+// inFolderOfRepos asks whether to set up dir, a folder of repositories, as
+// one project, and if not, which repository in it to set up.
+func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos []childRepo, total int, ws []core.Workspace) (initTarget, bool, error) {
 	if r.yes || !r.interactive {
-		return initTarget{}, usageError{fmt.Errorf("%s contains Git repositories; pass the one to set up, for example: taskship init %s", displayPath(dir), displayPath(filepath.Join(dir, "myproject")))}
+		return initTarget{}, false, usageError{fmt.Errorf("%s contains Git repositories; pass the one to set up, for example: taskship init %s", displayPath(dir), displayPath(filepath.Join(dir, "myproject")))}
 	}
 	w := r.p.out
-	switch {
-	case len(repos) == 0:
-		fmt.Fprintf(w, "All %d repositories in %s are already set up.\n", total, displayPath(dir))
-	case len(repos) > maxChoices:
-		fmt.Fprintf(w, "%s isn't a Git repository, but it contains %d that aren't set up yet. The %d most recently changed:\n", displayPath(dir), len(repos), maxChoices)
-		repos = repos[:maxChoices]
-	default:
-		fmt.Fprintf(w, "%s isn't a Git repository, but it contains %d that aren't set up yet:\n", displayPath(dir), len(repos))
+	if total == 1 {
+		fmt.Fprintf(w, "Looks like %s contains a project repository.\n", displayPath(dir))
+	} else {
+		fmt.Fprintf(w, "Looks like %s contains multiple project repositories.\n", displayPath(dir))
 	}
-	n := len(repos) + 2
+	r.asked = true
+	itself, err := r.p.confirm(fmt.Sprintf("Set up %s as one project?", displayPath(dir)), false)
+	if err != nil || itself {
+		return initTarget{path: dir}, itself, err
+	}
+	if len(repos) == 0 {
+		if total == 1 {
+			fmt.Fprintf(r.cmd.OutOrStdout(), "The repository in %s is already set up.\n", displayPath(dir))
+		} else {
+			fmt.Fprintf(r.cmd.OutOrStdout(), "All %d repositories in %s are already set up.\n", total, displayPath(dir))
+		}
+		return initTarget{}, false, nil
+	}
+
+	if len(repos) > maxChoices {
+		fmt.Fprintf(w, "Which repository do you want to set up? The %d most recently changed that aren't set up yet:\n", maxChoices)
+		repos = repos[:maxChoices]
+	} else {
+		fmt.Fprintln(w, "Which repository do you want to set up?")
+	}
+	n := len(repos) + 1
 	width := len(strconv.Itoa(n))
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	now := time.Now()
@@ -243,23 +329,14 @@ func (r *initRun) choose(ctx context.Context, dir string, repos []childRepo, tot
 		fmt.Fprintf(tw, "  %*d) %s\t%s\n", width, i+1, filepath.Base(repo.path), changedAgo(repo.changed, now))
 	}
 	tw.Flush()
-	fmt.Fprintf(w, "  %*d) Another folder...\n", width, n-1)
-	fmt.Fprintf(w, "  %*d) %s itself\n", width, n, displayPath(dir))
+	fmt.Fprintf(w, "  %*d) Another folder...\n", width, n)
 
-	choice, err := r.ask("Which one do you want to set up? (1-"+strconv.Itoa(n)+")", "", "", "", func(s string) (string, error) {
-		if i, err := strconv.Atoi(s); err != nil || i < 1 || i > n {
-			return "", retry{fmt.Sprintf("Choose a number from 1 to %d.", n), ""}
-		}
-		return s, nil
-	})
+	choice, err := r.ask("Enter your choice (1-"+strconv.Itoa(n)+")", "", "", "", numberIn(n))
 	if err != nil {
-		return initTarget{}, err
+		return initTarget{}, false, err
 	}
-	switch i, _ := strconv.Atoi(choice); {
-	case i <= len(repos):
+	if i, _ := strconv.Atoi(choice); i < n {
 		return r.target(ctx, repos[i-1].path, true, ws)
-	case i == n:
-		return initTarget{path: dir}, nil
 	}
 	path, err := r.ask("Folder path", "", "", "", func(s string) (string, error) {
 		path, err := filepath.Abs(expandHome(s))
@@ -275,9 +352,19 @@ func (r *initRun) choose(ctx context.Context, dir string, repos []childRepo, tot
 		return path, nil
 	})
 	if err != nil {
-		return initTarget{}, err
+		return initTarget{}, false, err
 	}
 	return r.target(ctx, path, true, ws)
+}
+
+// numberIn accepts a whole number from 1 to n.
+func numberIn(n int) func(string) (string, error) {
+	return func(s string) (string, error) {
+		if i, err := strconv.Atoi(s); err != nil || i < 1 || i > n {
+			return "", retry{fmt.Sprintf("Choose a number from 1 to %d.", n), ""}
+		}
+		return s, nil
+	}
 }
 
 // ask asks a question, unless flag already answers it or -y accepts def.
@@ -305,16 +392,16 @@ func (r *initRun) ask(label, flag, def, what string, check func(string) (string,
 	return r.p.ask(label, def, check)
 }
 
-// confirm asks a yes/no question whose default is yes; -y answers it.
-func (r *initRun) confirm(label string) (bool, error) {
+// confirm asks a yes/no question; -y takes the default.
+func (r *initRun) confirm(label string, def bool) (bool, error) {
 	if r.yes {
-		return true, nil
+		return def, nil
 	}
 	if !r.interactive {
 		return false, errNeedTerminal
 	}
 	r.asked = true
-	return r.p.confirm(label, true)
+	return r.p.confirm(label, def)
 }
 
 func (r *initRun) create(ctx context.Context, t initTarget, name string) error {
@@ -407,11 +494,12 @@ func checkName(s string) (string, error) {
 	return "", retry{"Names use lowercase letters, digits, and hyphens.", core.NameFromFolder(s)}
 }
 
-// defaultName suggests a project name: the repository name in its remote's
-// URL, or else the folder's name. For a bare repository in a folder named
+// defaultName suggests a project name: for a whole repository, the
+// repository name in its remote's URL; otherwise, or without a remote, the
+// folder's name. For a bare repository in a folder named
 // .bare or .git, the folder above it names the project.
 func defaultName(ctx context.Context, t initTarget) string {
-	if t.gitCommonDir != "" {
+	if t.gitCommonDir != "" && !t.subfolder {
 		if name := core.NameFromFolder(workspace.RemoteName(ctx, t.path)); name != "" {
 			return name
 		}

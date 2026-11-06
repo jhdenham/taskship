@@ -78,7 +78,7 @@ func TestInitInRepository(t *testing.T) {
 	mkdirs(t, filepath.Join(repo, "internal"))
 	t.Chdir(filepath.Join(repo, "internal"))
 
-	r := runInput(t, "\nproj\n", "init")
+	r := runInput(t, "\n\nproj\n", "init")
 	if r.code != 0 {
 		t.Fatalf("exit %d, stderr %q", r.code, r.stderr)
 	}
@@ -92,8 +92,13 @@ Taskship doesn't write anything to this repository. Everything lives in ~/.tasks
 	if r.stdout != want {
 		t.Errorf("stdout:\n%s\nwant:\n%s", r.stdout, want)
 	}
-	if want := "? Project name (myproject): ? Task prefix (MYPT): "; r.stderr != want {
-		t.Errorf("stderr = %q, want %q", r.stderr, want)
+	wantErr := "The current folder (~/code/myproject/internal) is part of a repository (~/code/myproject).\n" +
+		"Where do you want to set up a Taskship project?\n" +
+		"  1) The whole repository (~/code/myproject)\n" +
+		"  2) Only this folder (~/code/myproject/internal)\n" +
+		"? Enter your choice (1): ? Project name (myproject): ? Task prefix (MYPT): "
+	if r.stderr != wantErr {
+		t.Errorf("stderr:\n%s\nwant:\n%s", r.stderr, wantErr)
 	}
 
 	// The main checkout is registered, and the project is now inferred.
@@ -104,11 +109,62 @@ Taskship doesn't write anything to this repository. Everything lives in ~/.tasks
 		t.Errorf("add after init = %q", out)
 	}
 
-	// Running it again changes nothing.
+	// Running it again at the root changes nothing.
+	t.Chdir(repo)
 	r = runInput(t, "", "init")
 	want = "Taskship is already set up for this repository.\n  Project: myproject\n  Prefix:  PROJ\nRun \"taskship tasks\" to see its tasks.\n"
 	if r.code != 0 || r.stdout != want || r.stderr != "" {
 		t.Errorf("init again: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+
+	// In a subfolder, it offers a separate project, defaulting to no.
+	t.Chdir(filepath.Join(repo, "internal"))
+	r = runInput(t, "\n", "init")
+	if r.code != 0 || r.stdout != "This folder is already part of a project (name: myproject, prefix: PROJ).\nRun \"taskship tasks\" to see its tasks.\n" ||
+		r.stderr != "? Set up a separate project for this folder? (y/N): " {
+		t.Errorf("init in subfolder: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	r = runInput(t, "y\n\n\n", "init")
+	if r.code != 0 || !strings.Contains(r.stdout, "Setting up Taskship for ~/code/myproject/internal\nTaskship doesn't write anything to this folder.") ||
+		!strings.Contains(r.stdout, "✓ Created project internal. Tasks will be numbered INTL-1") {
+		t.Errorf("separate project: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	if out := mustRun(t, "add", "in internal"); out != "✓ Created INTL-1: in internal\n" {
+		t.Errorf("add in separate project = %q", out)
+	}
+}
+
+func TestInitInWorktreeSubfolder(t *testing.T) {
+	home := initHome(t)
+	repo, worktree := filepath.Join(home, "code", "mono"), filepath.Join(home, "wt", "feature")
+	newRepo(t, repo)
+	if out, err := exec.Command("git", "-C", repo, "worktree", "add", "-q", worktree).CombinedOutput(); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	mkdirs(t, filepath.Join(repo, "api"), filepath.Join(worktree, "api"))
+
+	// -y picks the whole repository.
+	t.Chdir(filepath.Join(worktree, "api"))
+	if out := mustRun(t, "init", "-y"); !strings.HasPrefix(out, "Setting up Taskship for ~/code/mono\n") {
+		t.Errorf("init -y in worktree subfolder:\n%s", out)
+	}
+	// Only this folder records its position in the main checkout.
+	r := runInput(t, "y\nmono-api\n\n", "init")
+	if r.code != 0 || !strings.HasPrefix(r.stdout, "This folder is already part of a project (name: mono, prefix: MONO).\nSetting up Taskship for ~/code/mono/api\n") {
+		t.Errorf("separate project from worktree: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	if out := mustRun(t, "workspace", "list"); !strings.Contains(out, "mono-api  ~/code/mono/api\n") {
+		t.Errorf("workspace list:\n%s", out)
+	}
+}
+
+func TestInitInSubfolderOfPlainFolder(t *testing.T) {
+	home := initHome(t)
+	mkdirs(t, filepath.Join(home, "notes", "2026"))
+	mustRun(t, "init", filepath.Join(home, "notes"), "--name", "my-notes", "--prefix", "NOTE")
+	t.Chdir(filepath.Join(home, "notes", "2026"))
+	if out := mustRun(t, "init", "-y"); out != "This folder is already part of a project (name: my-notes, prefix: NOTE).\nRun \"taskship tasks\" to see its tasks.\n" {
+		t.Errorf("init -y in subfolder of a plain folder = %q", out)
 	}
 }
 
@@ -255,18 +311,19 @@ func TestInitChoosesRepositoryInFolder(t *testing.T) {
 	mustRun(t, "workspace", "add", "done", "--path", filepath.Join(gitDir, "done"))
 	t.Chdir(gitDir)
 
-	r := runInput(t, "9\n0\n1\n\n\n", "init")
+	r := runInput(t, "\n9\n0\n1\n\n\n", "init")
 	if r.code != 0 {
 		t.Fatalf("exit %d, stderr %q", r.code, r.stderr)
 	}
-	want := "~/git isn't a Git repository, but it contains 2 that aren't set up yet:\n" +
+	want := "Looks like ~/git contains multiple project repositories.\n" +
+		"? Set up ~/git as one project? (y/N): " +
+		"Which repository do you want to set up?\n" +
 		"  1) newer  changed just now\n" +
 		"  2) older  changed 2 days ago\n" +
 		"  3) Another folder...\n" +
-		"  4) ~/git itself\n" +
-		"? Which one do you want to set up? (1-4):   ✗ Choose a number from 1 to 4.\n" +
-		"? Which one do you want to set up? (1-4):   ✗ Choose a number from 1 to 4.\n" +
-		"? Which one do you want to set up? (1-4): " +
+		"? Enter your choice (1-3):   ✗ Choose a number from 1 to 3.\n" +
+		"? Enter your choice (1-3):   ✗ Choose a number from 1 to 3.\n" +
+		"? Enter your choice (1-3): " +
 		"? Project name (newer): ? Task prefix (NEWR): "
 	if r.stderr != want {
 		t.Errorf("stderr:\n%s\nwant:\n%s", r.stderr, want)
@@ -276,24 +333,27 @@ func TestInitChoosesRepositoryInFolder(t *testing.T) {
 	}
 
 	// "Another folder..." asks for a path; "~" works.
-	r = runInput(t, "2\n~/nope\n~/git/older\n\n\n", "init")
+	r = runInput(t, "\n2\n~/nope\n~/git/older\n\n\n", "init")
 	if r.code != 0 || !strings.Contains(r.stderr, "? Folder path:   ✗ No such folder: ~/nope.\n? Folder path: ") ||
 		!strings.HasPrefix(r.stdout, "Setting up Taskship for ~/git/older\n") {
 		t.Errorf("another folder: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
 	}
 
 	if r := runInput(t, "", "init", "-y"); r.code != exitInvalidInput || !strings.Contains(r.stderr, "pass the one to set up") {
-		t.Errorf("chooser with -y: exit %d, stderr %q", r.code, r.stderr)
+		t.Errorf("folder of repositories with -y: exit %d, stderr %q", r.code, r.stderr)
 	}
 
-	// With every repository set up, only the other choices are left.
-	r = runInput(t, "2\n\nPLAIN\n", "init")
-	if r.code != 0 || !strings.HasPrefix(r.stderr, "All 3 repositories in ~/git are already set up.\n  1) Another folder...\n  2) ~/git itself\n") ||
-		!strings.HasPrefix(r.stdout, "Setting up Taskship for ~/git\nTaskship doesn't write anything to this folder.") {
+	// With every repository set up, there is nothing to choose.
+	r = runInput(t, "\n", "init")
+	if r.code != 0 || r.stdout != "All 3 repositories in ~/git are already set up.\n" {
 		t.Errorf("all set up: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
 	}
 
-	// Now ~/git itself is set up too.
+	// The folder itself, on request.
+	r = runInput(t, "y\n\nPLAIN\n", "init")
+	if r.code != 0 || !strings.HasPrefix(r.stdout, "Setting up Taskship for ~/git\nTaskship doesn't write anything to this folder.") {
+		t.Errorf("folder itself: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
 	if r := runInput(t, "", "init"); r.code != 0 || !strings.HasPrefix(r.stdout, "Taskship is already set up for this folder.\n  Project: git\n") {
 		t.Errorf("init in ~/git again: exit %d, stdout %q", r.code, r.stdout)
 	}
