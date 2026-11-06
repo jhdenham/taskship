@@ -75,6 +75,16 @@ When the output is piped, that line is left out so scripts get only the table; `
 
 The default agent workflow reviews task readiness and proposes a plan before code changes. Explicit approval is required; agent-native permissions remain important.
 
+`taskship run PROJ-1 --dry-run` shows what a run would do without launching anything: the agent (`--agent`, `-a`; only `claude` for now), the workspace it would run in, and the exact prompt it would receive. Launching agents is not implemented yet, so `--dry-run` is required.
+
+The workspace is chosen in this order:
+
+1. `--workspace PATH`, which must be a workspace of the task's project or a Git worktree of one.
+2. The current directory, if it is in a workspace of the task's project or a Git worktree of one.
+3. The project's only registered workspace. If the project has several, the command fails with exit code 4 and asks for `--workspace`. If it has none, it says how to register one.
+
+The prompt contains only the task's ref, project, title, and description (acceptance criteria are part of the description), never configuration or environment variables, so it can't carry credentials. The title and description are fenced and marked as untrusted requirements, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. This is a request to the agent, not an enforcement mechanism.
+
 ## Leave no trace and worktree discovery
 
 Taskship does not add metadata files to repositories. Projects are registered explicitly. Per-machine paths are stored outside repositories under `~/.taskship/`. When launched from an existing Git worktree of a registered project, Taskship recognizes it from Git metadata (`git rev-parse --git-common-dir`), which is read-only and runs no repository hooks.

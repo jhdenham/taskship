@@ -107,3 +107,59 @@ func TestInspect(t *testing.T) {
 		t.Errorf("after worktree removal common dir = %q", common)
 	}
 }
+
+func TestForTask(t *testing.T) {
+	root := t.TempDir()
+	dir := func(name string) string {
+		p := filepath.Join(root, name)
+		if err := os.MkdirAll(p, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	myproject, mono, api, notes := dir("myproject"), dir("mono"), dir("mono/api"), dir("notes")
+	ws := []core.Workspace{
+		{ProjectID: "p1", Project: "myproject", Path: myproject, GitCommonDir: myproject + "/.git"},
+		{ProjectID: "p2", Project: "mono-web", Path: mono, GitCommonDir: mono + "/.git"},
+		{ProjectID: "p3", Project: "mono-api", Path: api, GitCommonDir: mono + "/.git"},
+		{ProjectID: "p4", Project: "notes", Path: notes},
+		{ProjectID: "p4", Project: "notes", Path: dir("notes-2")},
+		{ProjectID: "p6", Project: "gone", Path: filepath.Join(root, "missing")},
+	}
+	task := func(id, slug string) core.Task { return core.Task{ProjectID: id, Project: slug} }
+	tests := []struct {
+		name           string
+		task           core.Task
+		dir, commonDir string
+		explicit       bool
+		want           string
+		err            error
+	}{
+		{"cwd in checkout", task("p1", "myproject"), myproject + "/internal", myproject + "/.git", false, myproject + "/internal", nil},
+		{"cwd in linked worktree", task("p1", "myproject"), "/wt/feature", myproject + "/.git", false, "/wt/feature", nil},
+		{"cwd elsewhere uses sole workspace", task("p1", "myproject"), "/tmp", "", false, myproject, nil},
+		{"cwd in other project uses sole workspace", task("p1", "myproject"), notes, "", false, myproject, nil},
+		{"monorepo sibling folder is not claimed", task("p3", "mono-api"), mono + "/web", mono + "/.git", false, api, nil},
+		{"ambiguous worktree settled by task", task("p3", "mono-api"), "/wt/mono", mono + "/.git", false, "/wt/mono", nil},
+		{"several workspaces", task("p4", "notes"), "/tmp", "", false, "", core.ErrAmbiguous},
+		{"no workspace", task("p5", "empty"), "/tmp", "", false, "", core.ErrNotFound},
+		{"sole workspace missing", task("p6", "gone"), "/tmp", "", false, "", core.ErrNotFound},
+		{"explicit worktree", task("p1", "myproject"), "/wt/feature", myproject + "/.git", true, "/wt/feature", nil},
+		{"explicit one of several", task("p4", "notes"), notes, "", true, notes, nil},
+		{"explicit other project", task("p1", "myproject"), notes, "", true, "", core.ErrInvalid},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ForTask(tt.task, tt.dir, tt.commonDir, tt.explicit, ws)
+			if tt.err != nil {
+				if !errors.Is(err, tt.err) {
+					t.Errorf("err = %v, want %v", err, tt.err)
+				}
+				return
+			}
+			if err != nil || got != tt.want {
+				t.Errorf("ForTask = %q, %v; want %q", got, err, tt.want)
+			}
+		})
+	}
+}

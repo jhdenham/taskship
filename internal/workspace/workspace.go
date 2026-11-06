@@ -4,6 +4,7 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -97,4 +98,51 @@ func Resolve(path, gitCommonDir string, workspaces []core.Workspace) (w core.Wor
 func contains(base, path string) bool {
 	rel, err := filepath.Rel(base, path)
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// ForTask chooses the directory to run task t in, given a directory and its
+// common Git directory from Inspect. If explicit is true, dir was passed by
+// the user and must belong to the task's project. Otherwise dir is the
+// current directory: it is used if it belongs to the task's project, and
+// failing that, the project's only registered workspace is. With several
+// workspaces, the choice is ambiguous; with none, the error says how to
+// register one.
+func ForTask(t core.Task, dir, gitCommonDir string, explicit bool, all []core.Workspace) (string, error) {
+	var own []core.Workspace
+	for _, w := range all {
+		if w.ProjectID == t.ProjectID {
+			own = append(own, w)
+		}
+	}
+	// Match against every project first, so a directory that most
+	// specifically belongs to another project isn't claimed. If that is
+	// ambiguous, the task's project settles it.
+	w, ok, err := Resolve(dir, gitCommonDir, all)
+	if errors.Is(err, core.ErrAmbiguous) {
+		w, ok, err = Resolve(dir, gitCommonDir, own)
+	}
+	if err != nil {
+		return "", err
+	}
+	if ok && w.ProjectID == t.ProjectID {
+		return dir, nil
+	}
+	if explicit {
+		return "", fmt.Errorf("%w: %s is not a workspace of %s (see: taskship workspace list -p %s)", core.ErrInvalid, dir, t.Project, t.Project)
+	}
+
+	switch len(own) {
+	case 0:
+		return "", fmt.Errorf("%w: no workspace is registered for %s; register a checkout with: taskship workspace add %s --path PATH", core.ErrNotFound, t.Project, t.Project)
+	case 1:
+		if info, err := os.Stat(own[0].Path); err != nil || !info.IsDir() {
+			return "", fmt.Errorf("%w: the workspace %s of %s no longer exists; remove it with: taskship workspace remove %s", core.ErrNotFound, own[0].Path, t.Project, own[0].Path)
+		}
+		return own[0].Path, nil
+	}
+	paths := make([]string, len(own))
+	for i, w := range own {
+		paths[i] = w.Path
+	}
+	return "", fmt.Errorf("%w: %s has several workspaces (%s); run from inside one or pass --workspace PATH", core.ErrAmbiguous, t.Project, strings.Join(paths, ", "))
 }
