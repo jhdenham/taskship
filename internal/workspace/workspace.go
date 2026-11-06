@@ -97,7 +97,7 @@ func contains(base, path string) bool {
 // the user and must belong to the task's project. Otherwise dir is the
 // current directory: if it belongs to the task's project, its workspace root
 // is used (see root), and failing that, the project's only registered
-// workspace is. With several workspaces, the choice is ambiguous; with none,
+// workspace is, unless it is a bare repository. With several workspaces, the choice is ambiguous; with none,
 // the error says how to register one.
 func ForTask(ctx context.Context, t core.Task, dir, gitCommonDir string, explicit bool, all []core.Workspace) (string, error) {
 	var own []core.Workspace
@@ -129,6 +129,9 @@ func ForTask(ctx context.Context, t core.Task, dir, gitCommonDir string, explici
 	case 1:
 		if info, err := os.Stat(own[0].Path); err != nil || !info.IsDir() {
 			return "", fmt.Errorf("%w: the workspace %s of %s no longer exists; remove it with: taskship workspace remove %s", core.ErrNotFound, own[0].Path, t.Project, own[0].Path)
+		}
+		if out, _ := gitOutput(ctx, own[0].Path, "rev-parse", "--is-bare-repository"); out == "true" {
+			return "", fmt.Errorf("%w: %s is a bare repository, with no files to work on; run this from one of its worktrees, or pass --workspace PATH", core.ErrInvalid, own[0].Path)
 		}
 		return own[0].Path, nil
 	}

@@ -4,6 +4,29 @@
 
 A project groups tasks and has a display prefix such as `PROJ`. A task has a title, a Markdown description, a workflow status, and a priority. Acceptance criteria are optional and live in the description, conventionally as a checklist under an `## Acceptance criteria` heading. Taskship doesn't enforce any structure for the description.
 
+## Setting up a repository
+
+Run `taskship init` in a repository (or pass its path) to start using Taskship there:
+
+```text
+$ taskship init
+Setting up Taskship for ~/code/myproject
+Taskship doesn't write anything to this repository. Everything lives in ~/.taskship.
+
+? Project name (myproject):
+? Task prefix (MYPT): PROJ
+
+✓ Created project myproject. Tasks will be numbered PROJ-1, PROJ-2, and so on.
+```
+
+- The suggested name comes from the repository's `origin` remote (or its only remote), else the folder's name. The suggested prefix comes from the name: initials for several words (`my-cool-app` gives `MCA`), a short word whole (`web` gives `WEB`), or four letters spanning a longer word (`taskship` gives `TSKP`). It's only a suggestion; type any prefix you like.
+- In a linked worktree or a subfolder, `init` sets up the repository's main checkout, and every worktree is recognized. In a bare repository with worktrees, the bare repository is set up.
+- In a folder that isn't a repository but contains some, such as `~/git`, `init` lists the most recently changed ones that aren't set up yet, and you choose one, another folder, or the folder itself. A folder that isn't a repository is set up as a whole, except the repositories inside it.
+- If a project with the chosen name already exists, for example after cloning the repository again somewhere else, `init` offers to link the folder to it. Folders of that project that no longer exist are replaced.
+- `--name`, `--prefix`, and `-y` (accept the defaults) let `init` run without a terminal. It refuses your home folder and the filesystem root.
+
+Running `init` again in a folder that is set up just says which project it belongs to.
+
 ## Tasks as Markdown
 
 Tasks are stored in SQLite, and Markdown is how you read and edit them by hand:

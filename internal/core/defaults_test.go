@@ -127,3 +127,14 @@ func TestBlocklistEntries(t *testing.T) {
 		t.Error("rot13 is not ROT13")
 	}
 }
+
+func TestFreePrefix(t *testing.T) {
+	taken := map[string]bool{"PROJ": true, "PROJ2": true}
+	isTaken := func(p string) bool { return taken[p] }
+	if got := FreePrefix("PROJ", isTaken); got != "PROJ3" {
+		t.Errorf("FreePrefix(PROJ) = %q, want PROJ3", got)
+	}
+	if got := FreePrefix("OTHER", isTaken); got != "OTHER" {
+		t.Errorf("FreePrefix(OTHER) = %q, want OTHER", got)
+	}
+}

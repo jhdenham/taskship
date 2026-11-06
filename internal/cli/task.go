@@ -211,8 +211,14 @@ func statusNames(sts []core.Status) []string {
 
 // isTerminal reports whether w is a terminal. The task list summary line is
 // shown only in terminals, so piped output stays plain rows. Tests override it.
-var isTerminal = func(w io.Writer) bool {
-	f, ok := w.(*os.File)
+var isTerminal = func(w io.Writer) bool { return isCharDevice(w) }
+
+// inputIsTerminal reports whether r is a terminal someone can answer
+// questions on. Tests override it.
+var inputIsTerminal = func(r io.Reader) bool { return isCharDevice(r) }
+
+func isCharDevice(v any) bool {
+	f, ok := v.(*os.File)
 	if !ok {
 		return false
 	}

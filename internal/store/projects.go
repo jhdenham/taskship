@@ -30,6 +30,18 @@ func now() time.Time {
 
 // CreateProject validates p, assigns its ID and timestamps, and stores it.
 func (s *Store) CreateProject(ctx context.Context, p core.Project) (core.Project, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return core.Project{}, err
+	}
+	defer tx.Rollback()
+	if p, err = createProject(ctx, tx, p); err != nil {
+		return core.Project{}, err
+	}
+	return p, tx.Commit()
+}
+
+func createProject(ctx context.Context, tx *sql.Tx, p core.Project) (core.Project, error) {
 	if err := core.ValidateProject(p); err != nil {
 		return core.Project{}, err
 	}
@@ -39,12 +51,6 @@ func (s *Store) CreateProject(ctx context.Context, p core.Project) (core.Project
 	}
 	ts := now()
 	p.ID, p.CreatedAt, p.UpdatedAt, p.ArchivedAt = id.String(), ts, ts, nil
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return core.Project{}, err
-	}
-	defer tx.Rollback()
 
 	if err := checkNameFree(ctx, tx, p.Name, ""); err != nil {
 		return core.Project{}, err
@@ -63,7 +69,7 @@ func (s *Store) CreateProject(ctx context.Context, p core.Project) (core.Project
 	if err != nil {
 		return core.Project{}, err
 	}
-	return p, tx.Commit()
+	return p, nil
 }
 
 // checkNameFree reports an error if a project other than exceptID uses name.

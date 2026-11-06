@@ -66,6 +66,12 @@ func DefaultPrefix(name string, taken func(string) bool) string {
 	for blockedPrefixes[prefix] {
 		prefix = prefix[:len(prefix)-1]
 	}
+	return FreePrefix(prefix, taken)
+}
+
+// FreePrefix returns prefix, or if taken reports it as used, the first of
+// prefix+"2", prefix+"3", and so on that isn't.
+func FreePrefix(prefix string, taken func(string) bool) string {
 	if !taken(prefix) {
 		return prefix
 	}

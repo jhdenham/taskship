@@ -38,3 +38,12 @@ func TestValidateProject(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateNameAndPrefix(t *testing.T) {
+	if ValidateName("2024-notes") != nil || ValidateName("My Project") == nil {
+		t.Error("ValidateName")
+	}
+	if ValidatePrefix("PROJ") != nil || ValidatePrefix("proj") == nil || ValidatePrefix("1P") == nil {
+		t.Error("ValidatePrefix")
+	}
+}

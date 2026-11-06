@@ -140,6 +140,8 @@ func TestForTask(t *testing.T) {
 	git(t, p("myproject"), "worktree", "add", "-q", p("myproject/.worktrees/inner"))
 	git(t, p("mono"), "worktree", "add", "-q", p("wt/mono"))
 	git(t, p("solo"), "worktree", "add", "-q", p("wt/solo-registered"))
+	git(t, base, "clone", "-q", "--bare", p("solo"), p("bare/.bare"))
+	git(t, p("bare/.bare"), "worktree", "add", "-q", p("bare/main"))
 	mkdir("wt/feature/docs")
 
 	ws := []core.Workspace{
@@ -150,6 +152,7 @@ func TestForTask(t *testing.T) {
 		{ProjectID: "p4", Project: "notes", Path: p("notes-2")},
 		{ProjectID: "p6", Project: "gone", Path: p("missing")},
 		{ProjectID: "p7", Project: "solo", Path: p("wt/solo-registered")},
+		{ProjectID: "p8", Project: "bare", Path: p("bare/.bare")},
 	}
 	for i, w := range ws {
 		if _, ws[i].GitCommonDir, _ = Inspect(ctx, w.Path); w.Project == "gone" {
@@ -178,6 +181,8 @@ func TestForTask(t *testing.T) {
 		{"monorepo worktree, subfolder project", task("p3", "mono-api"), "wt/mono/web", false, "wt/mono/api", nil},
 		{"monorepo worktree, root project", task("p2", "mono-web"), "wt/mono/api", false, "wt/mono", nil},
 		{"registered worktree deleted", task("p7", "solo"), "solo", false, "solo", nil},
+		{"worktree of a registered bare repo", task("p8", "bare"), "bare/main", false, "bare/main", nil},
+		{"bare repo from outside its worktrees", task("p8", "bare"), "notes", false, "", core.ErrInvalid},
 		{"several workspaces", task("p4", "notes"), "myproject", false, "", core.ErrAmbiguous},
 		{"no workspace", task("p5", "empty"), "notes", false, "", core.ErrNotFound},
 		{"sole workspace missing", task("p6", "gone"), "notes", false, "", core.ErrNotFound},

@@ -21,6 +21,7 @@ func run(t *testing.T, version string, args ...string) result {
 	t.Helper()
 	cmd := NewRootCmd(version)
 	var out, errb bytes.Buffer
+	cmd.SetIn(strings.NewReader("")) // never the real terminal
 	cmd.SetOut(&out)
 	cmd.SetErr(&errb)
 	code := Execute(cmd, args)
@@ -59,7 +60,7 @@ func TestMetadataCommandsHaveNoSideEffects(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("TASKSHIP_HOME", "")
-	for _, args := range [][]string{{"--version"}, {"--help"}, {"project", "--help"}, {"project", "add", "--help"}, {"task", "--help"}, {"add", "--help"}, {"tasks", "--help"}, {"run", "--help"}} {
+	for _, args := range [][]string{{"--version"}, {"--help"}, {"project", "--help"}, {"project", "add", "--help"}, {"task", "--help"}, {"add", "--help"}, {"tasks", "--help"}, {"run", "--help"}, {"init", "--help"}} {
 		if r := run(t, "", args...); r.code != 0 {
 			t.Fatalf("%v: exit %d", args, r.code)
 		}

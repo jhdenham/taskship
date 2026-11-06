@@ -7,13 +7,11 @@
 # Optional: install the Taskship skill in Claude user configuration
 taskship skill install claude
 
-# Create a project
-taskship project add myproject --prefix PROJ
+# Set up Taskship for a repository: asks for a project name and task prefix
+cd ~/code/myproject
+taskship init
 
-# Register a local checkout (outside the repository)
-taskship workspace add myproject --path ~/code/myproject --default
-
-# Capture work inside a project directory
+# Capture work from anywhere in the repository
 taskship add "Build a weekly habit tracker"
 
 # Capture work (from anywhere)
@@ -29,4 +27,4 @@ taskship PROJ-1 --agent claude --dry-run
 taskship PROJ-1 --agent claude
 ```
 
-`taskship init` is an optional onboarding wizard, not a prerequisite. Installation, help, and version checks do not initialize storage. Before dispatch, map the project to a local checkout. The agent must be installed separately. Commands are design proposals and may change.
+`taskship init` is an optional onboarding wizard, not a prerequisite. Installation, help, and version checks do not initialize storage. `taskship init` writes nothing to the repository. The agent must be installed separately. Commands are design proposals and may change.

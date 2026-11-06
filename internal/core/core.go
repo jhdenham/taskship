@@ -37,11 +37,24 @@ const maxNameLen = 40
 
 // ValidateProject checks the user-supplied fields of a new or edited project.
 func ValidateProject(p Project) error {
-	if len(p.Name) > maxNameLen || !nameRE.MatchString(p.Name) {
-		return fmt.Errorf("%w: name %q must be lowercase letters, digits, and single hyphens, and be at most %d characters", ErrInvalid, p.Name, maxNameLen)
+	if err := ValidateName(p.Name); err != nil {
+		return err
 	}
-	if !prefixRE.MatchString(p.TaskPrefix) {
-		return fmt.Errorf("%w: task prefix %q must be 1-10 uppercase letters or digits, starting with a letter", ErrInvalid, p.TaskPrefix)
+	return ValidatePrefix(p.TaskPrefix)
+}
+
+// ValidateName checks a project name.
+func ValidateName(name string) error {
+	if len(name) > maxNameLen || !nameRE.MatchString(name) {
+		return fmt.Errorf("%w: name %q must be lowercase letters, digits, and single hyphens, and be at most %d characters", ErrInvalid, name, maxNameLen)
+	}
+	return nil
+}
+
+// ValidatePrefix checks a task prefix.
+func ValidatePrefix(prefix string) error {
+	if !prefixRE.MatchString(prefix) {
+		return fmt.Errorf("%w: task prefix %q must be 1-10 uppercase letters or digits, starting with a letter", ErrInvalid, prefix)
 	}
 	return nil
 }

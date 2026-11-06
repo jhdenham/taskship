@@ -18,17 +18,40 @@ FROM workspaces w JOIN projects p ON p.id = w.project_id`
 // AddWorkspace registers w.Path (and w.GitCommonDir) for a project. A path
 // can belong to only one project.
 func (s *Store) AddWorkspace(ctx context.Context, project string, w core.Workspace) (core.Workspace, error) {
-	id, err := uuid.NewV7()
-	if err != nil {
-		return core.Workspace{}, err
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return core.Workspace{}, err
 	}
 	defer tx.Rollback()
-
 	p, err := getProject(ctx, tx, project)
+	if err != nil {
+		return core.Workspace{}, err
+	}
+	if w, err = addWorkspace(ctx, tx, p, w); err != nil {
+		return core.Workspace{}, err
+	}
+	return w, tx.Commit()
+}
+
+// CreateProjectWithWorkspace creates project p with workspace w in one
+// transaction: either both are stored or neither is.
+func (s *Store) CreateProjectWithWorkspace(ctx context.Context, p core.Project, w core.Workspace) (core.Project, core.Workspace, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return core.Project{}, core.Workspace{}, err
+	}
+	defer tx.Rollback()
+	if p, err = createProject(ctx, tx, p); err != nil {
+		return core.Project{}, core.Workspace{}, err
+	}
+	if w, err = addWorkspace(ctx, tx, p, w); err != nil {
+		return core.Project{}, core.Workspace{}, err
+	}
+	return p, w, tx.Commit()
+}
+
+func addWorkspace(ctx context.Context, tx *sql.Tx, p core.Project, w core.Workspace) (core.Workspace, error) {
+	id, err := uuid.NewV7()
 	if err != nil {
 		return core.Workspace{}, err
 	}
@@ -47,7 +70,7 @@ func (s *Store) AddWorkspace(ctx context.Context, project string, w core.Workspa
 	if err != nil {
 		return core.Workspace{}, err
 	}
-	return w, tx.Commit()
+	return w, nil
 }
 
 // ListWorkspaces returns registered workspaces, optionally for one project,
