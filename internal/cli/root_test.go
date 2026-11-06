@@ -23,8 +23,7 @@ func run(t *testing.T, version string, args ...string) result {
 	var out, errb bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&errb)
-	cmd.SetArgs(args)
-	code := Execute(cmd)
+	code := Execute(cmd, args)
 	return result{out.String(), errb.String(), code}
 }
 

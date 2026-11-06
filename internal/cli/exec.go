@@ -24,8 +24,10 @@ const (
 	exitAmbiguous    = 4
 )
 
-// Execute runs cmd, prints any error to stderr, and returns the exit code.
-func Execute(cmd *cobra.Command) int {
+// Execute runs the root command cmd with args (without the program name),
+// prints any error to stderr, and returns the exit code.
+func Execute(cmd *cobra.Command, args []string) int {
+	cmd.SetArgs(shortcut(cmd, args))
 	err := cmd.Execute()
 	if err == nil {
 		return exitOK
@@ -42,6 +44,22 @@ func Execute(cmd *cobra.Command) int {
 	default:
 		return exitFailure
 	}
+}
+
+// shortcut rewrites "taskship PROJ-42 ..." to "taskship run PROJ-42 ...".
+// Only a valid task ref that isn't a command is rewritten, so a mistyped
+// command is still an unknown-command error.
+func shortcut(root *cobra.Command, args []string) []string {
+	if len(args) == 0 {
+		return args
+	}
+	if _, _, err := core.ParseTaskRef(args[0]); err != nil {
+		return args
+	}
+	if cmd, _, err := root.Find(args[:1]); err == nil && cmd != root {
+		return args
+	}
+	return append([]string{"run"}, args...)
 }
 
 // usageError marks bad command-line usage (wrong args, unknown flags).

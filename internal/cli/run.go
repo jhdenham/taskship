@@ -17,9 +17,12 @@ func newRunCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run TASK_REF --dry-run [--agent claude] [--workspace PATH]",
 		Short: "Preview an agent run for a task",
-		Long: `Prepare a plan-first agent run for a task. Launching agents is not
-implemented yet, so --dry-run is required: it prints the chosen workspace and
-the exact prompt the agent would receive, and launches nothing.
+		Long: `Prepare a plan-first agent run for a task. "taskship PROJ-42" is short
+for "taskship run PROJ-42".
+
+Launching agents is not implemented yet, so --dry-run is required: it prints
+the chosen workspace and the exact prompt the agent would receive, and
+launches nothing.
 
 The agent runs at the root of a workspace, never in a subfolder. The workspace
 is the one containing --workspace if given (it must belong to the task's
@@ -27,7 +30,7 @@ project), otherwise the one containing the current directory if that belongs
 to the task's project, otherwise the project's only registered workspace. In a
 Git worktree of a registered checkout, the agent runs at the worktree's
 corresponding folder, usually its top level.`,
-		Example: "  taskship run PROJ-42 --dry-run\n  taskship run PROJ-42 --dry-run --workspace ~/worktrees/myproject/feature",
+		Example: "  taskship PROJ-42 --dry-run\n  taskship PROJ-42 --dry-run --workspace ~/worktrees/myproject/feature",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if agent != "claude" {

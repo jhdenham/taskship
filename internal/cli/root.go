@@ -13,6 +13,7 @@ func NewRootCmd(version string) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "taskship",
 		Short:         "From task to agent, in one command.",
+		Example:       "  taskship PROJ-42 --dry-run   Preview an agent run for a task (short for: taskship run PROJ-42 --dry-run)",
 		Version:       resolveVersion(version),
 		SilenceUsage:  true,
 		SilenceErrors: true, // Execute prints errors and picks the exit code

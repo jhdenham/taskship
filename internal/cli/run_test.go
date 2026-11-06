@@ -77,3 +77,23 @@ func TestRunWithoutDryRunLaunchesNothing(t *testing.T) {
 		t.Errorf("run without --dry-run touched storage: %v", err)
 	}
 }
+
+// "taskship PROJ-1" is shorthand for "taskship run PROJ-1".
+func TestRunShortcut(t *testing.T) {
+	seedCLIProjects(t)
+	mustRun(t, "add", "Fix export", "-p", "myproject")
+	mustRun(t, "workspace", "add", "myproject", "--path", t.TempDir())
+
+	want := mustRun(t, "run", "PROJ-1", "--dry-run")
+	for _, args := range [][]string{{"PROJ-1", "--dry-run"}, {"proj-1", "--dry-run", "-a", "claude"}} {
+		if got := mustRun(t, args...); got != want {
+			t.Errorf("%v output differs from run:\n%s", args, got)
+		}
+	}
+	if r := run(t, "", "PROJ-1"); r.code != exitFailure || !strings.Contains(r.stderr, "use --dry-run") {
+		t.Errorf("shortcut without --dry-run: exit %d, stderr %q", r.code, r.stderr)
+	}
+	if r := run(t, "", "PROJ-99", "--dry-run"); r.code != exitNotFound {
+		t.Errorf("shortcut for a missing task: exit %d", r.code)
+	}
+}

@@ -139,8 +139,7 @@ func TestEditFromStdin(t *testing.T) {
 	cmd.SetIn(strings.NewReader("# New title\n\nKeep me\n"))
 	cmd.SetOut(&out)
 	cmd.SetErr(&errb)
-	cmd.SetArgs([]string{"task", "edit", "proj-1", "--from", "-"})
-	if code := Execute(cmd); code != exitOK || out.String() != "✓ Updated PROJ-1: New title\n" {
+	if code := Execute(cmd, []string{"task", "edit", "proj-1", "--from", "-"}); code != exitOK || out.String() != "✓ Updated PROJ-1: New title\n" {
 		t.Fatalf("exit %d, stdout %q, stderr %q", code, out.String(), errb.String())
 	}
 	task := taskJSON(t, "PROJ-1")

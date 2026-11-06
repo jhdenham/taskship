@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 )
@@ -154,12 +155,15 @@ func TestTaskExitCodes(t *testing.T) {
 	}
 }
 
-// Root-level task refs are not dispatch yet; they must not be treated as commands.
+// A mistyped command is an error and never becomes a task ref.
 func TestUnknownCommandFails(t *testing.T) {
-	tempHome(t)
-	for _, args := range [][]string{{"taks"}, {"PROJ-1"}} {
-		if r := run(t, "", args...); r.code == 0 {
-			t.Errorf("%v succeeded; want failure", args)
+	home := tempHome(t)
+	for _, args := range [][]string{{"taks"}, {"PROJ"}, {"PROJ-0"}, {"proj-1x"}} {
+		if r := run(t, "", args...); r.code != exitFailure || !strings.Contains(r.stderr, "unknown command") {
+			t.Errorf("%v: exit %d, stderr %q; want unknown command", args, r.code, r.stderr)
 		}
+	}
+	if _, err := os.Stat(home); !os.IsNotExist(err) {
+		t.Errorf("unknown commands touched storage: %v", err)
 	}
 }

@@ -75,7 +75,7 @@ When the output is piped, that line is left out so scripts get only the table; `
 
 The default agent workflow reviews task readiness and proposes a plan before code changes. Explicit approval is required; agent-native permissions remain important.
 
-`taskship run PROJ-1 --dry-run` shows what a run would do without launching anything: the agent (`--agent`, `-a`; only `claude` for now), the workspace it would run in, and the exact prompt it would receive. Launching agents is not implemented yet, so `--dry-run` is required.
+`taskship PROJ-1 --dry-run` (short for `taskship run PROJ-1 --dry-run`) shows what a run would do without launching anything: the agent (`--agent`, `-a`; only `claude` for now), the workspace it would run in, and the exact prompt it would receive. Launching agents is not implemented yet, so `--dry-run` is required.
 
 The agent always runs at the root of a workspace, never in a subfolder, so it can see the whole checkout. The workspace is chosen in this order:
 
