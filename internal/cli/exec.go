@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -32,7 +31,10 @@ func Execute(cmd *cobra.Command, args []string) int {
 	if err == nil {
 		return exitOK
 	}
-	fmt.Fprintln(cmd.ErrOrStderr(), "taskship:", err)
+	if errors.Is(err, errDeclined) {
+		return exitFailure
+	}
+	printError(cmd.ErrOrStderr(), err)
 	var usage usageError
 	switch {
 	case errors.As(err, &usage), errors.Is(err, core.ErrInvalid):
@@ -71,6 +73,10 @@ type kindError struct {
 
 func (e kindError) Error() string { return e.msg }
 func (e kindError) Unwrap() error { return e.err }
+
+// errDeclined ends a command the user declined to go on with. The command
+// has already said what happened, so it isn't printed, but it exits 1.
+var errDeclined = errors.New("declined")
 
 // usageError marks bad command-line usage (wrong args, unknown flags).
 type usageError struct{ error }

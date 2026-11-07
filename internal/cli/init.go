@@ -10,9 +10,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -33,8 +33,8 @@ In a Git repository, its main checkout is set up, and every worktree of it is
 recognized. In a subfolder of a repository, init asks whether to set up the
 whole repository or only that folder, and in a folder that is already part of
 a project, whether to set up a separate project for it. In a folder that
-contains repositories, it asks whether to set up the folder as one project
-or which repository in it to set up.
+contains repositories, it asks whether to set up the whole folder or a
+single repository in it, and then which repository.
 
 init asks for the project name and task prefix, suggesting defaults from the
 repository's remote or the folder's name. --name and --prefix answer those
@@ -79,6 +79,7 @@ type initRun struct {
 	interactive  bool // stdin is a terminal
 	asked        bool // a question was asked
 	forAdd       bool // run by taskship add: no header or next steps
+	headed       bool // the header was printed; a blank line ends it before what follows
 }
 
 // initTarget is the folder init sets up.
@@ -119,8 +120,9 @@ func (r *initRun) runAt(ctx context.Context, pl place, explicit bool, ws []core.
 
 	if !r.forAdd {
 		out := r.cmd.OutOrStdout()
-		fmt.Fprintf(out, "Setting up Taskship for %s\n", displayPath(t.path))
-		fmt.Fprintf(out, "%s\n\n", noTraceLine(t.kind()))
+		lipgloss.Fprintln(out, headingf("Setting up Taskship for %s", displayPath(t.path)))
+		lipgloss.Fprintln(out, faint.Render(noTraceLine(t.kind())))
+		r.headed = true
 	}
 
 	def := defaultName(ctx, t)
@@ -135,7 +137,11 @@ func (r *initRun) runAt(ctx context.Context, pl place, explicit bool, ws []core.
 		} else if err != nil {
 			return core.Project{}, err
 		}
-		link, err := r.confirm(fmt.Sprintf("%s already exists (prefix %s). Link this folder to it?", p.Name, p.TaskPrefix), true)
+		if r.interactive && !r.yes {
+			r.endHeader()
+			lipgloss.Fprintf(r.p.out, "A project named %s already exists (prefix %s).\n", value.Render(p.Name), value.Render(p.TaskPrefix))
+		}
+		link, err := r.confirm("Link this folder to it?", true)
 		if err != nil {
 			return core.Project{}, err
 		}
@@ -143,7 +149,9 @@ func (r *initRun) runAt(ctx context.Context, pl place, explicit bool, ws []core.
 			return p, r.link(ctx, t, p)
 		}
 		if r.name != "" {
-			return core.Project{}, fmt.Errorf("nothing changed; pass a different --name")
+			r.gap()
+			lipgloss.Fprintln(r.cmd.OutOrStdout(), "Nothing changed. To set up a new project, pass a different --name.")
+			return core.Project{}, nil
 		}
 		def = ""
 	}
@@ -181,6 +189,11 @@ type place struct {
 func (pl place) whole() bool { return pl.loc.GitCommonDir != "" && pl.pos == pl.main }
 
 func locate(ctx context.Context, dir string) (place, error) {
+	if abs, err := filepath.Abs(dir); err == nil {
+		if _, err := os.Stat(abs); errors.Is(err, fs.ErrNotExist) {
+			return place{}, kindError{pathRef(abs) + " doesn't exist", core.ErrInvalid}
+		}
+	}
 	loc, err := workspace.Inspect(ctx, dir)
 	if err != nil {
 		return place{}, err
@@ -226,8 +239,8 @@ func (r *initRun) targetAt(ctx context.Context, pl place, explicit bool, ws []co
 		return initTarget{}, false, err
 	}
 	if !explicit {
-		if repos, total := childRepos(ctx, loc.Path, ws); total > 0 {
-			return r.inFolderOfRepos(ctx, loc.Path, repos, total, ws)
+		if repos, setUp, total := childRepos(ctx, loc.Path, ws); total > 0 {
+			return r.inFolderOfRepos(ctx, loc.Path, repos, setUp, total, ws)
 		}
 	}
 	return initTarget{path: loc.Path}, true, nil
@@ -240,13 +253,14 @@ func (r *initRun) separate(ctx context.Context, loc workspace.Location, pos stri
 		return initTarget{}, false, err
 	}
 	out := r.cmd.OutOrStdout()
-	fmt.Fprintf(out, "This folder is already part of a project (name: %s, prefix: %s).\n", p.Name, p.TaskPrefix)
+	lipgloss.Fprintln(out, headingf("This folder is already part of a project (name: %s, prefix: %s).", p.Name, p.TaskPrefix)+"\n")
 	yes, err := r.confirm("Set up a separate project for this folder?", false)
 	if err != nil {
 		return initTarget{}, false, err
 	}
+	r.gap()
 	if !yes {
-		fmt.Fprintln(out, `Run "taskship tasks" to see its tasks.`)
+		lipgloss.Fprintln(out, "Nothing changed. Run "+cmdRef("taskship tasks")+" to see its tasks.")
 		return initTarget{}, false, nil
 	}
 	return initTarget{pos, loc.GitCommonDir, loc.GitCommonDir != ""}, true, checkInitPath(pos)
@@ -267,14 +281,15 @@ func (r *initRun) wholeOrFolder(loc workspace.Location, pos, main string, explic
 	if explicit {
 		which = "The folder"
 	}
-	fmt.Fprintf(w, "%s (%s) is part of a repository (%s).\n", which, displayPath(loc.Path), displayPath(main))
+	lipgloss.Fprintln(w, headingf(which+" (%s) is part of a repository (%s).", displayPath(loc.Path), displayPath(main))+"\n")
 	fmt.Fprintln(w, "Where do you want to set up a Taskship project?")
-	fmt.Fprintf(w, "  1) The whole repository (%s)\n", displayPath(main))
-	fmt.Fprintf(w, "  2) Only this folder (%s)\n", displayPath(pos))
+	lipgloss.Fprintf(w, "  1) The whole repository (%s)\n", pathRef(main))
+	lipgloss.Fprintf(w, "  2) Only this folder (%s)\n", pathRef(pos))
 	choice, err := r.ask("Enter your choice", "", "1", "", numberIn(2))
 	if err != nil {
 		return initTarget{}, false, err
 	}
+	r.gap()
 	if choice == "1" {
 		return whole, true, checkInitPath(main)
 	}
@@ -294,20 +309,21 @@ func checkInitPath(path string) error {
 	default:
 		return nil
 	}
-	return usageError{fmt.Errorf(`run "taskship init" inside a project's folder, not %s, or pass one: taskship init ~/code/myproject`, where)}
+	return usageError{fmt.Errorf("run %s inside a project's folder, not %s, or pass a folder path, for example: %s", cmdRef("taskship init"), where, command.Render("taskship init ~/code/myproject"))}
 }
 
 // childRepo is a Git repository directly inside a folder.
 type childRepo struct {
 	path    string
 	changed time.Time
+	project string // the project it's set up for, if any
 }
 
 // childRepos returns the repositories directly inside dir that aren't set
-// up yet, most recently changed first, and how many repositories there are
-// in all. A repository's last change is the modification time of its .git
+// up yet, most recently changed first, those that are, by name, and how
+// many repositories there are in all. A repository's last change is the modification time of its .git
 // entry, which commits, checkouts and fetches update.
-func childRepos(ctx context.Context, dir string, ws []core.Workspace) (repos []childRepo, total int) {
+func childRepos(ctx context.Context, dir string, ws []core.Workspace) (repos, setUp []childRepo, total int) {
 	entries, _ := os.ReadDir(dir)
 	for _, e := range entries {
 		if !e.IsDir() {
@@ -323,42 +339,51 @@ func childRepos(ctx context.Context, dir string, ws []core.Workspace) (repos []c
 		if err != nil || loc.GitCommonDir == "" {
 			continue
 		}
-		if _, ok, err := workspace.Resolve(loc, ws); ok || err != nil {
+		w, ok, err := workspace.Resolve(loc, ws)
+		if err != nil {
 			continue
 		}
-		repos = append(repos, childRepo{loc.Path, info.ModTime()})
+		if ok {
+			setUp = append(setUp, childRepo{loc.Path, info.ModTime(), w.Project})
+			continue
+		}
+		repos = append(repos, childRepo{loc.Path, info.ModTime(), ""})
 	}
 	slices.SortStableFunc(repos, func(a, b childRepo) int { return b.changed.Compare(a.changed) })
-	return repos, total
+	return repos, setUp, total
 }
 
 // maxChoices is how many repositories are listed to choose from.
 const maxChoices = 8
 
 // inFolderOfRepos asks whether to set up dir, a folder of repositories, as
-// one project, and if not, which repository in it to set up.
-func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos []childRepo, total int, ws []core.Workspace) (initTarget, bool, error) {
+// a whole or a single repository in it, and then which repository.
+func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos, setUp []childRepo, total int, ws []core.Workspace) (initTarget, bool, error) {
 	if r.yes || !r.interactive {
-		return initTarget{}, false, usageError{fmt.Errorf("%s contains Git repositories; pass the one to set up, for example: taskship init %s", displayPath(dir), displayPath(filepath.Join(dir, "myproject")))}
+		return initTarget{}, false, usageError{fmt.Errorf("%s contains Git repositories; pass the one to set up, for example: %s", pathRef(dir), command.Render("taskship init "+displayPath(filepath.Join(dir, "myproject"))))}
 	}
 	w := r.p.out
-	if total == 1 {
-		fmt.Fprintf(w, "Looks like %s contains a project repository.\n", displayPath(dir))
-	} else {
-		fmt.Fprintf(w, "Looks like %s contains multiple project repositories.\n", displayPath(dir))
+	contains, one := "a repository", "The repository in it"
+	if only := slices.Concat(repos, setUp); total == 1 && len(only) == 1 {
+		one = fmt.Sprintf("The repository (%s)", pathRef(only[0].path))
+	} else if total > 1 {
+		contains, one = fmt.Sprintf("%d repositories", total), "A single repository"
 	}
+	lipgloss.Fprintln(w, headingf("The current folder (%s) contains "+contains+".", displayPath(dir))+"\n")
+	fmt.Fprintln(w, "Where do you want to set up a Taskship project?")
+	lipgloss.Fprintf(w, "  1) The whole folder (%s)\n", pathRef(dir))
+	lipgloss.Fprintf(w, "  2) %s\n", one)
 	r.asked = true
-	itself, err := r.p.confirm(fmt.Sprintf("Set up %s as one project?", displayPath(dir)), false)
-	if err != nil || itself {
-		return initTarget{path: dir}, itself, err
+	where, err := r.p.ask("Enter your choice", "2", numberIn(2))
+	if err != nil {
+		return initTarget{}, false, err
+	}
+	r.gap()
+	if where == "1" {
+		return initTarget{path: dir}, true, nil
 	}
 	if len(repos) == 0 {
-		if total == 1 {
-			fmt.Fprintf(r.cmd.OutOrStdout(), "The repository in %s is already set up.\n", displayPath(dir))
-		} else {
-			fmt.Fprintf(r.cmd.OutOrStdout(), "All %d repositories in %s are already set up.\n", total, displayPath(dir))
-		}
-		return initTarget{}, false, nil
+		return initTarget{}, false, r.allSetUp(ctx, dir, setUp)
 	}
 
 	if len(repos) > maxChoices {
@@ -369,12 +394,9 @@ func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos []child
 	}
 	n := len(repos) + 1
 	width := len(strconv.Itoa(n))
-	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	now := time.Now()
 	for i, repo := range repos {
-		fmt.Fprintf(tw, "  %*d) %s\t%s\n", width, i+1, filepath.Base(repo.path), changedAgo(repo.changed, now))
+		fmt.Fprintf(w, "  %*d) %s\n", width, i+1, filepath.Base(repo.path))
 	}
-	tw.Flush()
 	fmt.Fprintf(w, "  %*d) Another folder...\n", width, n)
 
 	choice, err := r.ask("Enter your choice (1-"+strconv.Itoa(n)+")", "", "", "", numberIn(n))
@@ -382,6 +404,7 @@ func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos []child
 		return initTarget{}, false, err
 	}
 	if i, _ := strconv.Atoi(choice); i < n {
+		r.gap()
 		return r.target(ctx, repos[i-1].path, true, ws)
 	}
 	path, err := r.ask("Folder path", "", "", "", func(s string) (string, error) {
@@ -400,7 +423,29 @@ func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos []child
 	if err != nil {
 		return initTarget{}, false, err
 	}
+	r.gap()
 	return r.target(ctx, path, true, ws)
+}
+
+// allSetUp reports that every repository in dir is already set up, and for
+// which projects.
+func (r *initRun) allSetUp(ctx context.Context, dir string, setUp []childRepo) error {
+	head, where := fmt.Sprintf("All %d repositories in %s are already set up as Taskship projects:", len(setUp), pathRef(dir)), "one of them"
+	if len(setUp) == 1 {
+		head, where = fmt.Sprintf("The repository in %s is already set up as a Taskship project:", pathRef(dir)), "it"
+	}
+	var b strings.Builder
+	b.WriteString(head + "\n")
+	for _, repo := range setUp {
+		p, err := r.s.GetProject(ctx, repo.project)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&b, "  %s (name: %s, prefix: %s)\n", filepath.Base(repo.path), value.Render(p.Name), value.Render(p.TaskPrefix))
+	}
+	fmt.Fprintf(&b, "\nRun %s in %s to see its tasks.\n", cmdRef("taskship tasks"), where)
+	lipgloss.Fprint(r.cmd.OutOrStdout(), b.String())
+	return nil
 }
 
 // numberIn accepts a whole number from 1 to n.
@@ -427,13 +472,18 @@ func (r *initRun) ask(label, flag, def, what string, check func(string) (string,
 		v, err := check(answer)
 		var rt retry
 		if errors.As(err, &rt) {
-			return "", usageError{fmt.Errorf("%s: %s", answer, rt.msg)}
+			src := "--" + what
+			if flag == "" {
+				src = "default " + what // from -y
+			}
+			return "", usageError{fmt.Errorf("invalid %s %q: %s", src, answer, strings.ToLower(rt.msg[:1])+rt.msg[1:])}
 		}
 		return v, err
 	}
 	if !r.interactive {
 		return "", errNeedTerminal
 	}
+	r.endHeader()
 	r.asked = true
 	return r.p.ask(label, def, check)
 }
@@ -446,8 +496,18 @@ func (r *initRun) confirm(label string, def bool) (bool, error) {
 	if !r.interactive {
 		return false, errNeedTerminal
 	}
+	r.endHeader()
 	r.asked = true
 	return r.p.confirm(label, def)
+}
+
+// endHeader prints the blank line after the header, once, so an error
+// right after the header doesn't get two (it prints its own).
+func (r *initRun) endHeader() {
+	if r.headed {
+		fmt.Fprintln(r.cmd.OutOrStdout())
+	}
+	r.headed = false
 }
 
 func (r *initRun) create(ctx context.Context, t initTarget, name string) (core.Project, error) {
@@ -478,9 +538,9 @@ func (r *initRun) create(ctx context.Context, t initTarget, name string) (core.P
 		return core.Project{}, err
 	}
 	if r.forAdd {
-		r.done(t, p, "Created project %s.", p.Name)
+		r.done(t, p, "Created project %s.", value.Render(p.Name))
 	} else {
-		r.done(t, p, "Created project %s. Tasks will be numbered %s-1, %s-2, and so on.", p.Name, p.TaskPrefix, p.TaskPrefix)
+		r.done(t, p, "Created project %s. Tasks will be numbered %s-1, %s-2, and so on.", value.Render(p.Name), p.TaskPrefix, p.TaskPrefix)
 	}
 	return p, nil
 }
@@ -505,28 +565,36 @@ func (r *initRun) link(ctx context.Context, t initTarget, p core.Project) error 
 	if _, err := r.s.AddWorkspace(ctx, p.Name, core.Workspace{Path: t.path, GitCommonDir: t.gitCommonDir}); err != nil {
 		return err
 	}
-	r.done(t, p, "Linked %s to %s.", displayPath(t.path), p.Name)
+	r.done(t, p, "Linked %s to %s.", pathRef(t.path), value.Render(p.Name))
 	return nil
+}
+
+// gap prints a blank line after a question, before what follows it, if a
+// question was asked.
+func (r *initRun) gap() {
+	if r.asked {
+		fmt.Fprintln(r.p.out)
+	}
 }
 
 // done reports success and prints the next steps.
 func (r *initRun) done(t initTarget, p core.Project, format string, a ...any) {
 	out := r.cmd.OutOrStdout()
-	if r.asked {
+	if r.asked || r.headed {
 		fmt.Fprintln(out)
 	}
 	success(out, format, a...)
 	if r.forAdd {
 		return
 	}
-	fmt.Fprintln(out, "\nNext steps:")
+	lipgloss.Fprintln(out, "\n"+heading.Render("Next steps:"))
 	ref := p.TaskPrefix + "-1"
-	tw := tabwriter.NewWriter(out, 0, 0, 3, ' ', 0)
-	fmt.Fprintf(tw, "  taskship add \"Fix the export bug\"\tAdd a task from anywhere in this %s\n", t.kind())
-	fmt.Fprintf(tw, "  taskship tasks\tList this project's tasks\n")
-	fmt.Fprintf(tw, "  taskship show %s\tShow a task\n", ref)
-	fmt.Fprintf(tw, "  taskship %s --dry-run\tPreview what an agent would be given\n", ref)
-	tw.Flush()
+	columns(out, 3, [][2]string{
+		{command.Render(`taskship add "Fix the export bug"`), faint.Render("Add a task from anywhere in this " + t.kind())},
+		{command.Render("taskship tasks"), faint.Render("List this project's tasks")},
+		{command.Render("taskship show " + ref), faint.Render("Show a task")},
+		{command.Render("taskship " + ref + " --dry-run"), faint.Render("Preview what an agent would be given")},
+	})
 }
 
 func (r *initRun) alreadySetUp(ctx context.Context, t initTarget, project string) error {
@@ -534,7 +602,7 @@ func (r *initRun) alreadySetUp(ctx context.Context, t initTarget, project string
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(r.cmd.OutOrStdout(), "Taskship is already set up for this %s.\n  Project: %s\n  Prefix:  %s\nRun \"taskship tasks\" to see its tasks.\n", t.kind(), p.Name, p.TaskPrefix)
+	lipgloss.Fprintf(r.cmd.OutOrStdout(), "%s\n  Project: %s\n  Prefix:  %s\n\nRun %s to see its tasks.\n", heading.Render("Taskship is already set up for this "+t.kind()+"."), value.Render(p.Name), value.Render(p.TaskPrefix), cmdRef("taskship tasks"))
 	return nil
 }
 
@@ -544,7 +612,7 @@ func checkName(s string) (string, error) {
 	if core.ValidateName(s) == nil {
 		return s, nil
 	}
-	return "", retry{"Names use lowercase letters, digits, and hyphens.", core.NameFromFolder(s)}
+	return "", retry{"Names use lowercase letters, digits, and hyphens (no spaces).", core.NameFromFolder(s)}
 }
 
 // defaultName suggests a project name: for a whole repository, the
@@ -579,36 +647,9 @@ func expandHome(path string) string {
 	return path
 }
 
-// changedAgo describes when something changed, e.g. "changed 2 days ago".
-func changedAgo(t, now time.Time) string {
-	d := now.Sub(t)
-	plural := func(n int, unit string) string {
-		if n == 1 {
-			return fmt.Sprintf("changed 1 %s ago", unit)
-		}
-		return fmt.Sprintf("changed %d %ss ago", n, unit)
-	}
-	switch {
-	case d < time.Minute:
-		return "changed just now"
-	case d < time.Hour:
-		return plural(int(d.Minutes()), "minute")
-	case d < 24*time.Hour:
-		return plural(int(d.Hours()), "hour")
-	case d < 48*time.Hour:
-		return "changed yesterday"
-	case d < 7*24*time.Hour:
-		return plural(int(d.Hours()/24), "day")
-	case t.Year() == now.Year():
-		return "changed in " + t.Month().String()
-	default:
-		return fmt.Sprintf("changed in %s %d", t.Month(), t.Year())
-	}
-}
+var noProjectsYet = "No projects yet. Run " + cmdRef("taskship init") + " in a repository to set one up."
 
-const noProjectsYet = `No projects yet. Run "taskship init" in a repository to set one up.`
-
-var errNotSetUp = usageError{errors.New(`this folder isn't part of a Taskship project. Run "taskship init" to set it up, or pass --project NAME to use an existing project.`)}
+var errNotSetUp = usageError{errors.New("this folder isn't part of a Taskship project. Run " + cmdRef("taskship init") + ` to set it up, or pass --project NAME to add to an existing project.`)}
 
 // offerSetup is called by taskship add in a folder with no project, given
 // the folder's Location and every workspace. If no project exists yet and
@@ -632,12 +673,14 @@ func offerSetup(cmd *cobra.Command, s *store.Store, loc workspace.Location, ws [
 		kind = "repository"
 	}
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "This %s isn't set up with Taskship yet.\n%s\n", kind, noTraceLine(kind))
+	lipgloss.Fprintf(out, "%s\n%s\n\n", heading.Render(fmt.Sprintf("This %s isn't set up with Taskship yet.", kind)), faint.Render(noTraceLine(kind)))
 	r := initRun{cmd: cmd, s: s, p: newPrompter(cmd), interactive: true, forAdd: true}
 	if yes, err := r.confirm("Set up Taskship now?", true); err != nil {
 		return "", err
 	} else if !yes {
-		return "", usageError{fmt.Errorf(`no task added; run "taskship init" to set up this %s, or pass --project NAME`, kind)}
+		r.gap()
+		lipgloss.Fprintf(out, "No task added. Run %s to set up this %s, or pass --project NAME.\n", cmdRef("taskship init"), kind)
+		return "", errDeclined
 	}
 	p, err := r.runAt(ctx, pl, false, ws)
 	if err != nil {

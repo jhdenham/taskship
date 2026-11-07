@@ -129,7 +129,7 @@ func TestAddInfersProject(t *testing.T) {
 	}
 
 	t.Chdir(t.TempDir())
-	if r := run(t, "", "add", "x"); r.code != exitInvalidInput || r.stderr != "taskship: this folder isn't part of a Taskship project. Run \"taskship init\" to set it up, or pass --project NAME to use an existing project.\n" {
+	if r := run(t, "", "add", "x"); r.code != exitInvalidInput || r.stderr != "taskship: this folder isn't part of a Taskship project. Run \"taskship init\" to set it up, or pass --project NAME to add to an existing project.\n" {
 		t.Errorf("unregistered dir: exit %d, stderr %q", r.code, r.stderr)
 	}
 }

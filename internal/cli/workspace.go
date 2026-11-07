@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -60,7 +61,7 @@ func newWorkspaceAddCmd() *cobra.Command {
 				return writeJSON(cmd, w)
 			}
 			out := cmd.OutOrStdout()
-			success(out, "Added workspace %s for %s", displayPath(w.Path), w.Project)
+			success(out, "Added workspace %s for %s", pathRef(w.Path), value.Render(w.Project))
 			if w.GitCommonDir != "" {
 				fmt.Fprintln(out, "Worktrees of this repository are recognized automatically.")
 			}
@@ -94,7 +95,7 @@ func newWorkspaceListCmd() *cobra.Command {
 				return writeJSON(cmd, ws)
 			}
 			if len(ws) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No workspaces. Register one with: taskship workspace add PROJECT --path PATH")
+				lipgloss.Fprintln(cmd.OutOrStdout(), "No workspaces. Register one with: "+command.Render("taskship workspace add PROJECT --path PATH"))
 				return nil
 			}
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
@@ -141,7 +142,7 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, w)
 			}
-			success(cmd.OutOrStdout(), "Removed workspace %s from %s", displayPath(w.Path), w.Project)
+			success(cmd.OutOrStdout(), "Removed workspace %s from %s", pathRef(w.Path), value.Render(w.Project))
 			return nil
 		},
 	}

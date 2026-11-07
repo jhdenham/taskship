@@ -44,7 +44,7 @@ the files do not change the tasks.`,
 			if len(tasks) == 1 {
 				noun = "task"
 			}
-			success(cmd.OutOrStdout(), "Exported %d %s to %s", len(tasks), noun, displayPath(dir))
+			success(cmd.OutOrStdout(), "Exported %d %s to %s", len(tasks), noun, pathRef(dir))
 			return nil
 		},
 	}

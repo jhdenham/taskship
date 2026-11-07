@@ -22,7 +22,7 @@ Taskship doesn't write anything to this repository. Everything lives in ~/.tasks
 - The suggested name comes from the repository's `origin` remote (or its only remote), else the folder's name. The suggested prefix comes from the name: initials for several words (`my-cool-app` gives `MCA`), a short word whole (`web` gives `WEB`), or four letters spanning a longer word (`taskship` gives `TSKP`). It's only a suggestion; type any prefix you like.
 - In a linked worktree, `init` sets up the repository's main checkout, and every worktree is recognized. In a bare repository with worktrees, the bare repository is set up.
 - In a subfolder of a repository, `init` asks whether to set up the whole repository (the default) or only that folder, for example one part of a monorepo. A folder that is already part of a project can become a separate project too: `init` asks, and the default is no. Tasks added in that folder then go to the new project. In a worktree, the folder is recorded at the same place in the main checkout.
-- In a folder that isn't a repository but contains some, such as `~/git`, `init` asks whether to set up the folder itself as one project (the default is no), and otherwise lists the most recently changed repositories that aren't set up yet. A folder that isn't a repository is set up as a whole, except the repositories inside it.
+- In a folder that isn't a repository but contains some, such as `~/git`, `init` asks whether to set up the whole folder or a single repository in it (the default), and for a repository, lists the most recently changed ones that aren't set up yet. A folder that isn't a repository is set up as a whole, except the repositories inside it.
 - If a project with the chosen name already exists, for example after cloning the repository again somewhere else, `init` offers to link the folder to it. Folders of that project that no longer exist are replaced.
 - `--name`, `--prefix`, and `-y` (accept the defaults) let `init` run without a terminal. It refuses your home folder and the filesystem root.
 
@@ -85,7 +85,7 @@ Without `--project`, `taskship add` uses the project of the current folder:
    Run "taskship tasks" to list this project's tasks.
    ```
 
-   Otherwise, without a terminal, or with `--json`, it fails with exit code 2 and suggests `taskship init` or `--project`. Declining the offer fails the same way. Taskship never falls back to a default project.
+   Otherwise, without a terminal, or with `--json`, it fails with exit code 2 and suggests `taskship init` or `--project`. Declining the offer adds nothing and exits 1. Taskship never falls back to a default project.
 
 `taskship tasks` (or `taskship task list`) uses the same rules to list only the current folder's project. Outside any project it lists all projects, and `--all-projects` does so from anywhere. In a terminal, the first line says what is shown and how to change it:
 

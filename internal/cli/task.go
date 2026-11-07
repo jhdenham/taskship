@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -89,7 +90,7 @@ If no project exists yet, add offers to set one up first.`,
 			}
 			success(cmd.OutOrStdout(), "Created %s: %s", t.Ref, t.Title)
 			if setUp {
-				fmt.Fprintln(cmd.OutOrStdout(), `Run "taskship tasks" to list this project's tasks.`)
+				lipgloss.Fprintln(cmd.OutOrStdout(), "\nRun "+cmdRef("taskship tasks")+" to list this project's tasks.")
 			}
 			return nil
 		},
@@ -157,7 +158,7 @@ first line says what is shown and how to change it.`,
 					if projects, err := s.ListProjects(cmd.Context(), true); err != nil {
 						return err
 					} else if len(projects) == 0 {
-						fmt.Fprintln(out, noProjectsYet)
+						lipgloss.Fprintln(out, noProjectsYet)
 						return nil
 					}
 				}
@@ -358,7 +359,7 @@ for the format.`,
 				if draft == "" {
 					return err
 				}
-				return fmt.Errorf("%w\nYour edits are saved in %s. Fix them and run: taskship task edit %s --from %s", err, draft, args[0], draft)
+				return fmt.Errorf("%w\nYour edits are saved in %s. Fix them and run: %s", err, pathRef(draft), command.Render("taskship task edit "+args[0]+" --from "+draft))
 			}
 			if patch == (store.TaskPatch{}) {
 				t, err := s.GetTask(ctx, args[0])

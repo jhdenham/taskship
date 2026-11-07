@@ -67,9 +67,9 @@ corresponding folder, usually its top level.`,
 					return err
 				}
 				if nf.Missing != "" {
-					return kindError{fmt.Sprintf(`%s's folder %s no longer exists. If it moved, run "taskship init" in the new location to relink it.`, nf.Project, displayPath(nf.Missing)), err}
+					return kindError{fmt.Sprintf("%s's folder %s no longer exists. If it moved, run %s in the new location to relink it.", value.Render(nf.Project), pathRef(nf.Missing), cmdRef("taskship init")), err}
 				}
-				return kindError{fmt.Sprintf(`%s isn't linked to a folder on this machine. Run "taskship init" in its repository to link it.`, nf.Project), err}
+				return kindError{fmt.Sprintf("%s isn't linked to a folder on this machine. Run %s in its repository to link it.", value.Render(nf.Project), cmdRef("taskship init")), err}
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(dir), dispatch.BuildPrompt(t))
 			return nil

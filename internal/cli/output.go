@@ -6,11 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"charm.land/lipgloss/v2"
 )
 
 // success prints a line reporting that something was done, marked with ✓.
 func success(w io.Writer, format string, a ...any) {
-	fmt.Fprintf(w, "✓ "+format+"\n", a...)
+	lipgloss.Fprintln(w, okMark, fmt.Sprintf(format, a...))
 }
 
 // displayPath shortens an absolute path in the home directory to ~/..., for

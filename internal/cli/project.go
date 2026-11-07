@@ -5,6 +5,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -52,7 +53,7 @@ func newProjectAddCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, created)
 			}
-			success(cmd.OutOrStdout(), "Created project %s (%s)", created.Name, created.TaskPrefix)
+			success(cmd.OutOrStdout(), "Created project %s (%s)", value.Render(created.Name), value.Render(created.TaskPrefix))
 			return nil
 		},
 	}
@@ -90,7 +91,7 @@ func newProjectListCmd() *cobra.Command {
 						msg = "All projects are archived. Use --archived to list them."
 					}
 				}
-				fmt.Fprintln(cmd.OutOrStdout(), msg)
+				lipgloss.Fprintln(cmd.OutOrStdout(), msg)
 				return nil
 			}
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
@@ -176,7 +177,7 @@ func newProjectEditCmd() *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, p)
 			}
-			success(cmd.OutOrStdout(), "Updated project %s", p.Name)
+			success(cmd.OutOrStdout(), "Updated project %s", value.Render(p.Name))
 			return nil
 		},
 	}
@@ -210,7 +211,7 @@ func newProjectArchiveCmd(archive bool) *cobra.Command {
 			if asJSON {
 				return writeJSON(cmd, p)
 			}
-			success(cmd.OutOrStdout(), "%s project %s", done, p.Name)
+			success(cmd.OutOrStdout(), "%s project %s", done, value.Render(p.Name))
 			return nil
 		},
 	}

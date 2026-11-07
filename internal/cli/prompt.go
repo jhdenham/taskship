@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -34,9 +35,9 @@ func (r retry) Error() string { return r.msg }
 func (p *prompter) ask(label, def string, check func(string) (string, error)) (string, error) {
 	for {
 		if def != "" {
-			fmt.Fprintf(p.out, "? %s (%s): ", label, def)
+			lipgloss.Fprintf(p.out, "%s %s (%s): ", askMark, heading.Render(label), def)
 		} else {
-			fmt.Fprintf(p.out, "? %s: ", label)
+			lipgloss.Fprintf(p.out, "%s %s: ", askMark, heading.Render(label))
 		}
 		answer, err := p.readLine()
 		if err != nil {
@@ -56,7 +57,7 @@ func (p *prompter) ask(label, def string, check func(string) (string, error)) (s
 		if !errors.As(err, &r) {
 			return v, err
 		}
-		fmt.Fprintf(p.out, "  ✗ %s\n", r.msg)
+		lipgloss.Fprintf(p.out, "  %s %s\n", errMark, r.msg)
 		if r.def != "" {
 			def = r.def
 		}
@@ -70,7 +71,7 @@ func (p *prompter) confirm(label string, def bool) (bool, error) {
 		choices = "Y/n"
 	}
 	for {
-		fmt.Fprintf(p.out, "? %s (%s): ", label, choices)
+		lipgloss.Fprintf(p.out, "%s %s (%s): ", askMark, heading.Render(label), choices)
 		answer, err := p.readLine()
 		if err != nil {
 			return false, err
@@ -83,19 +84,20 @@ func (p *prompter) confirm(label string, def bool) (bool, error) {
 		case "n", "no":
 			return false, nil
 		}
-		fmt.Fprintln(p.out, "  ✗ Answer y or n.")
+		lipgloss.Fprintf(p.out, "  %s Answer y or n.\n", errMark)
 	}
 }
 
 // readLine reads one trimmed line. Input that ends before an answer is an
-// io.ErrUnexpectedEOF error.
+// error that wraps io.ErrUnexpectedEOF.
 func (p *prompter) readLine() (string, error) {
 	line, err := p.in.ReadString('\n')
 	if err == io.EOF && line != "" {
 		err = nil
 	}
 	if err == io.EOF {
-		return "", fmt.Errorf("input ended before an answer: %w", io.ErrUnexpectedEOF)
+		fmt.Fprintln(p.out) // end the prompt line, which Ctrl+D leaves open
+		return "", kindError{"input ended before an answer", io.ErrUnexpectedEOF}
 	}
 	return strings.TrimSpace(line), err
 }
