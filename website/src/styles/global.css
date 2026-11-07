@@ -1,23 +1,51 @@
-/* Colours and fonts from the starter prototype. Dark mode comes with the
-   shared palette (see the website plan). */
+/* Taskship palette. One set of colours for the site's light and dark themes
+   and for terminal output; internal/cli/style.go mirrors the terminal roles.
+
+   Terminal roles   dark terminal   light terminal
+   command          #9cf2a6         #1f6b45
+   success (✓)      #5fd38a         #237a45
+   value (paths,    #f0c674         #8f5b00
+     names)
+   error            #ff8a7a         #c2412d
+   faint            #7e9b8a         #5f7068
+
+   The site's terminals and code blocks are always dark, so they use the dark
+   terminal column. */
 :root {
-  --bg: #f7f8f6;
-  --surface: #ffffff;
-  --ink: #182723;
-  --muted: #64746e;
-  --line: #dde4de;
-  --accent: #24684b;
-  --accent-strong: #348b5c;
-  --tint: #edf5ee;
-  --tint-ink: #19543b;
-  --term-bg: #10231d;
+  color-scheme: light dark;
+  --bg: light-dark(#f7f8f6, #0d1915);
+  --surface: light-dark(#ffffff, #12221c);
+  --ink: light-dark(#182723, #e2eee6);
+  --muted: light-dark(#5b6b64, #93a89d);
+  --line: light-dark(#dde4de, #233a30);
+  --accent: light-dark(#24684b, #86dc9b);
+  --accent-strong: light-dark(#2f7d52, #9cf2a6);
+  --tint: light-dark(#e9f3eb, #173026);
+  --tint-ink: light-dark(#19543b, #b4f0c0);
+  --shadow: light-dark(#193d2b19, #00000066);
+  --primary-bg: light-dark(#10231d, #9cf2a6);
+  --primary-ink: light-dark(#9cf2a6, #0d1915);
+
+  --term-bg: light-dark(#10231d, #08130f);
   --term-ink: #d4ebda;
   --term-line: #2c473b;
-  --term-dim: #7e9b8a;
-  --term-green: #9cf2a6;
+  --cli-command: #9cf2a6;
+  --cli-success: #5fd38a;
+  --cli-value: #f0c674;
+  --cli-error: #ff8a7a;
+  --cli-faint: #7e9b8a;
+
   --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --gutter: clamp(16px, 5vw, 78px);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 * {
@@ -65,7 +93,7 @@ a {
   height: 30px;
   border-radius: 9px;
   background: var(--term-bg);
-  color: var(--term-green);
+  color: var(--cli-command);
   display: grid;
   place-items: center;
   font-size: 18px;
@@ -73,9 +101,28 @@ a {
 
 .toplinks {
   display: flex;
+  align-items: center;
   gap: 22px;
   font-size: 14px;
   font-weight: 600;
+}
+
+.theme {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.theme:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .toplinks a:hover,
@@ -151,9 +198,9 @@ a {
 }
 
 .btn.primary {
-  background: var(--term-bg);
-  color: var(--term-green);
-  border-color: var(--term-bg);
+  background: var(--primary-bg);
+  color: var(--primary-ink);
+  border-color: var(--primary-bg);
 }
 
 .btn:hover {
@@ -165,7 +212,8 @@ a {
   background: var(--term-bg);
   color: var(--term-ink);
   border-radius: 15px;
-  box-shadow: 0 20px 45px #193d2b19;
+  box-shadow: 0 20px 45px var(--shadow);
+  border: 1px solid var(--term-line);
   overflow: hidden;
 }
 
@@ -175,7 +223,7 @@ a {
   justify-content: space-between;
   padding: 14px 19px;
   border-bottom: 1px solid var(--term-line);
-  color: var(--term-dim);
+  color: var(--cli-faint);
   font-size: 12px;
 }
 
@@ -191,15 +239,15 @@ a {
 }
 
 .dots i:nth-child(1) {
-  background: #e49c88;
+  background: var(--cli-error);
 }
 
 .dots i:nth-child(2) {
-  background: #e8c77c;
+  background: var(--cli-value);
 }
 
 .dots i:nth-child(3) {
-  background: #87c995;
+  background: var(--cli-success);
 }
 
 .terminal pre {
@@ -210,13 +258,20 @@ a {
   font: 13px/2 var(--mono);
 }
 
-.terminal .cmd,
+.terminal .cmd {
+  color: var(--cli-command);
+}
+
 .terminal .good {
-  color: var(--term-green);
+  color: var(--cli-success);
+}
+
+.terminal .val {
+  color: var(--cli-value);
 }
 
 .terminal .dim {
-  color: var(--term-dim);
+  color: var(--cli-faint);
 }
 
 .sectionhead {
@@ -394,8 +449,20 @@ a {
 }
 
 .prose pre {
-  background: var(--term-bg);
+  --astro-code-background: var(--term-bg);
+  --astro-code-foreground: var(--term-ink);
+  --astro-code-token-comment: var(--cli-faint);
+  --astro-code-token-keyword: var(--cli-command);
+  --astro-code-token-function: var(--cli-command);
+  --astro-code-token-link: var(--cli-command);
+  --astro-code-token-string: var(--cli-value);
+  --astro-code-token-string-expression: var(--cli-value);
+  --astro-code-token-constant: var(--cli-value);
+  --astro-code-token-parameter: var(--term-ink);
+  --astro-code-token-punctuation: var(--term-ink);
+  background: var(--term-bg) !important;
   color: var(--term-ink);
+  border: 1px solid var(--term-line);
   border-radius: 10px;
   padding: 18px 20px;
   margin: 20px 0;
