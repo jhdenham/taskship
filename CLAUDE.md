@@ -13,6 +13,7 @@ Never mention the maintainer's private projects in this repo. In examples, use `
 - `cmd/taskship/` is the `main` package. Keep it thin and put logic in `internal/`.
 - `internal/cli/` holds the Cobra command tree. Commands call application services and stay free of domain logic.
 - `docs/` is user-facing documentation.
+- `website/` is the Astro site for taskship.dev. It renders `docs/*.md` in place (never copy them); `website/src/nav.ts` sets the sidebar and must list every doc, or the build fails.
 
 ### Hard constraints (from the accepted decisions)
 
@@ -29,6 +30,14 @@ go build -o bin/taskship ./cmd/taskship
 go test ./...
 go vet ./...
 gofmt -l .
+```
+
+Website (Node 22+, see `website/.nvmrc`):
+
+```sh
+cd website && npm ci
+npm run dev     # http://localhost:4321
+npm run build
 ```
 
 ---

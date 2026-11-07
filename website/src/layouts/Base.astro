@@ -1,0 +1,41 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Taskship is a local-first task manager and agent dispatcher for developers.',
+} = Astro.props;
+const path = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="mark">↗</span> taskship
+      </a>
+      <nav class="toplinks">
+        <a href="/docs/" aria-current={path.startsWith('/docs/') ? 'page' : undefined}>Docs</a>
+        <a href="https://github.com/jhdenham/taskship">GitHub</a>
+      </nav>
+    </header>
+    <slot />
+    <footer class="footer">
+      <span>Taskship · Apache License 2.0</span>
+      <a href="https://github.com/jhdenham/taskship">github.com/jhdenham/taskship</a>
+    </footer>
+  </body>
+</html>

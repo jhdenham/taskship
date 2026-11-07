@@ -1,0 +1,69 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Taskship · From task to agent, in one command">
+  <main class="landing">
+    <section class="hero">
+      <div class="eyebrow">Developer tools, without the busywork</div>
+      <h1>From task to agent,<br /><span>in one command.</span></h1>
+      <p class="lede">
+        Taskship is a local-first task manager and agent dispatcher. Organize work on your own
+        terms, then hand a task to your coding agent with the context it needs to get started.
+      </p>
+      <div class="actions">
+        <a class="btn primary" href="/docs/quickstart/">Read the quickstart →</a>
+        <a class="btn" href="/docs/concepts/">How it works</a>
+      </div>
+    </section>
+
+    <div class="terminal">
+      <div class="termbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <span>terminal · taskship</span>
+        <span></span>
+      </div>
+      <pre><span class="dim"># Pick a task. Launch an agent.</span>
+<span class="cmd">$ taskship PROJ-42</span>
+
+<span class="good">✓</span> Resolved task <b>PROJ-42</b>
+<span class="good">✓</span> Project: myproject
+<span class="good">✓</span> Workspace: ~/code/myproject
+<span class="good">✓</span> Starting Claude with task context
+
+<span class="dim">Agent: I'll inspect the repository, assess the
+requirements, and propose a plan before coding.</span></pre>
+    </div>
+
+    <section class="sectionhead">
+      <h2>Built for the way developers work</h2>
+      <p>A complete task manager on its own. An agent dispatcher when you need one.</p>
+    </section>
+    <div class="cards">
+      <article class="card">
+        <span class="ico">▤</span>
+        <h3>Manage tasks anywhere</h3>
+        <p>
+          Projects, priorities, descriptions, and acceptance criteria. Start locally with
+          SQLite, with no server or account needed.
+        </p>
+      </article>
+      <article class="card">
+        <span class="ico">↗</span>
+        <h3>Dispatch with context</h3>
+        <p>
+          Launch Claude directly from a task. The agent reviews requirements, inspects the repo,
+          and proposes a plan first.
+        </p>
+      </article>
+      <article class="card">
+        <span class="ico">⌘</span>
+        <h3>Own your workflow</h3>
+        <p>
+          Work in the CLI or TUI. Add a self-hosted backend for multiple machines, and connect
+          external trackers later.
+        </p>
+      </article>
+    </div>
+  </main>
+</Base>

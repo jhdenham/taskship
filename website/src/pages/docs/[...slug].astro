@@ -1,0 +1,72 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { nav, navItems, docHref } from '../../nav';
+
+export async function getStaticPaths() {
+  const docs = await getCollection('docs');
+  const ids = docs.map((d) => d.id).sort();
+  const listed = navItems.map((i) => i.id).sort();
+  if (ids.join() !== listed.join()) {
+    throw new Error(
+      `website/src/nav.ts must list every file in docs/ exactly once.\n  docs/: ${ids.join(', ')}\n  nav:   ${listed.join(', ')}`,
+    );
+  }
+  return docs.map((entry) => ({
+    params: { slug: entry.id === 'overview' ? undefined : entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const index = navItems.findIndex((i) => i.id === entry.id);
+const item = navItems[index];
+const prev = navItems[index - 1];
+const next = navItems[index + 1];
+---
+
+<Base title={`${item.label} · Taskship docs`}>
+  <div class="docs">
+    <aside class="sidebar">
+      <button class="menu" type="button" aria-expanded="false" aria-controls="docnav">
+        Menu <span aria-hidden="true">▾</span>
+      </button>
+      <nav id="docnav" class="docnav">
+        {
+          nav.map((g) => (
+            <>
+              <div class="navgroup">{g.group}</div>
+              {g.items.map((i) => (
+                <a
+                  class="navlink"
+                  href={docHref(i.id)}
+                  aria-current={i.id === entry.id ? 'page' : undefined}
+                >
+                  {i.label}
+                  {i.planned && <span class="pill">Planned</span>}
+                </a>
+              ))}
+            </>
+          ))
+        }
+      </nav>
+    </aside>
+    <main class="doc">
+      <article class="prose">
+        <Content />
+      </article>
+      <nav class="pager">
+        {prev ? <a href={docHref(prev.id)}><small>Previous</small>{prev.label}</a> : <span />}
+        {next && <a class="next" href={docHref(next.id)}><small>Next</small>{next.label}</a>}
+      </nav>
+    </main>
+  </div>
+  <script>
+    const button = document.querySelector<HTMLButtonElement>('.menu')!;
+    button.addEventListener('click', () => {
+      const open = button.getAttribute('aria-expanded') !== 'true';
+      button.setAttribute('aria-expanded', String(open));
+    });
+  </script>
+</Base>
