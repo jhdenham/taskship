@@ -19,6 +19,10 @@ export const nav: { group: string; items: NavItem[] }[] = [
     group: 'Extend',
     items: [{ id: 'integrations', label: 'Integrations', planned: true }],
   },
+  {
+    group: 'Project',
+    items: [{ id: 'roadmap', label: 'Roadmap' }],
+  },
 ];
 
 export const navItems = nav.flatMap((g) => g.items);
