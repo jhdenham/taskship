@@ -6,11 +6,12 @@ import (
 )
 
 // TaskMarkdown renders a task as a Markdown document: a front matter block
-// with ref, project, status and priority, the title as a level-1 heading, and
-// the description as the body.
+// with ref, project, status, priority and labels, the title as a level-1
+// heading, and the description as the body.
 func TaskMarkdown(t Task) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "---\nref: %s\nproject: %s\nstatus: %s\npriority: %s\n---\n# %s\n", t.Ref, t.Project, t.Status, t.Priority, t.Title)
+	fmt.Fprintf(&b, "---\nref: %s\nproject: %s\nstatus: %s\npriority: %s\nlabels: [%s]\n---\n# %s\n",
+		t.Ref, t.Project, t.Status, t.Priority, strings.Join(t.Labels, ", "), t.Title)
 	if t.Description != "" {
 		fmt.Fprintf(&b, "\n%s\n", t.Description)
 	}
@@ -24,6 +25,7 @@ type TaskDoc struct {
 	Project     string
 	Status      Status
 	Priority    Priority
+	Labels      []string // normalized; nil if the key was absent, empty to clear
 	Title       string
 	Description string
 }
@@ -82,10 +84,27 @@ func (doc *TaskDoc) setField(line string) error {
 		doc.Status, err = ParseStatus(value)
 	case "priority":
 		doc.Priority, err = ParsePriority(value)
+	case "labels":
+		doc.Labels, err = parseLabelList(value)
 	default:
-		err = fmt.Errorf("%w: unknown front matter key %q (valid: ref, project, status, priority)", ErrInvalid, key)
+		err = fmt.Errorf("%w: unknown front matter key %q (valid: ref, project, status, priority, labels)", ErrInvalid, key)
 	}
 	return err
+}
+
+// parseLabelList parses a front matter list such as "[infra, cli]".
+func parseLabelList(value string) ([]string, error) {
+	inner, ok := strings.CutPrefix(value, "[")
+	if ok {
+		inner, ok = strings.CutSuffix(inner, "]")
+	}
+	if !ok {
+		return nil, fmt.Errorf("%w: labels must be a list such as [infra, cli] (found %q)", ErrInvalid, value)
+	}
+	if strings.TrimSpace(inner) == "" {
+		return []string{}, nil
+	}
+	return NormalizeLabels(strings.Split(inner, ","))
 }
 
 func skipBlank(lines []string, i int) int {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -37,6 +38,7 @@ func newTaskCmd() *cobra.Command {
 
 func newTaskAddCmd(name string) *cobra.Command {
 	var project, description, status, priority string
+	var labels []string
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   name + " TITLE [--project NAME]",
@@ -44,7 +46,7 @@ func newTaskAddCmd(name string) *cobra.Command {
 		Long: `Create a task. Without --project, the project is the one set up for the
 current folder, its repository, or any worktree of it (see "taskship init").
 If no project exists yet, add offers to set one up first.`,
-		Example: "  taskship " + name + " \"Fix export\"\n  taskship " + name + " \"Fix export\" --project myproject",
+		Example: "  taskship " + name + " \"Fix export\"\n  taskship " + name + " \"Fix export\" --project myproject --label bug,cli",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			st, err := core.ParseStatus(status)
@@ -53,6 +55,9 @@ If no project exists yet, add offers to set one up first.`,
 			}
 			pr, err := core.ParsePriority(priority)
 			if err != nil {
+				return err
+			}
+			if labels, err = core.NormalizeLabels(labels); err != nil {
 				return err
 			}
 			s, err := openStore(cmd.Context())
@@ -80,7 +85,7 @@ If no project exists yet, add offers to set one up first.`,
 				}
 			}
 			t, err := s.CreateTask(cmd.Context(), project, core.Task{
-				Title: args[0], Description: description, Status: st, Priority: pr,
+				Title: args[0], Description: description, Status: st, Priority: pr, Labels: labels,
 			})
 			if err != nil {
 				return err
@@ -99,13 +104,14 @@ If no project exists yet, add offers to set one up first.`,
 	cmd.Flags().StringVar(&description, "description", "", "task description")
 	cmd.Flags().StringVar(&status, "status", string(core.StatusTodo), "initial status")
 	cmd.Flags().StringVar(&priority, "priority", string(core.PriorityNone), "priority: none, low, medium, high, urgent")
+	cmd.Flags().StringSliceVarP(&labels, "label", "l", nil, "labels (comma-separated or repeated)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
 }
 
 func newTaskListCmd(name string) *cobra.Command {
 	var project string
-	var statuses []string
+	var statuses, labels []string
 	var asJSON, archived, allProjects bool
 	cmd := &cobra.Command{
 		Use:   name + " [--project NAME | --all-projects]",
@@ -118,13 +124,14 @@ project. --project and --all-projects choose explicitly. In a terminal, a
 first line says what is shown and how to change it.`,
 		Example: "  taskship " + name + "\n" +
 			"  taskship " + name + " --all-projects\n" +
-			"  taskship " + name + " --project myproject --status todo,in_progress",
+			"  taskship " + name + " --project myproject --status todo,in_progress\n" +
+			"  taskship " + name + " --label bug",
 		Args: exactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if project != "" && allProjects {
 				return usageError{fmt.Errorf("--project and --all-projects cannot be used together")}
 			}
-			filter := store.TaskFilter{Project: project, IncludeArchived: archived}
+			filter := store.TaskFilter{Project: project, Labels: labels, IncludeArchived: archived}
 			for _, s := range statuses {
 				st, err := core.ParseStatus(s)
 				if err != nil {
@@ -168,10 +175,20 @@ first line says what is shown and how to change it.`,
 			if isTerminal(out) {
 				fmt.Fprintf(out, "%s\n\n", scope.summary(filter, len(tasks)))
 			}
+			// The LABELS column appears only when some task has labels.
+			withLabels := slices.ContainsFunc(tasks, func(t core.Task) bool { return len(t.Labels) > 0 })
 			w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "REF\tSTATUS\tPRIORITY\tTITLE")
+			if withLabels {
+				fmt.Fprintln(w, "REF\tSTATUS\tPRIORITY\tLABELS\tTITLE")
+			} else {
+				fmt.Fprintln(w, "REF\tSTATUS\tPRIORITY\tTITLE")
+			}
 			for _, t := range tasks {
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s%s\n", t.Ref, t.Status, t.Priority, t.Title, archivedMark(t.ArchivedAt))
+				fmt.Fprintf(w, "%s\t%s\t%s\t", t.Ref, t.Status, t.Priority)
+				if withLabels {
+					fmt.Fprintf(w, "%s\t", strings.Join(t.Labels, ","))
+				}
+				fmt.Fprintf(w, "%s%s\n", t.Title, archivedMark(t.ArchivedAt))
 			}
 			return w.Flush()
 		},
@@ -179,6 +196,7 @@ first line says what is shown and how to change it.`,
 	cmd.Flags().StringVarP(&project, "project", "p", "", "only tasks in this project (default: the project of the current folder)")
 	cmd.Flags().BoolVar(&allProjects, "all-projects", false, "tasks in all projects, wherever you are")
 	cmd.Flags().StringSliceVar(&statuses, "status", nil, "only tasks with these statuses (comma-separated or repeated)")
+	cmd.Flags().StringSliceVarP(&labels, "label", "l", nil, "only tasks with all of these labels (comma-separated or repeated)")
 	cmd.Flags().BoolVar(&archived, "archived", false, "include archived tasks and tasks in archived projects")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
@@ -282,6 +300,9 @@ func newTaskShowCmd(name string) *cobra.Command {
 			fmt.Fprintf(w, "Project:\t%s\n", t.Project)
 			fmt.Fprintf(w, "Status:\t%s\n", t.Status)
 			fmt.Fprintf(w, "Priority:\t%s\n", t.Priority)
+			if len(t.Labels) > 0 {
+				fmt.Fprintf(w, "Labels:\t%s\n", strings.Join(t.Labels, ", "))
+			}
 			fmt.Fprintf(w, "Created:\t%s\n", t.CreatedAt.Local().Format(time.DateTime))
 			fmt.Fprintf(w, "Updated:\t%s\n", t.UpdatedAt.Local().Format(time.DateTime))
 			if t.ArchivedAt != nil {
@@ -307,11 +328,12 @@ func newTaskEditCmd() *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "edit TASK_REF [--title TITLE] [--description TEXT] [--status STATUS] [--priority PRIORITY] [--from FILE]",
-		Short: "Change a task's title, description, status, or priority",
-		Long: `Change a task's title, description, status, or priority.
+		Short: "Change a task's title, description, status, priority, or labels",
+		Long: `Change a task's title, description, status, priority, or labels.
 
 With no flags, the task opens as Markdown in $VISUAL or $EDITOR (default vi).
 With --from, the Markdown is read from a file, or from stdin if FILE is "-".
+Labels are changed in the Markdown front matter ("labels: [bug, cli]").
 Only fields that differ from the current task are changed. See "taskship show --md"
 for the format.`,
 		Example: "  taskship task edit PROJ-1 --status in_progress --priority high\n" +
@@ -433,6 +455,9 @@ func markdownPatch(t core.Task, src string) (store.TaskPatch, error) {
 	}
 	if doc.Priority != "" && doc.Priority != t.Priority {
 		patch.Priority = &doc.Priority
+	}
+	if doc.Labels != nil && !slices.Equal(doc.Labels, t.Labels) {
+		patch.Labels = &doc.Labels
 	}
 	return patch, nil
 }

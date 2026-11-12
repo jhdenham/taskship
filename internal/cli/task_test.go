@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"strings"
@@ -165,5 +166,56 @@ func TestUnknownCommandFails(t *testing.T) {
 	}
 	if _, err := os.Stat(home); !os.IsNotExist(err) {
 		t.Errorf("unknown commands touched storage: %v", err)
+	}
+}
+
+func TestTaskLabelsCLI(t *testing.T) {
+	seedCLIProjects(t)
+	mustRun(t, "add", "Fix export", "-p", "myproject", "--label", "Bug", "-l", "cli,bug")
+	mustRun(t, "add", "Write docs", "-p", "myproject")
+	if r := run(t, "", "add", "Bad", "-p", "myproject", "--label", "two words"); r.code != exitInvalidInput {
+		t.Errorf("invalid label: exit %d, stderr %q", r.code, r.stderr)
+	}
+
+	want := "REF     STATUS  PRIORITY  LABELS   TITLE\nPROJ-1  todo    none      bug,cli  Fix export\nPROJ-2  todo    none               Write docs\n"
+	if out := mustRun(t, "tasks", "-p", "myproject"); out != want {
+		t.Errorf("tasks =\n%s", out)
+	}
+	if out := mustRun(t, "tasks", "-p", "myproject", "--label", "BUG"); !strings.Contains(out, "PROJ-1") || strings.Contains(out, "PROJ-2") {
+		t.Errorf("tasks --label =\n%s", out)
+	}
+	if out := mustRun(t, "tasks", "-p", "myproject", "--label", "docs"); strings.Contains(out, "PROJ-") {
+		t.Errorf("tasks --label docs =\n%s", out)
+	}
+	if out := mustRun(t, "show", "PROJ-1"); !strings.Contains(out, "Labels:    bug, cli\n") {
+		t.Errorf("show =\n%s", out)
+	}
+	if out := mustRun(t, "show", "PROJ-2", "--json"); !strings.Contains(out, `"labels": []`) {
+		t.Errorf("show --json without labels =\n%s", out)
+	}
+
+	// Labels change through the Markdown front matter; a missing key keeps them.
+	edit := func(md string) {
+		t.Helper()
+		cmd := NewRootCmd("")
+		var out, errb bytes.Buffer
+		cmd.SetIn(strings.NewReader(md))
+		cmd.SetOut(&out)
+		cmd.SetErr(&errb)
+		if code := Execute(cmd, []string{"task", "edit", "PROJ-1", "--from", "-"}); code != 0 {
+			t.Fatalf("edit: exit %d, stderr %q", code, errb.String())
+		}
+	}
+	edit("---\nlabels: [infra]\n---\n# Fix export\n")
+	if out := mustRun(t, "show", "PROJ-1", "--md"); !strings.Contains(out, "\nlabels: [infra]\n") {
+		t.Errorf("after edit:\n%s", out)
+	}
+	edit("# Fix export\n")
+	if out := mustRun(t, "show", "PROJ-1", "--md"); !strings.Contains(out, "\nlabels: [infra]\n") {
+		t.Errorf("after edit without labels key:\n%s", out)
+	}
+	edit("---\nlabels: []\n---\n# Fix export\n")
+	if out := mustRun(t, "tasks", "-p", "myproject"); strings.Contains(out, "LABELS") {
+		t.Errorf("after clearing labels:\n%s", out)
 	}
 }

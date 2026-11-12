@@ -2,7 +2,9 @@
 
 ## Projects and tasks
 
-A project groups tasks and has a display prefix such as `PROJ`. A task has a title, a Markdown description, a workflow status, and a priority. Acceptance criteria are optional and live in the description, conventionally as a checklist under an `## Acceptance criteria` heading. Taskship doesn't enforce any structure for the description. Labels and comments are planned; the Terminal UI page describes them.
+A project groups tasks and has a display prefix such as `PROJ`. A task has a title, a Markdown description, a workflow status, a priority, and labels. Acceptance criteria are optional and live in the description, conventionally as a checklist under an `## Acceptance criteria` heading. Taskship doesn't enforce any structure for the description. Comments are planned; the Terminal UI page describes them.
+
+Labels such as `bug` or `infra` are free-form words of up to 50 characters, without spaces or commas, matched without regard to case (they're stored in lowercase). Add them with `taskship add "Fix export" --label bug,cli` (or repeat `--label`), list the tasks that have all of some labels with `taskship tasks --label bug`, and change them in a task's Markdown.
 
 ## Setting up a repository
 
@@ -38,6 +40,7 @@ ref: PROJ-1
 project: myproject
 status: todo
 priority: high
+labels: [habits, web]
 ---
 # Build a weekly habit tracker
 
@@ -53,7 +56,7 @@ Track habits per week.
 - `taskship task edit PROJ-1` with no flags opens it in `$VISUAL` or `$EDITOR`. `--from FILE` (or `--from -` for stdin) applies a document without an editor, which is how scripts and agents edit tasks.
 - `taskship export DIR` writes each task to `DIR/PROJ-1.md`. The files are a snapshot; editing them doesn't change the tasks.
 
-When editing, `status` and `priority` can be changed, and `ref` and `project` can't. The front matter keys are optional, and a missing key leaves that field unchanged. The `# Title` heading is required, and everything after it is the description. Only fields that differ from the current task are updated. If the editor's changes are invalid, they are kept in a temporary file and the error says how to apply them with `--from`.
+When editing, `status`, `priority`, and `labels` can be changed, and `ref` and `project` can't. `labels` replaces the task's labels, and `labels: []` removes them all. The front matter keys are optional, and a missing key leaves that field unchanged. The `# Title` heading is required, and everything after it is the description. Only fields that differ from the current task are updated. If the editor's changes are invalid, they are kept in a temporary file and the error says how to apply them with `--from`.
 
 ## Task sources
 
