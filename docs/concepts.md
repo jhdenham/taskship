@@ -18,6 +18,8 @@ taskship comment delete PROJ-1 2       # asks first; --yes skips the question
 
 `comment add` and `comment edit` also take the text as an argument, or from stdin with `-`. `show` prints a task's comments after its description, `show --json` includes them, and so does the prompt an agent receives.
 
+`taskship task copy PROJ-3` creates a new task from an existing one, in the same project or, with `--project`, in another. The title, description, priority, and labels are copied; comments, runs, and the completion date stay with the original. The copy starts in `todo` (or `--status`), can get a new title with `--title`, and its first comment says `Copied from PROJ-3.`
+
 ## Setting up a repository
 
 Run `taskship init` in a repository (or pass its path) to start using Taskship there:

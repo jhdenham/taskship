@@ -267,3 +267,52 @@ func TestTaskLabels(t *testing.T) {
 		t.Errorf("clear labels = %q, %v", got.Labels, err)
 	}
 }
+
+func TestCopyTask(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t, t.TempDir())
+	seedProjects(t, s)
+	in := core.Task{Title: "Fix export", Description: "## Acceptance criteria\n\n- [ ] CSV", Status: core.StatusDone,
+		Priority: core.PriorityHigh, Labels: []string{"bug", "cli"}}
+	src := mustCreateTask(t, s, "myproject", in)
+	if _, err := s.AddComment(ctx, src.Ref, "History", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SetTaskArchived(ctx, src.Ref, true); err != nil {
+		t.Fatal(err)
+	}
+
+	same, err := s.CopyTask(ctx, src.Ref, "", "", core.StatusTodo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if same.Ref != "PROJ-2" || same.Title != in.Title || same.Description != in.Description || same.Priority != in.Priority ||
+		!reflect.DeepEqual(same.Labels, in.Labels) || same.Status != core.StatusTodo || same.ArchivedAt != nil || same.CompletedAt != nil {
+		t.Errorf("copy = %+v", same)
+	}
+	comments, _ := s.ListComments(ctx, same.ID)
+	if len(comments) != 1 || comments[0].Body != "Copied from PROJ-1." || comments[0].Number != 1 {
+		t.Errorf("copy comments = %+v", comments)
+	}
+
+	other, err := s.CopyTask(ctx, "proj-1", "other", "Fix export in other", core.StatusBacklog)
+	if err != nil || other.Ref != "OTH-1" || other.Project != "other" || other.Title != "Fix export in other" || other.Status != core.StatusBacklog {
+		t.Errorf("copy to other = %+v, %v", other, err)
+	}
+
+	for _, c := range []struct {
+		ref, project string
+		want         error
+	}{{"PROJ-9", "", core.ErrNotFound}, {"PROJ-1", "nope", core.ErrNotFound}} {
+		if _, err := s.CopyTask(ctx, c.ref, c.project, "", core.StatusTodo); !errors.Is(err, c.want) {
+			t.Errorf("CopyTask(%s, %q): err = %v, want %v", c.ref, c.project, err, c.want)
+		}
+	}
+	// A failed copy leaves nothing behind.
+	if _, err := s.CopyTask(ctx, "PROJ-1", "", "two\nlines", core.StatusTodo); !errors.Is(err, core.ErrInvalid) {
+		t.Errorf("invalid title: err = %v", err)
+	}
+	if tasks, _ := s.ListTasks(ctx, TaskFilter{IncludeArchived: true}); len(tasks) != 3 {
+		t.Errorf("tasks after copies = %d, want 3", len(tasks))
+	}
+}

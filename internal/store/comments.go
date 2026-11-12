@@ -19,20 +19,28 @@ const commentSelect = `SELECT c.id, c.task_id, c.number, c.body, COALESCE(c.run_
 // with the task's next comment number. runID is the agent run adding it, if
 // any; it is recorded only if it is a running run of the task.
 func (s *Store) AddComment(ctx context.Context, ref, body, runID string) (core.Comment, error) {
-	body, err := core.CleanCommentBody(body)
-	if err != nil {
-		return core.Comment{}, err
-	}
-	id, err := uuid.NewV7()
-	if err != nil {
-		return core.Comment{}, err
-	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return core.Comment{}, err
 	}
 	defer tx.Rollback()
 	t, err := getTask(ctx, tx, ref)
+	if err != nil {
+		return core.Comment{}, err
+	}
+	c, err := addComment(ctx, tx, t, body, runID)
+	if err != nil {
+		return core.Comment{}, err
+	}
+	return c, tx.Commit()
+}
+
+func addComment(ctx context.Context, tx *sql.Tx, t core.Task, body, runID string) (core.Comment, error) {
+	body, err := core.CleanCommentBody(body)
+	if err != nil {
+		return core.Comment{}, err
+	}
+	id, err := uuid.NewV7()
 	if err != nil {
 		return core.Comment{}, err
 	}
@@ -55,7 +63,7 @@ func (s *Store) AddComment(ctx context.Context, ref, body, runID string) (core.C
 		c.ID, c.TaskID, c.Number, c.Body, run, c.CreatedAt.Format(timeLayout), c.UpdatedAt.Format(timeLayout)); err != nil {
 		return core.Comment{}, err
 	}
-	return c, tx.Commit()
+	return c, nil
 }
 
 // ListComments returns a task's comments, oldest first.

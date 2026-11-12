@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -217,5 +218,35 @@ func TestTaskLabelsCLI(t *testing.T) {
 	edit("---\nlabels: []\n---\n# Fix export\n")
 	if out := mustRun(t, "tasks", "-p", "myproject"); strings.Contains(out, "LABELS") {
 		t.Errorf("after clearing labels:\n%s", out)
+	}
+}
+
+func TestTaskCopy(t *testing.T) {
+	seedCLIProjects(t)
+	mustRun(t, "add", "Fix export", "-p", "myproject", "--priority", "high", "--label", "bug", "--status", "in_progress")
+	if out := mustRun(t, "task", "copy", "proj-1"); out != "✓ Copied PROJ-1 to PROJ-2: Fix export\n" {
+		t.Errorf("copy = %q", out)
+	}
+	if out := mustRun(t, "task", "copy", "PROJ-1", "-p", "other", "--title", "Fix export in other", "--status", "backlog"); out != "✓ Copied PROJ-1 to OTH-1: Fix export in other\n" {
+		t.Errorf("copy to other = %q", out)
+	}
+	got := taskJSON(t, "PROJ-2")
+	if got["status"] != "todo" || got["priority"] != "high" || fmt.Sprint(got["labels"]) != "[bug]" {
+		t.Errorf("copy = %v", got)
+	}
+	if out := mustRun(t, "comment", "list", "OTH-1"); !strings.HasSuffix(out, "\nCopied from PROJ-1.\n") {
+		t.Errorf("copy comments =\n%s", out)
+	}
+	for _, c := range []struct {
+		args []string
+		code int
+	}{
+		{[]string{"task", "copy", "PROJ-9"}, exitNotFound},
+		{[]string{"task", "copy", "PROJ-1", "-p", "nope"}, exitNotFound},
+		{[]string{"task", "copy", "PROJ-1", "--status", "open"}, exitInvalidInput},
+	} {
+		if r := run(t, "", c.args...); r.code != c.code {
+			t.Errorf("%v: exit %d, want %d (stderr %q)", c.args, r.code, c.code, r.stderr)
+		}
 	}
 }

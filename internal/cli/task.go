@@ -27,6 +27,7 @@ func newTaskCmd() *cobra.Command {
 		newTaskListCmd("list"),
 		newTaskShowCmd("show"),
 		newTaskEditCmd(),
+		newTaskCopyCmd(),
 		newTaskArchiveCmd(true),
 		newTaskArchiveCmd(false),
 	)
@@ -537,6 +538,47 @@ func readFrom(cmd *cobra.Command, path string) ([]byte, error) {
 		return io.ReadAll(cmd.InOrStdin())
 	}
 	return os.ReadFile(path)
+}
+
+func newTaskCopyCmd() *cobra.Command {
+	var project, title, status string
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "copy TASK_REF [--project NAME] [--title TITLE] [--status STATUS]",
+		Short: "Copy a task, in its project or to another one",
+		Long: `Create a new task from an existing one. The title, description, priority,
+and labels are copied; comments, runs, and the completion date stay with the
+original. The copy starts in todo (or --status), in the original's project
+(or --project), and its first comment says where it was copied from.`,
+		Example: "  taskship task copy PROJ-3\n  taskship task copy PROJ-3 --project other --title \"Fix export in other\"",
+		Args:    exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			st, err := core.ParseStatus(status)
+			if err != nil {
+				return err
+			}
+			s, err := openStore(cmd.Context())
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+			t, err := s.CopyTask(cmd.Context(), args[0], project, title, st)
+			if err != nil {
+				return err
+			}
+			if asJSON {
+				return writeJSON(cmd, t)
+			}
+			prefix, seq, _ := core.ParseTaskRef(args[0]) // valid: the copy succeeded
+			success(cmd.OutOrStdout(), "Copied %s to %s: %s", core.FormatTaskRef(prefix, seq), t.Ref, t.Title)
+			return nil
+		},
+	}
+	cmd.Flags().StringVarP(&project, "project", "p", "", "project for the copy (default: the original's project)")
+	cmd.Flags().StringVar(&title, "title", "", "title for the copy (default: the original's title)")
+	cmd.Flags().StringVar(&status, "status", string(core.StatusTodo), "status for the copy")
+	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
+	return cmd
 }
 
 // newTaskArchiveCmd returns "task archive" or, if archive is false, "task restore".

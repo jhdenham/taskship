@@ -23,6 +23,51 @@ const taskSelect = `SELECT t.id, p.task_prefix, t.project_id, p.slug, t.sequence
 // CreateTask validates t and stores it in the project with the given name,
 // assigning the next sequence number in that project.
 func (s *Store) CreateTask(ctx context.Context, project string, t core.Task) (core.Task, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return core.Task{}, err
+	}
+	defer tx.Rollback()
+	if t, err = createTask(ctx, tx, project, t); err != nil {
+		return core.Task{}, err
+	}
+	return t, tx.Commit()
+}
+
+// CopyTask creates a copy of the task with the given ref in project (the
+// original's project if empty), with the given title (the original's if
+// empty) and status. Title, description, priority and labels are copied;
+// comments, runs and completion are not. The copy's first comment says
+// where it was copied from.
+func (s *Store) CopyTask(ctx context.Context, ref, project, title string, status core.Status) (core.Task, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return core.Task{}, err
+	}
+	defer tx.Rollback()
+	src, err := getTask(ctx, tx, ref)
+	if err != nil {
+		return core.Task{}, err
+	}
+	if project == "" {
+		project = src.Project
+	}
+	if title == "" {
+		title = src.Title
+	}
+	t, err := createTask(ctx, tx, project, core.Task{
+		Title: title, Description: src.Description, Status: status, Priority: src.Priority, Labels: src.Labels,
+	})
+	if err != nil {
+		return core.Task{}, err
+	}
+	if _, err := addComment(ctx, tx, t, "Copied from "+src.Ref+".", ""); err != nil {
+		return core.Task{}, err
+	}
+	return t, tx.Commit()
+}
+
+func createTask(ctx context.Context, tx *sql.Tx, project string, t core.Task) (core.Task, error) {
 	if err := core.ValidateTask(t); err != nil {
 		return core.Task{}, err
 	}
@@ -40,12 +85,6 @@ func (s *Store) CreateTask(ctx context.Context, project string, t core.Task) (co
 	// The transaction holds SQLite's write lock from BEGIN (_txlock=immediate),
 	// so concurrent creators cannot read the same MAX(sequence_number).
 	// Tasks are archived, never deleted, so numbers are never reused.
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return core.Task{}, err
-	}
-	defer tx.Rollback()
-
 	p, err := getProject(ctx, tx, project)
 	if err != nil {
 		return core.Task{}, err
@@ -68,9 +107,6 @@ func (s *Store) CreateTask(ctx context.Context, project string, t core.Task) (co
 		return core.Task{}, err
 	}
 	if err := setLabels(ctx, tx, id.String(), t.Labels); err != nil {
-		return core.Task{}, err
-	}
-	if err := tx.Commit(); err != nil {
 		return core.Task{}, err
 	}
 	t.ID, t.Project, t.Ref = id.String(), p.Name, core.FormatTaskRef(p.TaskPrefix, t.Sequence)
