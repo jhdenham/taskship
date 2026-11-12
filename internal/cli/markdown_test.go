@@ -26,7 +26,7 @@ Body.
 func TestShowMarkdown(t *testing.T) {
 	seedCLIProjects(t)
 	mustRun(t, "add", "Title", "-p", "myproject", "--description", "Body.")
-	want := "---\nref: PROJ-1\nproject: myproject\nstatus: todo\npriority: none\nlabels: []\n---\n# Title\n\nBody.\n"
+	want := "---\nref: PROJ-1\nproject: myproject\nstatus: todo\npriority: none\nlabels: []\n---\n\n# Title\n\nBody.\n"
 	if out := mustRun(t, "show", "PROJ-1", "--md"); out != want {
 		t.Errorf("show --md =\n%s", out)
 	}

@@ -15,7 +15,7 @@ func TestTaskMarkdownRoundTrip(t *testing.T) {
 		Description: "Track habits per week.\n\n## Acceptance criteria\n\n- [ ] Weekly view\n- [x] Persists",
 	}
 	md := TaskMarkdown(task)
-	want := "---\nref: PROJ-1\nproject: myproject\nstatus: todo\npriority: high\nlabels: [cli, infra]\n---\n# Add weekly habit tracker\n\n" + task.Description + "\n"
+	want := "---\nref: PROJ-1\nproject: myproject\nstatus: todo\npriority: high\nlabels: [cli, infra]\n---\n\n# Add weekly habit tracker\n\n" + task.Description + "\n"
 	if md != want {
 		t.Fatalf("TaskMarkdown =\n%s\nwant\n%s", md, want)
 	}

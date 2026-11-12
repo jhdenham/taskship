@@ -11,7 +11,7 @@ import (
 // heading, and the description as the body.
 func TaskMarkdown(t Task) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "---\nref: %s\nproject: %s\nstatus: %s\npriority: %s\nlabels: [%s]\n---\n# %s\n",
+	fmt.Fprintf(&b, "---\nref: %s\nproject: %s\nstatus: %s\npriority: %s\nlabels: [%s]\n---\n\n# %s\n",
 		t.Ref, t.Project, t.Status, t.Priority, strings.Join(t.Labels, ", "), t.Title)
 	if t.Description != "" {
 		fmt.Fprintf(&b, "\n%s\n", t.Description)

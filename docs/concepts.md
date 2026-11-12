@@ -58,6 +58,7 @@ status: todo
 priority: high
 labels: [habits, web]
 ---
+
 # Build a weekly habit tracker
 
 Track habits per week.
