@@ -122,11 +122,7 @@ is "-". Without TEXT, the comment opens in $VISUAL or $EDITOR.`,
 				return err
 			}
 			defer s.Close()
-			old, err := s.GetComment(ctx, args[0], n)
-			if err != nil {
-				return err
-			}
-			t, err := s.GetTask(ctx, args[0])
+			t, old, err := s.GetComment(ctx, args[0], n)
 			if err != nil {
 				return err
 			}
@@ -177,11 +173,7 @@ numbers of other comments don't change, and the number isn't reused.`,
 				return err
 			}
 			defer s.Close()
-			c, err := s.GetComment(ctx, args[0], n)
-			if err != nil {
-				return err
-			}
-			t, err := s.GetTask(ctx, args[0])
+			t, c, err := s.GetComment(ctx, args[0], n)
 			if err != nil {
 				return err
 			}

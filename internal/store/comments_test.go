@@ -64,7 +64,7 @@ func TestComments(t *testing.T) {
 	if err != nil || len(comments) != 2 || comments[0] != first || comments[1].Number != 3 {
 		t.Errorf("ListComments = %+v, %v", comments, err)
 	}
-	if got, err := s.GetComment(ctx, task.Ref, 3); err != nil || got != comments[1] {
+	if gotTask, got, err := s.GetComment(ctx, "proj-1", 3); err != nil || got != comments[1] || gotTask.Ref != task.Ref {
 		t.Errorf("GetComment = %+v, %v", got, err)
 	}
 }

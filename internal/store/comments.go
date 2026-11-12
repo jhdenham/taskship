@@ -84,8 +84,8 @@ func (s *Store) ListComments(ctx context.Context, taskID string) ([]core.Comment
 	return comments, rows.Err()
 }
 
-// GetComment returns comment number n of the task with the given ref.
-func (s *Store) GetComment(ctx context.Context, ref string, n int) (core.Comment, error) {
+// GetComment returns the task with the given ref and its comment number n.
+func (s *Store) GetComment(ctx context.Context, ref string, n int) (core.Task, core.Comment, error) {
 	return getComment(ctx, s.db, ref, n)
 }
 
@@ -101,7 +101,7 @@ func (s *Store) UpdateComment(ctx context.Context, ref string, n int, body strin
 		return core.Comment{}, err
 	}
 	defer tx.Rollback()
-	c, err := getComment(ctx, tx, ref, n)
+	_, c, err := getComment(ctx, tx, ref, n)
 	if err != nil {
 		return core.Comment{}, err
 	}
@@ -124,7 +124,7 @@ func (s *Store) DeleteComment(ctx context.Context, ref string, n int) (core.Comm
 		return core.Comment{}, err
 	}
 	defer tx.Rollback()
-	c, err := getComment(ctx, tx, ref, n)
+	_, c, err := getComment(ctx, tx, ref, n)
 	if err != nil {
 		return core.Comment{}, err
 	}
@@ -134,16 +134,16 @@ func (s *Store) DeleteComment(ctx context.Context, ref string, n int) (core.Comm
 	return c, tx.Commit()
 }
 
-func getComment(ctx context.Context, q querier, ref string, n int) (core.Comment, error) {
+func getComment(ctx context.Context, q querier, ref string, n int) (core.Task, core.Comment, error) {
 	t, err := getTask(ctx, q, ref)
 	if err != nil {
-		return core.Comment{}, err
+		return core.Task{}, core.Comment{}, err
 	}
 	c, err := scanComment(q.QueryRowContext(ctx, commentSelect+" WHERE c.task_id = ? AND c.number = ?", t.ID, n))
 	if errors.Is(err, sql.ErrNoRows) {
-		return core.Comment{}, fmt.Errorf("%s has no comment #%d: %w", t.Ref, n, core.ErrNotFound)
+		return core.Task{}, core.Comment{}, fmt.Errorf("%s has no comment #%d: %w", t.Ref, n, core.ErrNotFound)
 	}
-	return c, err
+	return t, c, err
 }
 
 func scanComment(row interface{ Scan(...any) error }) (core.Comment, error) {
