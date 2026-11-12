@@ -84,13 +84,15 @@ func TestRunNeedsTerminal(t *testing.T) {
 	}
 }
 
-// fakeClaude puts a "claude" on PATH that records its folder and arguments
-// (NUL-terminated) in the returned file and exits with $FAKE_CLAUDE_EXIT.
+// fakeClaude puts a "claude" on PATH that records its folder, its
+// TASKSHIP_RUN_ID, and its arguments (NUL-terminated) in the returned file,
+// and exits with $FAKE_CLAUDE_EXIT.
 func fakeClaude(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	out := filepath.Join(dir, "out")
-	script := "#!/bin/sh\npwd > '" + out + "'\nprintf '%s\\0' \"$@\" >> '" + out + "'\nexit \"${FAKE_CLAUDE_EXIT:-0}\"\n"
+	script := "#!/bin/sh\npwd > '" + out + "'\necho \"$TASKSHIP_RUN_ID\" >> '" + out + "'\n" +
+		"printf '%s\\0' \"$@\" >> '" + out + "'\nexit \"${FAKE_CLAUDE_EXIT:-0}\"\n"
 	if err := os.WriteFile(filepath.Join(dir, "claude"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -155,6 +157,7 @@ func TestRunLaunchesClaude(t *testing.T) {
 		t.Fatal(err)
 	}
 	cwd, rest, _ := strings.Cut(string(data), "\n")
+	runID, rest, _ := strings.Cut(rest, "\n")
 	args := strings.Split(strings.TrimSuffix(rest, "\x00"), "\x00")
 	if cwd != repo {
 		t.Errorf("claude ran in %q, want %q", cwd, repo)
@@ -168,7 +171,7 @@ func TestRunLaunchesClaude(t *testing.T) {
 	}
 	runs := runsOf(t, "PROJ-1")
 	if len(runs) != 1 || runs[0].State != core.RunEnded || runs[0].ExitCode == nil || *runs[0].ExitCode != 0 ||
-		runs[0].SessionID != args[3] || runs[0].WorkspacePath != repo || runs[0].Agent != "claude" {
+		runs[0].SessionID != args[3] || runs[0].WorkspacePath != repo || runs[0].Agent != "claude" || runs[0].ID != runID {
 		t.Errorf("runs = %+v", runs)
 	}
 
@@ -261,5 +264,45 @@ func TestRunShortcut(t *testing.T) {
 	if out := mustRun(t, "PROJ-1", "--dry-run"); !strings.Contains(out, "The task's comments, oldest first,") ||
 		!strings.Contains(out, " UTC\nCheck the CSV path first.\n```\n") {
 		t.Errorf("dry run with a comment:\n%s", out)
+	}
+}
+
+// Commands run by an agent credit its run through TASKSHIP_RUN_ID.
+func TestRunIDFromEnvironment(t *testing.T) {
+	seedCLIProjects(t)
+	mustRun(t, "add", "Fix export", "-p", "myproject")
+	ctx := context.Background()
+	s, err := openStore(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	task, _ := s.GetTask(ctx, "PROJ-1")
+	r, err := s.CreateRun(ctx, core.Run{TaskID: task.ID, TaskRef: task.Ref, Agent: "claude", Machine: "m", WorkspacePath: "/w"})
+	if err == nil {
+		err = s.StartRun(ctx, r.ID)
+	}
+	s.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv(runIDEnv, r.ID)
+	mustRun(t, "comment", "add", "PROJ-1", "Done: fixed the CSV path.")
+	mustRun(t, "task", "edit", "PROJ-1", "--status", "done")
+	got := taskJSON(t, "PROJ-1")
+	if got["completed_run_id"] != r.ID || got["completed_at"] == nil {
+		t.Errorf("task = %v", got)
+	}
+	var comments []core.Comment
+	if err := json.Unmarshal([]byte(mustRun(t, "comment", "list", "PROJ-1", "--json")), &comments); err != nil || len(comments) != 1 || comments[0].RunID != r.ID {
+		t.Errorf("comments = %+v, %v", comments, err)
+	}
+
+	// Without it, nothing is credited.
+	t.Setenv(runIDEnv, "")
+	mustRun(t, "task", "edit", "PROJ-1", "--status", "todo")
+	mustRun(t, "task", "edit", "PROJ-1", "--status", "done")
+	if got := taskJSON(t, "PROJ-1"); got["completed_run_id"] != nil || got["completed_at"] == nil {
+		t.Errorf("task = %v", got)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
@@ -49,7 +50,7 @@ Without TEXT, it opens $VISUAL or $EDITOR; an empty comment adds nothing.`,
 			if err != nil {
 				return err
 			}
-			c, err := s.AddComment(ctx, t.Ref, body)
+			c, err := s.AddComment(ctx, t.Ref, body, os.Getenv(runIDEnv))
 			if err != nil {
 				return err
 			}

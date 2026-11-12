@@ -25,17 +25,17 @@ func ClaudeArgs(sessionID, prompt string) ([]string, error) {
 	return []string{"--permission-mode", "plan", "--session-id", sessionID, "--", prompt}, nil
 }
 
-// Launch runs the agent executable at path with args in dir, attached to
-// this process's terminal, and returns its exit code once it exits (128 plus
+// Launch runs the agent executable at path with args and environment env in
+// dir, attached to this process's terminal, and returns its exit code once it exits (128 plus
 // the signal number if a signal ended it). started is called once the
 // process is running. The error is non-nil only if the agent couldn't be
 // started or waited for.
 //
 // While the agent runs, Ctrl-C and Ctrl-\ are left to it: the terminal sends
 // them to the agent, and this process doesn't exit on them.
-func Launch(path string, args []string, dir string, started func()) (int, error) {
+func Launch(path string, args, env []string, dir string, started func()) (int, error) {
 	cmd := exec.Command(path, args...)
-	cmd.Dir = dir
+	cmd.Dir, cmd.Env = dir, env
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 
 	// Notify, not Ignore: ignored signals would stay ignored in the agent.

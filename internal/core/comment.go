@@ -13,7 +13,8 @@ type Comment struct {
 	ID        string    `json:"id"`
 	TaskID    string    `json:"task_id"`
 	Number    int       `json:"number"`
-	Body      string    `json:"body"` // Markdown
+	Body      string    `json:"body"`             // Markdown
+	RunID     string    `json:"run_id,omitempty"` // the agent run that added it, if any
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

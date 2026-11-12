@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -69,5 +70,87 @@ func TestRuns(t *testing.T) {
 	}
 	if runs, err := s.ListRuns(ctx, other.ID); err != nil || len(runs) != 0 {
 		t.Errorf("other task runs = %+v, %v", runs, err)
+	}
+}
+
+func TestCompletionAndRunLinks(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t, t.TempDir())
+	seedProjects(t, s)
+	task := mustCreateTask(t, s, "myproject", newTask("Fix export"))
+	other := mustCreateTask(t, s, "myproject", newTask("Other"))
+	newRun := func(taskID, ref string, start bool) string {
+		t.Helper()
+		r, err := s.CreateRun(ctx, core.Run{TaskID: taskID, TaskRef: ref, Agent: "claude", Machine: "m", WorkspacePath: "/w"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if start {
+			if err := s.StartRun(ctx, r.ID); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return r.ID
+	}
+	running := newRun(task.ID, task.Ref, true)
+	otherRun := newRun(other.ID, other.Ref, true)
+	ended := newRun(task.ID, task.Ref, true)
+	code := 0
+	if err := s.FinishRun(ctx, ended, &code); err != nil {
+		t.Fatal(err)
+	}
+	status := func(st core.Status, runID string) core.Task {
+		t.Helper()
+		got, err := s.UpdateTask(ctx, task.Ref, TaskPatch{Status: &st, RunID: runID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if stored, _ := s.GetTask(ctx, task.Ref); !reflect.DeepEqual(stored, got) {
+			t.Errorf("stored %+v, returned %+v", stored, got)
+		}
+		return got
+	}
+
+	// Done without a run: completed now, by no run.
+	if got := status(core.StatusDone, ""); got.CompletedAt == nil || !got.CompletedAt.Equal(got.UpdatedAt) || got.CompletedRunID != "" {
+		t.Errorf("done = %+v", got)
+	}
+	// Leaving done clears it; a stale or foreign run is never credited.
+	if got := status(core.StatusTodo, ""); got.CompletedAt != nil {
+		t.Errorf("reopened = %+v", got)
+	}
+	for _, id := range []string{ended, otherRun, "nope"} {
+		if got := status(core.StatusDone, id); got.CompletedAt == nil || got.CompletedRunID != "" {
+			t.Errorf("run %s credited: %+v", id, got)
+		}
+		status(core.StatusTodo, "")
+	}
+	// A running run of the task is credited, and staying done keeps the record.
+	first := status(core.StatusDone, running)
+	if first.CompletedRunID != running {
+		t.Errorf("running run not credited: %+v", first)
+	}
+	title := "Renamed"
+	if got, err := s.UpdateTask(ctx, task.Ref, TaskPatch{Title: &title}); err != nil || !got.CompletedAt.Equal(*first.CompletedAt) || got.CompletedRunID != running {
+		t.Errorf("edit while done = %+v, %v", got, err)
+	}
+
+	// Comments record a running run of their task, and nothing else.
+	for id, want := range map[string]string{running: running, ended: "", otherRun: "", "": ""} {
+		if c, err := s.AddComment(ctx, task.Ref, "note", id); err != nil || c.RunID != want {
+			t.Errorf("comment with run %q: RunID %q, %v", id, c.RunID, err)
+		}
+	}
+	comments, _ := s.ListComments(ctx, task.ID)
+	linked := 0
+	for _, c := range comments {
+		if c.RunID == running {
+			linked++
+		} else if c.RunID != "" {
+			t.Errorf("comment linked to %q", c.RunID)
+		}
+	}
+	if len(comments) != 4 || linked != 1 {
+		t.Errorf("stored comments = %+v", comments)
 	}
 }

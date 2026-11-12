@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -60,6 +61,21 @@ func (s *Store) updateRun(ctx context.Context, query string, args ...any) error 
 		return fmt.Errorf("run %s: %w", args[len(args)-1], core.ErrNotFound)
 	}
 	return nil
+}
+
+// activeRun returns runID if it is a running run of the task, and "" if it
+// isn't (or is empty): a stale or foreign TASKSHIP_RUN_ID is ignored.
+func activeRun(ctx context.Context, q querier, runID, taskID string) (string, error) {
+	if runID == "" {
+		return "", nil
+	}
+	var id string
+	err := q.QueryRowContext(ctx, "SELECT id FROM runs WHERE id = ? AND task_id = ? AND state = ?",
+		runID, taskID, core.RunRunning).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return id, err
 }
 
 // ListRuns returns a task's runs, newest first.

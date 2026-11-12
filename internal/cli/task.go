@@ -420,6 +420,7 @@ for the format.`,
 					return nil
 				}
 			}
+			patch.RunID = os.Getenv(runIDEnv)
 			t, err := s.UpdateTask(ctx, args[0], patch)
 			if err != nil {
 				return keepDraft(err)

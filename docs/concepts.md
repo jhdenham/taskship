@@ -82,6 +82,8 @@ A run records one launch of an agent for a task: the agent, the machine, the fol
 
 `taskship runs PROJ-1` lists a task's runs, newest first (`--json` for scripts). To pick up a Claude session where it stopped, run `claude --resume SESSION` from the run's folder.
 
+When a task moves to `done`, Taskship records when; the time is cleared if the task leaves `done` again. While an agent runs, its `TASKSHIP_RUN_ID` environment variable tells the `taskship` commands it runs which run they belong to: if the agent marks the task done, the task records that run as the one that completed it, and comments the agent adds record the run too. Taskship only accepts a run that is still running and belongs to the same task, so a leftover value does nothing. `--json` output includes `completed_at`, `completed_run_id`, and a comment's `run_id`.
+
 ## Which project a folder belongs to
 
 Without `--project`, `taskship add` uses the project of the current folder:

@@ -16,7 +16,8 @@ import (
 
 const taskSelect = `SELECT t.id, p.task_prefix, t.project_id, p.slug, t.sequence_number, t.title,
 	t.description, t.status, t.priority, t.archived_at, t.created_at, t.updated_at,
-	(SELECT group_concat(label, ',') FROM task_labels WHERE task_id = t.id)
+	(SELECT group_concat(label, ',') FROM task_labels WHERE task_id = t.id),
+	t.completed_at, COALESCE(t.completed_run_id, '')
 	FROM tasks t JOIN projects p ON p.id = t.project_id`
 
 // CreateTask validates t and stores it in the project with the given name,
@@ -101,6 +102,11 @@ type TaskPatch struct {
 	Status             *core.Status
 	Priority           *core.Priority
 	Labels             *[]string // replaces the task's labels
+
+	// RunID is the agent run making the change, if any (from TASKSHIP_RUN_ID).
+	// If the patch completes the task and RunID is a running run of this
+	// task, the task records it as the run that completed it.
+	RunID string
 }
 
 // UpdateTask applies patch to the task with the given ref.
@@ -121,6 +127,7 @@ func (s *Store) UpdateTask(ctx context.Context, ref string, patch TaskPatch) (co
 	if patch.Description != nil {
 		t.Description = *patch.Description
 	}
+	wasDone := t.Status == core.StatusDone
 	if patch.Status != nil {
 		t.Status = *patch.Status
 	}
@@ -139,9 +146,25 @@ func (s *Store) UpdateTask(ctx context.Context, ref string, patch TaskPatch) (co
 		}
 	}
 	t.UpdatedAt = now()
-	_, err = tx.ExecContext(ctx,
-		"UPDATE tasks SET title = ?, description = ?, status = ?, priority = ?, updated_at = ? WHERE id = ?",
-		t.Title, t.Description, t.Status, t.Priority, t.UpdatedAt.Format(timeLayout), t.ID)
+	switch isDone := t.Status == core.StatusDone; {
+	case isDone && !wasDone:
+		t.CompletedAt = &t.UpdatedAt
+		if t.CompletedRunID, err = activeRun(ctx, tx, patch.RunID, t.ID); err != nil {
+			return core.Task{}, err
+		}
+	case !isDone:
+		t.CompletedAt, t.CompletedRunID = nil, ""
+	}
+	var completedAt, completedRun any
+	if t.CompletedAt != nil {
+		completedAt = t.CompletedAt.Format(timeLayout)
+	}
+	if t.CompletedRunID != "" {
+		completedRun = t.CompletedRunID
+	}
+	_, err = tx.ExecContext(ctx, `UPDATE tasks SET title = ?, description = ?, status = ?, priority = ?, updated_at = ?,
+		completed_at = ?, completed_run_id = ? WHERE id = ?`,
+		t.Title, t.Description, t.Status, t.Priority, t.UpdatedAt.Format(timeLayout), completedAt, completedRun, t.ID)
 	if err != nil {
 		return core.Task{}, err
 	}
@@ -251,9 +274,10 @@ func (s *Store) ListTasks(ctx context.Context, f TaskFilter) ([]core.Task, error
 func scanTask(row interface{ Scan(...any) error }) (core.Task, error) {
 	var t core.Task
 	var prefix, created, updated string
-	var archived, labels sql.NullString
+	var archived, labels, completed sql.NullString
 	if err := row.Scan(&t.ID, &prefix, &t.ProjectID, &t.Project, &t.Sequence, &t.Title,
-		&t.Description, &t.Status, &t.Priority, &archived, &created, &updated, &labels); err != nil {
+		&t.Description, &t.Status, &t.Priority, &archived, &created, &updated, &labels,
+		&completed, &t.CompletedRunID); err != nil {
 		return core.Task{}, err
 	}
 	t.Labels = []string{}
@@ -270,6 +294,9 @@ func scanTask(row interface{ Scan(...any) error }) (core.Task, error) {
 		return core.Task{}, err
 	}
 	if t.ArchivedAt, err = parseOptionalTime(archived); err != nil {
+		return core.Task{}, err
+	}
+	if t.CompletedAt, err = parseOptionalTime(completed); err != nil {
 		return core.Task{}, err
 	}
 	return t, nil

@@ -47,7 +47,7 @@ func TestLaunch(t *testing.T) {
 	}
 	args := []string{"--", "a b; $(touch pwned)", "it's \"quoted\"\nnext line"}
 	started := false
-	code, err := Launch(path, args, dir, func() { started = true })
+	code, err := Launch(path, args, nil, dir, func() { started = true })
 	if err != nil || code != 3 || !started {
 		t.Fatalf("Launch = %d, %v (started %v), want 3", code, err, started)
 	}
@@ -76,7 +76,7 @@ func TestLaunchExitCodes(t *testing.T) {
 		{"kill -TERM $$", 128 + 15},
 	} {
 		path, _ := fakeAgent(t, c.body)
-		if code, err := Launch(path, nil, t.TempDir(), func() {}); err != nil || code != c.want {
+		if code, err := Launch(path, nil, nil, t.TempDir(), func() {}); err != nil || code != c.want {
 			t.Errorf("%s: Launch = %d, %v, want %d", c.body, code, err, c.want)
 		}
 	}
@@ -84,7 +84,7 @@ func TestLaunchExitCodes(t *testing.T) {
 
 func TestLaunchNotStarted(t *testing.T) {
 	called := false
-	if _, err := Launch(filepath.Join(t.TempDir(), "missing"), nil, t.TempDir(), func() { called = true }); err == nil || called {
+	if _, err := Launch(filepath.Join(t.TempDir(), "missing"), nil, nil, t.TempDir(), func() { called = true }); err == nil || called {
 		t.Errorf("missing executable: err = %v, started called = %v", err, called)
 	}
 }

@@ -52,6 +52,10 @@ type Task struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	ArchivedAt  *time.Time `json:"archived_at,omitempty"`
+	// CompletedAt is when the task last moved to done; it is cleared when the
+	// task leaves done. CompletedRunID is the agent run that did it, if any.
+	CompletedAt    *time.Time `json:"completed_at,omitempty"`
+	CompletedRunID string     `json:"completed_run_id,omitempty"`
 }
 
 // ParseStatus validates a status name.

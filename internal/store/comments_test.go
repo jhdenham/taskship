@@ -17,7 +17,7 @@ func TestComments(t *testing.T) {
 
 	add := func(ref, body string) core.Comment {
 		t.Helper()
-		c, err := s.AddComment(ctx, ref, body)
+		c, err := s.AddComment(ctx, ref, body, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -31,10 +31,10 @@ func TestComments(t *testing.T) {
 	if o := add(other.Ref, "Elsewhere"); o.Number != 1 {
 		t.Errorf("numbers are per task: %+v", o)
 	}
-	if _, err := s.AddComment(ctx, task.Ref, "  \n"); !errors.Is(err, core.ErrInvalid) {
+	if _, err := s.AddComment(ctx, task.Ref, "  \n", ""); !errors.Is(err, core.ErrInvalid) {
 		t.Errorf("empty comment: err = %v", err)
 	}
-	if _, err := s.AddComment(ctx, "PROJ-99", "x"); !errors.Is(err, core.ErrNotFound) {
+	if _, err := s.AddComment(ctx, "PROJ-99", "x", ""); !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("missing task: err = %v", err)
 	}
 
