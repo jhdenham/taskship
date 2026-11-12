@@ -235,7 +235,7 @@ func printComments(w io.Writer, comments []core.Comment) {
 		if i > 0 {
 			fmt.Fprintln(w)
 		}
-		lipgloss.Fprintln(w, heading.Render(core.CommentHeading(c)))
+		lipgloss.Fprintln(w, faint.Render(core.CommentHeading(c)))
 		fmt.Fprintln(w, c.Body)
 	}
 }

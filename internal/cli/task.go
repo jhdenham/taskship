@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"charm.land/lipgloss/v2"
@@ -191,20 +190,18 @@ first line says what is shown and how to change it.`,
 			}
 			// The LABELS column appears only when some task has labels.
 			withLabels := slices.ContainsFunc(tasks, func(t core.Task) bool { return len(t.Labels) > 0 })
-			w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
+			rows := [][]cell{header("REF", "STATUS", "PRIORITY", "TITLE")}
 			if withLabels {
-				fmt.Fprintln(w, "REF\tSTATUS\tPRIORITY\tLABELS\tTITLE")
-			} else {
-				fmt.Fprintln(w, "REF\tSTATUS\tPRIORITY\tTITLE")
+				rows[0] = header("REF", "STATUS", "PRIORITY", "LABELS", "TITLE")
 			}
 			for _, t := range tasks {
-				fmt.Fprintf(w, "%s\t%s\t%s\t", t.Ref, t.Status, t.Priority)
+				row := []cell{{text: t.Ref}, {string(t.Status), statusStyle(t.Status)}, {text: string(t.Priority)}}
 				if withLabels {
-					fmt.Fprintf(w, "%s\t", strings.Join(t.Labels, ","))
+					row = append(row, cell{strings.Join(t.Labels, ","), &faint})
 				}
-				fmt.Fprintf(w, "%s%s\n", t.Title, archivedMark(t.ArchivedAt))
+				rows = append(rows, append(row, cell{text: t.Title + archivedMark(t.ArchivedAt)}))
 			}
-			return w.Flush()
+			return table(out, rows)
 		},
 	}
 	cmd.Flags().StringVarP(&project, "project", "p", "", "only tasks in this project (default: the project of the current folder)")
@@ -316,35 +313,47 @@ func newTaskShowCmd(name string) *cobra.Command {
 				return err
 			}
 			out := cmd.OutOrStdout()
-			fmt.Fprintf(out, "%s  %s\n\n", t.Ref, t.Title)
-			w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-			fmt.Fprintf(w, "Project:\t%s\n", t.Project)
-			fmt.Fprintf(w, "Status:\t%s\n", t.Status)
-			fmt.Fprintf(w, "Priority:\t%s\n", t.Priority)
+			lipgloss.Fprintf(out, "%s %s\n\n", value.Render(t.Ref+":"), heading.Render(t.Title))
+			fields := [][2]string{{"Project:", t.Project}, {"Status:", string(t.Status)}, {"Priority:", string(t.Priority)}}
 			if len(t.Labels) > 0 {
-				fmt.Fprintf(w, "Labels:\t%s\n", strings.Join(t.Labels, ", "))
+				fields = append(fields, [2]string{"Labels:", strings.Join(t.Labels, ", ")})
 			}
-			fmt.Fprintf(w, "Created:\t%s\n", t.CreatedAt.Local().Format(time.DateTime))
-			fmt.Fprintf(w, "Updated:\t%s\n", t.UpdatedAt.Local().Format(time.DateTime))
+			fields = append(fields, [2]string{"Created:", t.CreatedAt.Local().Format(time.DateTime)},
+				[2]string{"Updated:", t.UpdatedAt.Local().Format(time.DateTime)})
 			if t.CompletedAt != nil {
 				by := ""
 				if t.CompletedBy != nil {
 					by = " by " + t.CompletedBy.String()
 				}
-				fmt.Fprintf(w, "Completed:\t%s%s\n", t.CompletedAt.Local().Format(time.DateTime), by)
+				fields = append(fields, [2]string{"Completed:", t.CompletedAt.Local().Format(time.DateTime) + by})
 			}
 			if t.ArchivedAt != nil {
-				fmt.Fprintf(w, "Archived:\t%s\n", t.ArchivedAt.Local().Format(time.DateTime))
+				fields = append(fields, [2]string{"Archived:", t.ArchivedAt.Local().Format(time.DateTime)})
 			}
-			fmt.Fprintf(w, "ID:\t%s\n", t.ID)
-			if err := w.Flush(); err != nil {
+			fields = append(fields, [2]string{"ID:", t.ID})
+			var rows [][]cell
+			for _, f := range fields {
+				v := cell{text: f[1]}
+				if f[0] == "Status:" {
+					v.style = statusStyle(t.Status)
+				}
+				rows = append(rows, []cell{{f[0], &faint}, v})
+			}
+			if err := table(out, rows); err != nil {
 				return err
 			}
 			if t.Description != "" {
-				fmt.Fprintf(out, "\n%s\n", t.Description)
+				fmt.Fprintln(out)
+				if isTerminal(out) {
+					banner(out, "Description")
+					fmt.Fprintln(out)
+				}
+				fmt.Fprintln(out, t.Description)
 			}
 			if len(comments) > 0 {
-				lipgloss.Fprintf(out, "\n%s\n\n", heading.Render(fmt.Sprintf("Comments (%d)", len(comments))))
+				fmt.Fprintln(out)
+				banner(out, fmt.Sprintf("Comments (%d)", len(comments)))
+				fmt.Fprintln(out)
 				printComments(out, comments)
 			}
 			return nil

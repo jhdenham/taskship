@@ -2,10 +2,11 @@ package cli
 
 import (
 	"fmt"
-	"text/tabwriter"
 
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
+
+	"github.com/jhdenham/taskship/internal/core"
 )
 
 func newRunsCmd() *cobra.Command {
@@ -45,8 +46,7 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 				lipgloss.Fprintf(out, "No runs for %s yet. Run %s to launch Claude.\n", t.Ref, cmdRef("taskship "+t.Ref))
 				return nil
 			}
-			w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "RUN\tSTARTED\tAGENT\tSTATE\tEXIT\tCOMPLETED\tFOLDER\tSESSION")
+			rows := [][]cell{header("RUN", "STARTED", "AGENT", "STATE", "EXIT", "COMPLETED", "FOLDER", "SESSION")}
 			for _, r := range runs {
 				exit := "-"
 				if r.ExitCode != nil {
@@ -56,10 +56,11 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 				if r.ID == t.CompletedRunID {
 					completed = "✓"
 				}
-				fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", r.Number, r.StartedAt.Local().Format("2006-01-02 15:04"),
-					r.Agent, r.State, exit, completed, displayPath(r.WorkspacePath), r.SessionID)
+				rows = append(rows, []cell{{text: fmt.Sprintf("#%d", r.Number)}, {text: r.StartedAt.Local().Format("2006-01-02 15:04")},
+					{text: r.Agent}, {string(r.State), stateStyle(r)}, {text: exit}, {text: completed},
+					{displayPath(r.WorkspacePath), &faint}, {r.SessionID, &faint}})
 			}
-			if err := w.Flush(); err != nil {
+			if err := table(out, rows); err != nil {
 				return err
 			}
 			if isTerminal(out) {
@@ -70,4 +71,17 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
+}
+
+// stateStyle colors a run's state: accent while it is starting or running,
+// green if the agent exited 0, red if it failed or exited non-zero.
+func stateStyle(r core.Run) *lipgloss.Style {
+	switch {
+	case r.State == core.RunFailed, r.State == core.RunEnded && (r.ExitCode == nil || *r.ExitCode != 0):
+		return &failStyle
+	case r.State == core.RunEnded:
+		return &doneStyle
+	default:
+		return &value
+	}
 }

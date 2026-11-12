@@ -96,6 +96,8 @@ RUN  STARTED           AGENT   STATE  EXIT  COMPLETED  FOLDER            SESSION
 
 COMPLETED marks the run whose agent marked the task done. To pick up a Claude session where it stopped, run `claude --resume SESSION` from the run's folder.
 
+In a terminal, `tasks`, `runs`, `show`, and comment lists use color: a task's status is green when `done`, highlighted when `in_progress`, and muted in `backlog` or `canceled`; a run's state is green for exit 0 and red for a failure or another exit code; and labels, folders, sessions, field names, and comment headings are muted. Piped or redirected output has no color, and neither does output with `NO_COLOR` set. `show --md` and `--json` are never colored.
+
 When a task moves to `done`, Taskship records when, and `show` prints it, such as `Completed:  2026-11-12 14:31:40 by Claude (run #2)`; the time is cleared if the task leaves `done` again. While an agent runs, its `TASKSHIP_RUN_ID` environment variable tells the `taskship` commands it runs which run they belong to: if the agent marks the task done, the task records that run as the one that completed it, and comments the agent adds record the run too, shown in their heading: `#2 · 2026-11-12 14:30 · Claude (run #2)`. Taskship only accepts a run that is still running and belongs to the same task, so a leftover value does nothing. `--json` output includes `completed_at`, `completed_run_id`, and a comment's `run_id`.
 
 ## Which project a folder belongs to

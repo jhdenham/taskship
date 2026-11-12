@@ -36,7 +36,7 @@ func TestTaskShowAndJSON(t *testing.T) {
 
 	for _, args := range [][]string{{"show", "PROJ-1"}, {"task", "show", "proj-1"}} {
 		out := mustRun(t, args...)
-		for _, want := range []string{"PROJ-1  Fix export", "myproject", "in_progress", "high", "Details here"} {
+		for _, want := range []string{"PROJ-1: Fix export", "myproject", "in_progress", "high", "Details here"} {
 			if !strings.Contains(out, want) {
 				t.Errorf("%v output missing %q:\n%s", args, want, out)
 			}
