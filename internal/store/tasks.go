@@ -38,16 +38,15 @@ func (s *Store) CreateTask(ctx context.Context, project string, t core.Task) (co
 // original's project if empty), with the given title (the original's if
 // empty) and status. Title, description, priority and labels are copied;
 // comments, runs and completion are not. The copy's first comment says
-// where it was copied from.
-func (s *Store) CopyTask(ctx context.Context, ref, project, title string, status core.Status) (core.Task, error) {
+// where it was copied from. It returns the copy and the original.
+func (s *Store) CopyTask(ctx context.Context, ref, project, title string, status core.Status) (copied, src core.Task, err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return core.Task{}, err
+		return core.Task{}, core.Task{}, err
 	}
 	defer tx.Rollback()
-	src, err := getTask(ctx, tx, ref)
-	if err != nil {
-		return core.Task{}, err
+	if src, err = getTask(ctx, tx, ref); err != nil {
+		return core.Task{}, core.Task{}, err
 	}
 	if project == "" {
 		project = src.Project
@@ -55,16 +54,16 @@ func (s *Store) CopyTask(ctx context.Context, ref, project, title string, status
 	if title == "" {
 		title = src.Title
 	}
-	t, err := createTask(ctx, tx, project, core.Task{
+	copied, err = createTask(ctx, tx, project, core.Task{
 		Title: title, Description: src.Description, Status: status, Priority: src.Priority, Labels: src.Labels,
 	})
 	if err != nil {
-		return core.Task{}, err
+		return core.Task{}, core.Task{}, err
 	}
-	if _, err := addComment(ctx, tx, t, "Copied from "+src.Ref+".", ""); err != nil {
-		return core.Task{}, err
+	if _, err := addComment(ctx, tx, copied, "Copied from "+src.Ref+".", ""); err != nil {
+		return core.Task{}, core.Task{}, err
 	}
-	return t, tx.Commit()
+	return copied, src, tx.Commit()
 }
 
 func createTask(ctx context.Context, tx *sql.Tx, project string, t core.Task) (core.Task, error) {

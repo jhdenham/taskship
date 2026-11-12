@@ -617,15 +617,14 @@ opens the copy in $VISUAL or $EDITOR, as "taskship task edit" does.`,
 				return err
 			}
 			defer s.Close()
-			t, err := s.CopyTask(cmd.Context(), args[0], project, title, st)
+			t, src, err := s.CopyTask(cmd.Context(), args[0], project, title, st)
 			if err != nil {
 				return err
 			}
 			if asJSON {
 				return writeJSON(cmd, t)
 			}
-			prefix, seq, _ := core.ParseTaskRef(args[0]) // valid: the copy succeeded
-			success(cmd.OutOrStdout(), "Copied %s to %s: %s", core.FormatTaskRef(prefix, seq), t.Ref, t.Title)
+			success(cmd.OutOrStdout(), "Copied %s to %s: %s", src.Ref, t.Ref, t.Title)
 			if edit {
 				t, changed, err := editInEditor(cmd, s, t)
 				if err != nil {

@@ -282,9 +282,12 @@ func TestCopyTask(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	same, err := s.CopyTask(ctx, src.Ref, "", "", core.StatusTodo)
+	same, original, err := s.CopyTask(ctx, "proj-1", "", "", core.StatusTodo)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if original.Ref != src.Ref || original.ID != src.ID {
+		t.Errorf("original = %+v", original)
 	}
 	if same.Ref != "PROJ-2" || same.Title != in.Title || same.Description != in.Description || same.Priority != in.Priority ||
 		!reflect.DeepEqual(same.Labels, in.Labels) || same.Status != core.StatusTodo || same.ArchivedAt != nil || same.CompletedAt != nil {
@@ -295,7 +298,7 @@ func TestCopyTask(t *testing.T) {
 		t.Errorf("copy comments = %+v", comments)
 	}
 
-	other, err := s.CopyTask(ctx, "proj-1", "other", "Fix export in other", core.StatusBacklog)
+	other, _, err := s.CopyTask(ctx, "proj-1", "other", "Fix export in other", core.StatusBacklog)
 	if err != nil || other.Ref != "OTH-1" || other.Project != "other" || other.Title != "Fix export in other" || other.Status != core.StatusBacklog {
 		t.Errorf("copy to other = %+v, %v", other, err)
 	}
@@ -304,12 +307,12 @@ func TestCopyTask(t *testing.T) {
 		ref, project string
 		want         error
 	}{{"PROJ-9", "", core.ErrNotFound}, {"PROJ-1", "nope", core.ErrNotFound}} {
-		if _, err := s.CopyTask(ctx, c.ref, c.project, "", core.StatusTodo); !errors.Is(err, c.want) {
+		if _, _, err := s.CopyTask(ctx, c.ref, c.project, "", core.StatusTodo); !errors.Is(err, c.want) {
 			t.Errorf("CopyTask(%s, %q): err = %v, want %v", c.ref, c.project, err, c.want)
 		}
 	}
 	// A failed copy leaves nothing behind.
-	if _, err := s.CopyTask(ctx, "PROJ-1", "", "two\nlines", core.StatusTodo); !errors.Is(err, core.ErrInvalid) {
+	if _, _, err := s.CopyTask(ctx, "PROJ-1", "", "two\nlines", core.StatusTodo); !errors.Is(err, core.ErrInvalid) {
 		t.Errorf("invalid title: err = %v", err)
 	}
 	if tasks, _ := s.ListTasks(ctx, TaskFilter{IncludeArchived: true}); len(tasks) != 3 {
@@ -333,7 +336,7 @@ func TestCreateDoneTaskIsCompleted(t *testing.T) {
 	if todo := mustCreateTask(t, s, "myproject", newTask("Todo")); todo.CompletedAt != nil {
 		t.Errorf("todo task completed: %+v", todo)
 	}
-	copied, err := s.CopyTask(ctx, created.Ref, "", "", core.StatusDone)
+	copied, _, err := s.CopyTask(ctx, created.Ref, "", "", core.StatusDone)
 	if err != nil || copied.CompletedAt == nil {
 		t.Errorf("copied as done = %+v, %v", copied, err)
 	}
