@@ -109,6 +109,15 @@ func exactArgs(n int) cobra.PositionalArgs {
 	}
 }
 
+func rangeArgs(min, max int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := cobra.RangeArgs(min, max)(cmd, args); err != nil {
+			return usageError{err}
+		}
+		return nil
+	}
+}
+
 // homeDir is $TASKSHIP_HOME, or ~/.taskship by default.
 func homeDir() (string, error) {
 	if h := os.Getenv("TASKSHIP_HOME"); h != "" {

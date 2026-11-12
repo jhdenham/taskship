@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -18,6 +19,36 @@ func TaskMarkdown(t Task) string {
 	return b.String()
 }
 
+// CommentsMarker starts the comments section of a task document. Comments
+// are stored separately, so ParseTaskMarkdown ignores everything from the
+// marker on: applying an exported file never turns comments into description.
+const CommentsMarker = "<!-- taskship:comments (read-only: edits below this line are ignored) -->"
+
+// CommentsMarkdown renders comments as a read-only "## Comments" section to
+// append to TaskMarkdown, starting with CommentsMarker. Times are local. It
+// returns "" for no comments.
+func CommentsMarkdown(comments []Comment) string {
+	if len(comments) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "\n%s\n## Comments\n", CommentsMarker)
+	for _, c := range comments {
+		fmt.Fprintf(&b, "\n### %s\n\n%s\n", CommentHeading(c), c.Body)
+	}
+	return b.String()
+}
+
+// CommentHeading describes a comment in one line, e.g.
+// "#2 · 2026-11-12 14:03 (edited)", in local time.
+func CommentHeading(c Comment) string {
+	h := fmt.Sprintf("#%d · %s", c.Number, c.CreatedAt.Local().Format("2006-01-02 15:04"))
+	if c.Edited() {
+		h += " (edited)"
+	}
+	return h
+}
+
 // TaskDoc is a task document parsed from Markdown. Front matter keys are
 // optional; an empty field means the key was absent.
 type TaskDoc struct {
@@ -32,7 +63,8 @@ type TaskDoc struct {
 
 // ParseTaskMarkdown parses the format written by TaskMarkdown. The front
 // matter is optional, the "# Title" heading is required, and everything after
-// the heading is the description, without surrounding blank lines.
+// the heading is the description, without surrounding blank lines, up to a
+// CommentsMarker line if there is one.
 func ParseTaskMarkdown(src string) (TaskDoc, error) {
 	var doc TaskDoc
 	lines := strings.Split(strings.ReplaceAll(src, "\r\n", "\n"), "\n")
@@ -61,7 +93,11 @@ func ParseTaskMarkdown(src string) (TaskDoc, error) {
 		return doc, fmt.Errorf("%w: expected the task title as a \"# Title\" heading", ErrInvalid)
 	}
 	doc.Title = strings.TrimSpace(strings.TrimPrefix(lines[i], "# "))
-	doc.Description = strings.Trim(strings.Join(lines[i+1:], "\n"), "\n")
+	body := lines[i+1:]
+	if j := slices.IndexFunc(body, func(l string) bool { return strings.TrimSpace(l) == CommentsMarker }); j >= 0 {
+		body = body[:j]
+	}
+	doc.Description = strings.Trim(strings.Join(body, "\n"), "\n")
 	return doc, nil
 }
 

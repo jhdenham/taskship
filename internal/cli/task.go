@@ -287,11 +287,18 @@ func newTaskShowCmd(name string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			comments, err := s.ListComments(cmd.Context(), t.ID)
+			if err != nil {
+				return err
+			}
 			if asJSON {
-				return writeJSON(cmd, t)
+				return writeJSON(cmd, struct {
+					core.Task
+					Comments []core.Comment `json:"comments"`
+				}{t, comments})
 			}
 			if asMarkdown {
-				_, err := fmt.Fprint(cmd.OutOrStdout(), core.TaskMarkdown(t))
+				_, err := fmt.Fprint(cmd.OutOrStdout(), core.TaskMarkdown(t)+core.CommentsMarkdown(comments))
 				return err
 			}
 			out := cmd.OutOrStdout()
@@ -314,6 +321,10 @@ func newTaskShowCmd(name string) *cobra.Command {
 			}
 			if t.Description != "" {
 				fmt.Fprintf(out, "\n%s\n", t.Description)
+			}
+			if len(comments) > 0 {
+				lipgloss.Fprintf(out, "\n%s\n\n", heading.Render(fmt.Sprintf("Comments (%d)", len(comments))))
+				printComments(out, comments)
 			}
 			return nil
 		},
@@ -465,12 +476,19 @@ func markdownPatch(t core.Task, src string) (store.TaskPatch, error) {
 // editMarkdown writes the task to a temporary Markdown file, opens it in the
 // user's editor, and returns the file's path and edited contents.
 func editMarkdown(cmd *cobra.Command, t core.Task) (string, []byte, error) {
-	f, err := os.CreateTemp("", t.Ref+"-*.md")
+	return editText(cmd, t.Ref+"-*.md", core.TaskMarkdown(t))
+}
+
+// editText writes text to a temporary file named after pattern (see
+// os.CreateTemp), opens it in the user's editor, and returns the file's path
+// and edited contents. The caller removes the file.
+func editText(cmd *cobra.Command, pattern, text string) (string, []byte, error) {
+	f, err := os.CreateTemp("", pattern)
 	if err != nil {
 		return "", nil, err
 	}
 	path := f.Name()
-	_, err = f.WriteString(core.TaskMarkdown(t))
+	_, err = f.WriteString(text)
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}

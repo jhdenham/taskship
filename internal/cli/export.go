@@ -16,7 +16,7 @@ func newExportCmd() *cobra.Command {
 		Use:   "export DIR [--project NAME]",
 		Short: "Write tasks to a folder as Markdown files",
 		Long: `Write each unarchived task to DIR/REF.md (for example DIR/PROJ-1.md) in the
-format shown by "taskship show --md". DIR is created if needed, and existing
+format shown by "taskship show --md", including comments. DIR is created if needed, and existing
 files with the same names are overwritten. The export is a snapshot: edits to
 the files do not change the tasks.`,
 		Example: "  taskship export ~/taskship-export --project myproject",
@@ -36,7 +36,12 @@ the files do not change the tasks.`,
 				return err
 			}
 			for _, t := range tasks {
-				if err := os.WriteFile(filepath.Join(dir, t.Ref+".md"), []byte(core.TaskMarkdown(t)), 0o644); err != nil {
+				comments, err := s.ListComments(cmd.Context(), t.ID)
+				if err != nil {
+					return err
+				}
+				md := core.TaskMarkdown(t) + core.CommentsMarkdown(comments)
+				if err := os.WriteFile(filepath.Join(dir, t.Ref+".md"), []byte(md), 0o644); err != nil {
 					return err
 				}
 			}

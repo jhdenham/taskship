@@ -32,4 +32,4 @@ Before anything else happens, the TUI checks that the task's project has a folde
 
 Labels change in place, like status and priority.
 
-Comments (planned) are notes on a task, kept in order with their time. They're stored separately from the description, so editing the description never changes them. `show --md` and `export` include them after the description as a read-only `## Comments` section. The agent's prompt includes them too, marked as untrusted text, like the description. On the command line, `taskship comment add|list|edit|delete` manages comments.
+Comments are added, edited, and deleted from the task's detail view, as with `taskship comment` on the command line.

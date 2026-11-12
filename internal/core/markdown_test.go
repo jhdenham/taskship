@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestTaskMarkdownRoundTrip(t *testing.T) {
@@ -75,5 +76,29 @@ func TestParseTaskMarkdown(t *testing.T) {
 		if _, err := ParseTaskMarkdown(src); !errors.Is(err, ErrInvalid) {
 			t.Errorf("ParseTaskMarkdown(%q) err = %v, want ErrInvalid", src, err)
 		}
+	}
+}
+
+func TestCommentsMarkdown(t *testing.T) {
+	if got := CommentsMarkdown(nil); got != "" {
+		t.Errorf("no comments = %q", got)
+	}
+	at := time.Date(2026, 11, 12, 14, 3, 0, 0, time.Local)
+	comments := []Comment{
+		{Number: 1, Body: "Tried bumping the timeout.", CreatedAt: at, UpdatedAt: at},
+		{Number: 3, Body: "Still flaky.\n\n# Not a title", CreatedAt: at, UpdatedAt: at.Add(time.Hour)},
+	}
+	want := "\n" + CommentsMarker + "\n## Comments\n\n### #1 · 2026-11-12 14:03\n\nTried bumping the timeout.\n" +
+		"\n### #3 · 2026-11-12 14:03 (edited)\n\nStill flaky.\n\n# Not a title\n"
+	md := CommentsMarkdown(comments)
+	if md != want {
+		t.Errorf("CommentsMarkdown =\n%s\nwant\n%s", md, want)
+	}
+
+	// Parsing a document with comments drops them from the description.
+	task := Task{Ref: "PROJ-1", Project: "myproject", Status: StatusTodo, Priority: PriorityNone, Title: "T", Description: "Body."}
+	doc, err := ParseTaskMarkdown(TaskMarkdown(task) + md)
+	if err != nil || doc.Description != "Body." || doc.Title != "T" {
+		t.Errorf("parse with comments = %+v, %v", doc, err)
 	}
 }
