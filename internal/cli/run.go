@@ -79,7 +79,11 @@ corresponding folder, usually its top level.`,
 				}
 				return kindError{fmt.Sprintf("%s isn't linked to a folder on this machine. Run %s in its repository to link it.", value.Render(nf.Project), cmdRef("taskship init")), err}
 			}
-			prompt := dispatch.BuildPrompt(t)
+			comments, err := s.ListComments(ctx, t.ID)
+			if err != nil {
+				return err
+			}
+			prompt := dispatch.BuildPrompt(t, comments)
 			if dryRun {
 				fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(dir), prompt)
 				return nil

@@ -16,7 +16,7 @@ taskship comment edit PROJ-1 2         # opens the comment in your editor
 taskship comment delete PROJ-1 2       # asks first; --yes skips the question
 ```
 
-`comment add` and `comment edit` also take the text as an argument, or from stdin with `-`. `show` prints a task's comments after its description, and `show --json` includes them.
+`comment add` and `comment edit` also take the text as an argument, or from stdin with `-`. `show` prints a task's comments after its description, `show --json` includes them, and so does the prompt an agent receives.
 
 ## Setting up a repository
 
@@ -140,7 +140,7 @@ The agent always starts at the project's folder, never in a deeper subfolder, so
 
 In a Git worktree, the agent starts at the same position in the worktree as the project's folder has in the main checkout. That is usually the worktree's top level. For a project set up at a monorepo subfolder such as `~/code/mono/api`, it is that subfolder of the worktree. A bare repository has no files to work on, so from outside its worktrees the command fails and says to run it from one of them.
 
-The prompt contains only the task's ref, project, title, and description (acceptance criteria are part of the description), never configuration or environment variables, so it can't carry credentials. The title and description are fenced and marked as untrusted requirements, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. Plan mode enforces the approval step inside Claude, but neither is a security boundary: keep using Claude's own permission settings.
+The prompt contains only the task's ref, project, title, description (acceptance criteria are part of the description), and comments, oldest first, never configuration or environment variables, so it can't carry credentials. The title and description, and the comments, are fenced and marked as untrusted, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. Plan mode enforces the approval step inside Claude, but neither is a security boundary: keep using Claude's own permission settings.
 
 ## Leave no trace and worktree discovery
 

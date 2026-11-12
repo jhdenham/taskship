@@ -235,4 +235,11 @@ func TestRunShortcut(t *testing.T) {
 	if r := run(t, "", "PROJ-99", "--dry-run"); r.code != exitNotFound {
 		t.Errorf("shortcut for a missing task: exit %d", r.code)
 	}
+
+	// The prompt includes the task's comments.
+	mustRun(t, "comment", "add", "PROJ-1", "Check the CSV path first.")
+	if out := mustRun(t, "PROJ-1", "--dry-run"); !strings.Contains(out, "The task's comments, oldest first,") ||
+		!strings.Contains(out, " UTC\nCheck the CSV path first.\n```\n") {
+		t.Errorf("dry run with a comment:\n%s", out)
+	}
 }
