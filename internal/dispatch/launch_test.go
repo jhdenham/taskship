@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 )
 
 func TestClaudeArgs(t *testing.T) {
@@ -86,5 +88,25 @@ func TestLaunchNotStarted(t *testing.T) {
 	called := false
 	if _, err := Launch(filepath.Join(t.TempDir(), "missing"), nil, nil, t.TempDir(), func() { called = true }); err == nil || called {
 		t.Errorf("missing executable: err = %v, started called = %v", err, called)
+	}
+}
+
+// A terminate request to taskship reaches the agent, and taskship survives
+// it to report how the agent exited.
+func TestLaunchPassesTerminateToAgent(t *testing.T) {
+	ready := filepath.Join(t.TempDir(), "ready")
+	path, _ := fakeAgent(t, "trap 'exit 7' TERM\ntouch '"+ready+"'\nwhile :; do sleep 0.05; done")
+	code, err := Launch(path, nil, nil, t.TempDir(), func() {
+		go func() {
+			for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+				if _, err := os.Stat(ready); err == nil {
+					break
+				}
+			}
+			syscall.Kill(os.Getpid(), syscall.SIGTERM)
+		}()
+	})
+	if err != nil || code != 7 {
+		t.Errorf("Launch = %d, %v, want 7", code, err)
 	}
 }

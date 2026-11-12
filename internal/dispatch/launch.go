@@ -31,21 +31,37 @@ func ClaudeArgs(sessionID, prompt string) ([]string, error) {
 // process is running. The error is non-nil only if the agent couldn't be
 // started or waited for.
 //
-// While the agent runs, Ctrl-C and Ctrl-\ are left to it: the terminal sends
-// them to the agent, and this process doesn't exit on them.
+// While the agent runs, this process doesn't exit on signals, so it can
+// record how the run ended. Ctrl-C and Ctrl-\ are left to the agent: the
+// terminal sends them to it directly. A hang-up (the terminal closed) or a
+// terminate request is passed on to the agent, which then exits.
 func Launch(path string, args, env []string, dir string, started func()) (int, error) {
 	cmd := exec.Command(path, args...)
 	cmd.Dir, cmd.Env = dir, env
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 
 	// Notify, not Ignore: ignored signals would stay ignored in the agent.
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGQUIT)
+	sigs := make(chan os.Signal, 4)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGTERM)
 	defer signal.Stop(sigs)
 
 	if err := cmd.Start(); err != nil {
 		return 0, err
 	}
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		for {
+			select {
+			case sig := <-sigs:
+				if sig == syscall.SIGHUP || sig == syscall.SIGTERM {
+					cmd.Process.Signal(sig)
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
 	started()
 	err := cmd.Wait()
 	var exitErr *exec.ExitError
