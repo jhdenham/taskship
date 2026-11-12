@@ -30,7 +30,7 @@ func userVersion(t *testing.T, s *Store) int {
 func TestOpenCreatesHomeAndMigrates(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "home")
 	s := openTest(t, dir)
-	if v := userVersion(t, s); v != 5 {
+	if v := userVersion(t, s); v != 6 {
 		t.Errorf("user_version = %d, want 3", v)
 	}
 	var n int
@@ -49,7 +49,7 @@ func TestReopenPreservesDataAndSchema(t *testing.T) {
 	s.Close()
 
 	s = openTest(t, dir)
-	if v := userVersion(t, s); v != 5 {
+	if v := userVersion(t, s); v != 6 {
 		t.Errorf("user_version after reopen = %d, want 3", v)
 	}
 	var n int
@@ -83,7 +83,7 @@ func TestMigrateDropsProjectDisplayName(t *testing.T) {
 	db.Close()
 
 	s := openTest(t, dir)
-	if v := userVersion(t, s); v != 5 {
+	if v := userVersion(t, s); v != 6 {
 		t.Errorf("user_version = %d, want 3", v)
 	}
 	var slug string
