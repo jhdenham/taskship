@@ -37,7 +37,7 @@ func TestBuildPromptGolden(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BuildPrompt(tt.task, tt.comments)
+			got := BuildPrompt(tt.task, tt.comments, "taskship")
 			path := filepath.Join("testdata", tt.name+".golden")
 			if *update {
 				if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
@@ -59,7 +59,7 @@ func TestBuildPromptGolden(t *testing.T) {
 // any backtick run in the title or description.
 func TestBuildPromptFenceOutlastsTaskText(t *testing.T) {
 	for _, desc := range []string{"plain", "```go\nx\n```", "``````", "a ` b `` c"} {
-		p := BuildPrompt(core.Task{Ref: "PROJ-1", Project: "myproject", Title: "T", Description: desc}, nil)
+		p := BuildPrompt(core.Task{Ref: "PROJ-1", Project: "myproject", Title: "T", Description: desc}, nil, "taskship")
 		fence := strings.Repeat("`", max(3, longestRun(desc, '`')+1)) + "markdown\n"
 		start := strings.Index(p, fence)
 		if start < 0 {
@@ -79,8 +79,16 @@ func TestBuildPromptFenceOutlastsTaskText(t *testing.T) {
 func TestBuildPromptUsesNoEnvironment(t *testing.T) {
 	t.Setenv("ANTHROPIC_API_KEY", "sk-ant-secret")
 	t.Setenv("GITHUB_TOKEN", "ghp_secret")
-	p := BuildPrompt(core.Task{Ref: "PROJ-1", Project: "myproject", Title: "T"}, nil)
+	p := BuildPrompt(core.Task{Ref: "PROJ-1", Project: "myproject", Title: "T"}, nil, "taskship")
 	if strings.Contains(p, "secret") {
 		t.Errorf("prompt contains environment values:\n%s", p)
+	}
+}
+
+// Every Taskship command in the prompt uses the command it was given.
+func TestBuildPromptTaskshipCommand(t *testing.T) {
+	p := BuildPrompt(core.Task{Ref: "PROJ-1", Project: "myproject", Title: "T"}, nil, "'/my code/taskship'")
+	if n := strings.Count(p, "'/my code/taskship' "); n != 3 || strings.Contains(p, " taskship ") {
+		t.Errorf("prompt uses the command %d times, want 3:\n%s", n, p)
 	}
 }

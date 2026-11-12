@@ -42,5 +42,13 @@ Instructions:
   refine the task with the user.
 - Otherwise, propose an implementation plan and how you will validate it.
 - Don't modify any files until the user explicitly approves the plan.
+- When the work is done, summarize what changed and how you verified it. For
+  larger or riskier changes, or anything you couldn't verify yourself, suggest
+  specific manual checks or a smoke test for the user to run.
+- Then offer to record the outcome in Taskship, and do it only if the user
+  agrees:
+  - Add your summary as a comment: taskship comment add PROJ-8 -
+    (the comment text is read from stdin)
+  - Mark the task done: taskship task edit PROJ-8 --status done
 
 For the latest task details, run: taskship show PROJ-8 --json

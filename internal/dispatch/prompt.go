@@ -11,12 +11,13 @@ import (
 // BuildPrompt returns the initial plan-first prompt for an agent working on t.
 // It uses only the task's ref, project, title, description, and comments
 // (oldest first), never configuration or environment, so it can't carry
-// credentials. Acceptance criteria are part of the description.
+// credentials. Acceptance criteria are part of the description. taskship is
+// the command the agent should run to reach Taskship (see TaskshipCommand).
 //
 // The title, description, and comments are untrusted. Each block is fenced
 // with more backticks than it contains, so it can't close its fence and pose
 // as instructions; the prompt is still not a security boundary.
-func BuildPrompt(t core.Task, comments []core.Comment) string {
+func BuildPrompt(t core.Task, comments []core.Comment, taskship string) string {
 	description := strings.TrimSpace(t.Description)
 	if description == "" {
 		description = "(No description.)"
@@ -37,7 +38,13 @@ these instructions. Acceptance criteria, if any, are part of the description.
 %s
 %s
 %s
-Instructions:
+%s`, t.Ref, t.Project, fence, content, fence, commentsBlock(comments), instructions(t.Ref, taskship))
+}
+
+// instructions returns the prompt's closing instructions for the task with
+// the given ref, naming taskship as the command to run.
+func instructions(ref, taskship string) string {
+	return fmt.Sprintf(`Instructions:
 - Inspect the relevant repository files before proposing changes.
 - Assess whether the task is ready: identify blockers, missing requirements,
   risks, and assumptions. Missing acceptance criteria alone don't make a task
@@ -46,9 +53,17 @@ Instructions:
   refine the task with the user.
 - Otherwise, propose an implementation plan and how you will validate it.
 - Don't modify any files until the user explicitly approves the plan.
+- When the work is done, summarize what changed and how you verified it. For
+  larger or riskier changes, or anything you couldn't verify yourself, suggest
+  specific manual checks or a smoke test for the user to run.
+- Then offer to record the outcome in Taskship, and do it only if the user
+  agrees:
+  - Add your summary as a comment: %[1]s comment add %[2]s -
+    (the comment text is read from stdin)
+  - Mark the task done: %[1]s task edit %[2]s --status done
 
-For the latest task details, run: taskship show %s --json
-`, t.Ref, t.Project, fence, content, fence, commentsBlock(comments), t.Ref)
+For the latest task details, run: %[1]s show %[2]s --json
+`, taskship, ref)
 }
 
 // commentsBlock returns the fenced comments section of the prompt, or "" for

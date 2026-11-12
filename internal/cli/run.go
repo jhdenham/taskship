@@ -83,7 +83,7 @@ corresponding folder, usually its top level.`,
 			if err != nil {
 				return err
 			}
-			prompt := dispatch.BuildPrompt(t, comments)
+			prompt := dispatch.BuildPrompt(t, comments, dispatch.TaskshipCommand())
 			if dryRun {
 				fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(dir), prompt)
 				return nil
