@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 )
 
 const taskSelect = `SELECT t.id, p.task_prefix, t.project_id, p.slug, t.sequence_number, t.title,
-	t.description, t.status, t.priority, t.archived_at, t.created_at, t.updated_at
+	t.description, t.status, t.priority, t.archived_at, t.created_at, t.updated_at,
+	(SELECT group_concat(label, ',') FROM task_labels WHERE task_id = t.id)
 	FROM tasks t JOIN projects p ON p.id = t.project_id`
 
 // CreateTask validates t and stores it in the project with the given name,
@@ -23,6 +25,11 @@ func (s *Store) CreateTask(ctx context.Context, project string, t core.Task) (co
 	if err := core.ValidateTask(t); err != nil {
 		return core.Task{}, err
 	}
+	labels, err := core.NormalizeLabels(t.Labels)
+	if err != nil {
+		return core.Task{}, err
+	}
+	t.Labels = labels
 	id, err := uuid.NewV7()
 	if err != nil {
 		return core.Task{}, err
@@ -59,6 +66,9 @@ func (s *Store) CreateTask(ctx context.Context, project string, t core.Task) (co
 	if err != nil {
 		return core.Task{}, err
 	}
+	if err := setLabels(ctx, tx, id.String(), t.Labels); err != nil {
+		return core.Task{}, err
+	}
 	if err := tx.Commit(); err != nil {
 		return core.Task{}, err
 	}
@@ -90,6 +100,7 @@ type TaskPatch struct {
 	Title, Description *string
 	Status             *core.Status
 	Priority           *core.Priority
+	Labels             *[]string // replaces the task's labels
 }
 
 // UpdateTask applies patch to the task with the given ref.
@@ -119,6 +130,14 @@ func (s *Store) UpdateTask(ctx context.Context, ref string, patch TaskPatch) (co
 	if err := core.ValidateTask(t); err != nil {
 		return core.Task{}, err
 	}
+	if patch.Labels != nil {
+		if t.Labels, err = core.NormalizeLabels(*patch.Labels); err != nil {
+			return core.Task{}, err
+		}
+		if err := setLabels(ctx, tx, t.ID, t.Labels); err != nil {
+			return core.Task{}, err
+		}
+	}
 	t.UpdatedAt = now()
 	_, err = tx.ExecContext(ctx,
 		"UPDATE tasks SET title = ?, description = ?, status = ?, priority = ?, updated_at = ? WHERE id = ?",
@@ -127,6 +146,19 @@ func (s *Store) UpdateTask(ctx context.Context, ref string, patch TaskPatch) (co
 		return core.Task{}, err
 	}
 	return t, tx.Commit()
+}
+
+// setLabels replaces a task's labels with labels, which must be normalized.
+func setLabels(ctx context.Context, tx *sql.Tx, taskID string, labels []string) error {
+	if _, err := tx.ExecContext(ctx, "DELETE FROM task_labels WHERE task_id = ?", taskID); err != nil {
+		return err
+	}
+	for _, l := range labels {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO task_labels (task_id, label) VALUES (?, ?)", taskID, l); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SetTaskArchived archives or restores a task. It is a no-op if the task is
@@ -161,6 +193,7 @@ func (s *Store) SetTaskArchived(ctx context.Context, ref string, archived bool) 
 type TaskFilter struct {
 	Project         string
 	Statuses        []core.Status
+	Labels          []string // tasks with all of these labels
 	IncludeArchived bool
 }
 
@@ -184,6 +217,14 @@ func (s *Store) ListTasks(ctx context.Context, f TaskFilter) ([]core.Task, error
 		for _, st := range f.Statuses {
 			args = append(args, st)
 		}
+	}
+	labels, err := core.NormalizeLabels(f.Labels)
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range labels {
+		where = append(where, "EXISTS (SELECT 1 FROM task_labels l WHERE l.task_id = t.id AND l.label = ?)")
+		args = append(args, l)
 	}
 	query := taskSelect
 	if len(where) > 0 {
@@ -210,10 +251,15 @@ func (s *Store) ListTasks(ctx context.Context, f TaskFilter) ([]core.Task, error
 func scanTask(row interface{ Scan(...any) error }) (core.Task, error) {
 	var t core.Task
 	var prefix, created, updated string
-	var archived sql.NullString
+	var archived, labels sql.NullString
 	if err := row.Scan(&t.ID, &prefix, &t.ProjectID, &t.Project, &t.Sequence, &t.Title,
-		&t.Description, &t.Status, &t.Priority, &archived, &created, &updated); err != nil {
+		&t.Description, &t.Status, &t.Priority, &archived, &created, &updated, &labels); err != nil {
 		return core.Task{}, err
+	}
+	t.Labels = []string{}
+	if labels.Valid {
+		t.Labels = strings.Split(labels.String, ",")
+		slices.Sort(t.Labels)
 	}
 	t.Ref = core.FormatTaskRef(prefix, t.Sequence)
 	var err error

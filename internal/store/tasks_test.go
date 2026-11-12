@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"reflect"
 	"sort"
 	"sync"
 	"testing"
@@ -202,5 +203,67 @@ func TestCreateTaskConcurrentNumbering(t *testing.T) {
 		if seq != i+1 {
 			t.Fatalf("sequence numbers not unique and contiguous: %v", seqs)
 		}
+	}
+}
+
+func TestTaskLabels(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t, t.TempDir())
+	seedProjects(t, s)
+	in := newTask("Labeled")
+	in.Labels = []string{"Infra", "cli", "infra"}
+	a := mustCreateTask(t, s, "myproject", in)
+	if !reflect.DeepEqual(a.Labels, []string{"cli", "infra"}) {
+		t.Errorf("created labels = %q", a.Labels)
+	}
+	b := mustCreateTask(t, s, "myproject", newTask("Plain"))
+	if got, _ := s.GetTask(ctx, b.Ref); got.Labels == nil || len(got.Labels) != 0 {
+		t.Errorf("no labels = %#v, want empty, not nil", got.Labels)
+	}
+	if got, _ := s.GetTask(ctx, a.Ref); !reflect.DeepEqual(got.Labels, []string{"cli", "infra"}) {
+		t.Errorf("stored labels = %q", got.Labels)
+	}
+
+	bad := newTask("Bad")
+	bad.Labels = []string{"two words"}
+	if _, err := s.CreateTask(ctx, "myproject", bad); !errors.Is(err, core.ErrInvalid) {
+		t.Errorf("invalid label: err = %v", err)
+	}
+
+	// A patch replaces the set; no Labels in the patch leaves it alone.
+	set := []string{"bug", "CLI"}
+	if got, err := s.UpdateTask(ctx, a.Ref, TaskPatch{Labels: &set}); err != nil || !reflect.DeepEqual(got.Labels, []string{"bug", "cli"}) {
+		t.Errorf("UpdateTask labels = %q, %v", got.Labels, err)
+	}
+	title := "Renamed"
+	if got, err := s.UpdateTask(ctx, a.Ref, TaskPatch{Title: &title}); err != nil || !reflect.DeepEqual(got.Labels, []string{"bug", "cli"}) {
+		t.Errorf("title-only patch labels = %q, %v", got.Labels, err)
+	}
+	if got, _ := s.GetTask(ctx, a.Ref); !reflect.DeepEqual(got.Labels, []string{"bug", "cli"}) {
+		t.Errorf("stored after patch = %q", got.Labels)
+	}
+
+	refs := func(f TaskFilter) []string {
+		t.Helper()
+		tasks, err := s.ListTasks(ctx, f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var r []string
+		for _, task := range tasks {
+			r = append(r, task.Ref)
+		}
+		return r
+	}
+	if got := refs(TaskFilter{Labels: []string{"BUG"}}); !reflect.DeepEqual(got, []string{a.Ref}) {
+		t.Errorf("label filter = %q", got)
+	}
+	if got := refs(TaskFilter{Labels: []string{"bug", "infra"}}); got != nil {
+		t.Errorf("all-labels filter = %q, want none", got)
+	}
+
+	empty := []string{}
+	if got, err := s.UpdateTask(ctx, a.Ref, TaskPatch{Labels: &empty}); err != nil || len(got.Labels) != 0 {
+		t.Errorf("clear labels = %q, %v", got.Labels, err)
 	}
 }

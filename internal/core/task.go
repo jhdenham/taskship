@@ -48,6 +48,7 @@ type Task struct {
 	Description string     `json:"description"`
 	Status      Status     `json:"status"`
 	Priority    Priority   `json:"priority"`
+	Labels      []string   `json:"labels"` // normalized (see NormalizeLabels), never nil from the store
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	ArchivedAt  *time.Time `json:"archived_at,omitempty"`
