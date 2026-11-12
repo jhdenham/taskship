@@ -13,7 +13,10 @@ export const nav: { group: string; items: NavItem[] }[] = [
   },
   {
     group: 'Guides',
-    items: [{ id: 'self-hosting', label: 'Self-hosting', planned: true }],
+    items: [
+      { id: 'tui', label: 'Terminal UI', planned: true },
+      { id: 'self-hosting', label: 'Self-hosting', planned: true },
+    ],
   },
   {
     group: 'Extend',

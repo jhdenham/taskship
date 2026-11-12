@@ -4,7 +4,7 @@ Taskship is in early development. This is the planned order of releases, not a s
 
 ## v0.1: Local-first
 
-Projects and tasks in a local SQLite database, a CLI with JSON output, and a basic TUI. `taskship init` sets up repositories without writing to them, and worktrees are recognized automatically. `taskship PROJ-1` launches Claude Code with a plan-first prompt, and an optional Claude skill improves the workflow without being required.
+Projects and tasks in a local SQLite database, with labels and comments, a CLI with JSON output, and a TUI for managing tasks and launching agents. `taskship init` sets up repositories without writing to them, and worktrees are recognized automatically. `taskship PROJ-1` launches Claude Code with a plan-first prompt, and an optional Claude skill improves the workflow without being required.
 
 Task management, setup, and `--dry-run` work today. Launching Claude, the TUI, and the skill are next.
 
