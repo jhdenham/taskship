@@ -1,0 +1,24 @@
+ ◆ myproject                                                             ? help
+
+  1 Board   2 List
+ ┏ 9 tasks ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ sorted by priority ↓  o change ┓
+ ┃ REF     TITLE                         STATUS         PRIORITY ↓  LABELS    ┃
+ ┃ PROJ-8  Fix flaky login test          ◐ in progress  urgent      #bug      ┃
+ ┃ PROJ-1  Upgrade to Postgres 16        ● done         high        #infra    ┃
+ ┃ PROJ-5  Rate-limit webhook retries    ○ todo         high        #api #bug ┃
+ ┃ PROJ-6  Add --json to the status co…  ○ todo         medium      #cli      ┃
+ ┃ PROJ-9  Weekly habit tracker view     ◐ in progress  medium      #web      ┃
+ ┃ PROJ-2  Keyboard help overlay         ● done         low         #cli      ┃
+ ┃ PROJ-3  Document the export format    ◇ backlog      low         #docs     ┃
+ ┃ PROJ-7  Rename the sync settings      ○ todo         low                   ┃
+ ┃▌PROJ-4  Try a compact board layout    ◇ backlog      —                     ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+ j k move  enter open  o sort  n new  / filter  A archived  ? help  q quit

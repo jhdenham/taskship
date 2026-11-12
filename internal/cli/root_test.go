@@ -55,12 +55,24 @@ func TestVersion(t *testing.T) {
 	}
 }
 
-// --help and --version must not create user files.
+// Without a terminal, bare taskship prints help and taskship tui fails.
+func TestTUINeedsTerminal(t *testing.T) {
+	tempHome(t)
+	if r := run(t, ""); r.code != 0 || !strings.Contains(r.stdout, "taskship [command]") {
+		t.Errorf("bare taskship: exit %d, stdout %q", r.code, r.stdout)
+	}
+	if r := run(t, "", "tui"); r.code != exitInvalidInput || r.stderr != "taskship: the terminal UI needs a terminal\n" {
+		t.Errorf("tui: exit %d, stderr %q", r.code, r.stderr)
+	}
+}
+
+// --help and --version must not create user files, and neither does bare
+// taskship without a terminal.
 func TestMetadataCommandsHaveNoSideEffects(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("TASKSHIP_HOME", "")
-	for _, args := range [][]string{{"--version"}, {"--help"}, {"project", "--help"}, {"project", "add", "--help"}, {"task", "--help"}, {"add", "--help"}, {"tasks", "--help"}, {"run", "--help"}, {"init", "--help"}} {
+	for _, args := range [][]string{{"--version"}, {"--help"}, {"project", "--help"}, {"project", "add", "--help"}, {"task", "--help"}, {"add", "--help"}, {"tasks", "--help"}, {"run", "--help"}, {"init", "--help"}, {"tui", "--help"}, {}} {
 		if r := run(t, "", args...); r.code != 0 {
 			t.Fatalf("%v: exit %d", args, r.code)
 		}

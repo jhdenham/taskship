@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/display"
 )
 
 func newRunsCmd() *cobra.Command {
@@ -58,7 +59,7 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 				}
 				rows = append(rows, []cell{{text: fmt.Sprintf("#%d", r.Number)}, {text: r.StartedAt.Local().Format("2006-01-02 15:04")},
 					{text: r.Agent}, {string(r.State), stateStyle(r)}, {text: exit}, {text: completed},
-					{displayPath(r.WorkspacePath), &faint}, {r.SessionID, &faint}})
+					{display.Path(r.WorkspacePath), &faint}, {r.SessionID, &faint}})
 			}
 			if err := table(out, rows); err != nil {
 				return err

@@ -4,7 +4,7 @@
 
 Taskship is a local-first task manager and coding-agent dispatcher for developers. Organize projects and tasks from a CLI or TUI, then launch a coding agent such as Claude with the task's context. The agent reviews the task and proposes a plan before changing any code.
 
-> **Status:** early development. Implemented so far: `taskship --version`, `taskship init`, `taskship project add|list|show|edit|archive|restore`, `taskship task add|list|show|edit|copy|archive|restore` (with the shortcuts `add`, `tasks`, and `show`; tasks have labels), `taskship comment add|list|edit|delete`, `taskship workspace add|list|remove`, `taskship export`, `taskship TASK_REF` (short for `taskship run TASK_REF`; launches Claude Code in plan mode, or previews the prompt with `--dry-run`), and `taskship runs TASK_REF`. Tasks can be shown and edited as Markdown (`show --md`, `task edit` in `$EDITOR` or `--from`); see [docs/concepts.md](docs/concepts.md#tasks-as-markdown). Without `--project`, `add` and `tasks` use the project set up for the current folder or any Git worktree of the same repository (`tasks --all-projects` lists everything), and with no projects yet, `add` offers to set one up. Every other command described in `docs/` is planned, not implemented.
+> **Status:** early development. Implemented so far: `taskship --version`, `taskship init`, `taskship project add|list|show|edit|archive|restore`, `taskship task add|list|show|edit|copy|archive|restore` (with the shortcuts `add`, `tasks`, and `show`; tasks have labels), `taskship comment add|list|edit|delete`, `taskship workspace add|list|remove`, `taskship export`, `taskship TASK_REF` (short for `taskship run TASK_REF`; launches Claude Code in plan mode, or previews the prompt with `--dry-run`), `taskship runs TASK_REF`, and the terminal UI (`taskship` with no arguments, or `taskship tui`; see [docs/tui.md](docs/tui.md)). Tasks can be shown and edited as Markdown (`show --md`, `task edit` in `$EDITOR` or `--from`); see [docs/concepts.md](docs/concepts.md#tasks-as-markdown). Without `--project`, `add` and `tasks` use the project set up for the current folder or any Git worktree of the same repository (`tasks --all-projects` lists everything), and with no projects yet, `add` offers to set one up. Every other command described in `docs/` is planned, not implemented.
 >
 > Data is stored in `~/.taskship/` (override with `TASKSHIP_HOME`), which is created by the first command that needs it.
 
@@ -33,7 +33,10 @@ internal/cli/       Cobra command tree, exit codes, output
 internal/core/      domain types and validation
 internal/store/     SQLite persistence and embedded migrations
 internal/workspace/ project and workspace resolution from directories and Git metadata
-internal/dispatch/  agent run preparation: the plan-first prompt
+internal/dispatch/  agent runs: workspace choice, the plan-first prompt, launch
+internal/display/   text formatting shared by the CLI and TUI: ~ paths, section rules
+internal/editor/    opening text in $VISUAL or $EDITOR
+internal/tui/       the terminal UI (Bubble Tea)
 docs/               user-facing documentation (planned behavior)
 website/            Astro site for taskship.dev; renders docs/ as its docs pages
 ```

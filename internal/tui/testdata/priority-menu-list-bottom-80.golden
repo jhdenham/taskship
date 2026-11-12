@@ -1,0 +1,24 @@
+ ◆ myproject
+
+  1 Board   2 List
+ ┌ 9 tasks ─────────────────────────────────── sorted by priority ↓  o change ┐
+ │ REF     TITLE                         STATUS         PRIORITY ↓  LABELS    │
+ │ PROJ-8  Fix flaky login test          ◐ in progress  urgent      #bug      │
+ │ PROJ-1  Upgrade to Postgres 16        ● done         high        #infra    │
+ │ PROJ-5  Rate-limit webhook retries    ○ todo         high        #api #bug │
+ │ PROJ-6  Add --json to the status co…  ○ todo         medium      #cli      │
+ │ PROJ-9  Weekly habit tr┏ Priority of PROJ-4 ━━━━━━┓  medium      #web      │
+ │ PROJ-2  Keyboard help o┃▌ none             current┃  low         #cli      │
+ │ PROJ-3  Document the ex┃  low                     ┃  low         #docs     │
+ │ PROJ-7  Rename the sync┃  medium                  ┃  low                   │
+ │▌PROJ-4  Try a compact b┃  high                    ┃  —                     │
+ │                        ┃  urgent                  ┃                        │
+ │                        ┗ enter set  esc cancel ━━━┛                        │
+ │                                                                            │
+ │                                                                            │
+ │                                                                            │
+ │                                                                            │
+ │                                                                            │
+ └────────────────────────────────────────────────────────────────────────────┘
+
+

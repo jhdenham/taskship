@@ -1,0 +1,24 @@
+ ◆ myproject
+
+  1 Board   2 List
+ ┌ PROJ-9 · details ─────────────────────────────────────────────── esc close ┐
+ │ Weekly habit tracker view                                                  │
+ │                                                                            │
+ │ status    in progress                                                      │
+ │▌priority  medium                                                           │
+ │ labels    #web                                                             │
+ │ updated   Nov 11, 09:20┏ Priority of PROJ-9 ━━━━━━┓                        │
+ │                        ┃  none                    ┃                        │
+ │ ── Description ────────┃  low                     ┃─────────────────────── │
+ │ Show each habit as a ro┃▌ medium           current┃t week as columns.      │
+ │ Clicking a cell toggles┃  high                    ┃                        │
+ │                        ┃  urgent                  ┃                        │
+ │ Acceptance criteria   1┗ enter set  esc cancel ━━━┛                        │
+ │ [x] Weekly view shows each habit                                           │
+ │ [ ] Data persists across restarts                                          │
+ │ ────────────────────────────────────────────────────────────────────────── │
+ │ r launch agent · e edit · s status · p priority · # labels · c comment     │
+ │ a archive · y copy ref                                                     │
+ └────────────────────────────────────────────────────────────── ↓ j k scroll ┘
+
+

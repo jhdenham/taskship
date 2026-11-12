@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/display"
 	"github.com/jhdenham/taskship/internal/store"
 	"github.com/jhdenham/taskship/internal/workspace"
 )
@@ -120,7 +121,7 @@ func (r *initRun) runAt(ctx context.Context, pl place, explicit bool, ws []core.
 
 	if !r.forAdd {
 		out := r.cmd.OutOrStdout()
-		lipgloss.Fprintln(out, headingf("Setting up Taskship for %s", displayPath(t.path)))
+		lipgloss.Fprintln(out, headingf("Setting up Taskship for %s", display.Path(t.path)))
 		lipgloss.Fprintln(out, faint.Render(noTraceLine(t.kind())))
 		r.headed = true
 	}
@@ -163,7 +164,7 @@ func noTraceLine(kind string) string {
 	if err != nil {
 		home = "~/.taskship"
 	}
-	return fmt.Sprintf("Taskship doesn't write anything to this %s. Everything lives in %s.", kind, displayPath(home))
+	return fmt.Sprintf("Taskship doesn't write anything to this %s. Everything lives in %s.", kind, display.Path(home))
 }
 
 // target works out the folder to set up from dir: a repository's main
@@ -281,7 +282,7 @@ func (r *initRun) wholeOrFolder(loc workspace.Location, pos, main string, explic
 	if explicit {
 		which = "The folder"
 	}
-	lipgloss.Fprintln(w, headingf(which+" (%s) is part of a repository (%s).", displayPath(loc.Path), displayPath(main))+"\n")
+	lipgloss.Fprintln(w, headingf(which+" (%s) is part of a repository (%s).", display.Path(loc.Path), display.Path(main))+"\n")
 	fmt.Fprintln(w, "Where do you want to set up a Taskship project?")
 	lipgloss.Fprintf(w, "  1) The whole repository (%s)\n", pathRef(main))
 	lipgloss.Fprintf(w, "  2) Only this folder (%s)\n", pathRef(pos))
@@ -360,7 +361,7 @@ const maxChoices = 8
 // a whole or a single repository in it, and then which repository.
 func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos, setUp []childRepo, total int, ws []core.Workspace) (initTarget, bool, error) {
 	if r.yes || !r.interactive {
-		return initTarget{}, false, usageError{fmt.Errorf("%s contains Git repositories; pass the one to set up, for example: %s", pathRef(dir), command.Render("taskship init "+displayPath(filepath.Join(dir, "myproject"))))}
+		return initTarget{}, false, usageError{fmt.Errorf("%s contains Git repositories; pass the one to set up, for example: %s", pathRef(dir), command.Render("taskship init "+display.Path(filepath.Join(dir, "myproject"))))}
 	}
 	w := r.p.out
 	contains, one := "a repository", "The repository in it"
@@ -369,7 +370,7 @@ func (r *initRun) inFolderOfRepos(ctx context.Context, dir string, repos, setUp 
 	} else if total > 1 {
 		contains, one = fmt.Sprintf("%d repositories", total), "A single repository"
 	}
-	lipgloss.Fprintln(w, headingf("The current folder (%s) contains "+contains+".", displayPath(dir))+"\n")
+	lipgloss.Fprintln(w, headingf("The current folder (%s) contains "+contains+".", display.Path(dir))+"\n")
 	fmt.Fprintln(w, "Where do you want to set up a Taskship project?")
 	lipgloss.Fprintf(w, "  1) The whole folder (%s)\n", pathRef(dir))
 	lipgloss.Fprintf(w, "  2) %s\n", one)

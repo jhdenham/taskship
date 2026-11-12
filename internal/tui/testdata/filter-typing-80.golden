@@ -1,0 +1,24 @@
+ ◆ myproject                                      filter habit · 1 of 9  ? help
+
+  1 Board   2 List
+ ┏ backlog 0/2 ━━━━┓ ┌ todo 0/3 ───────┐ ┌ in progress 1/2 ┐ ┌ done 0/2 ──────┐
+ ┃ no matches      ┃ │ no matches      │ │┌───────────────┐│ │ no matches     │
+ ┃                 ┃ │                 │ ││ PROJ-9 medium ││ │                │
+ ┃                 ┃ │                 │ ││ Weekly habit… ││ │                │
+ ┃                 ┃ │                 │ ││ #web          ││ │                │
+ ┃                 ┃ │                 │ │└───────────────┘│ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┃                 ┃ │                 │ │                 │ │                │
+ ┗━━━━━━━━━━━━━━━━━┛ └─────────────────┘ └─────────────────┘ └────────────────┘
+ / habit                                                  matches title and ref
+ enter apply  esc cancel  #web label  status:todo  prio:high

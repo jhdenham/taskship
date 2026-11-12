@@ -4,6 +4,7 @@ package editor
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -29,6 +30,17 @@ func Draft(pattern, text string) (string, error) {
 // Command returns the command that opens path in the user's editor:
 // $VISUAL, else $EDITOR (either may include arguments), else vi.
 func Command(path string) *exec.Cmd {
+	editor := argv()
+	return exec.Command(editor[0], append(editor[1:], path)...)
+}
+
+// Name is the name of the program Command runs, without its folder or
+// arguments, for labels such as "open in nvim".
+func Name() string {
+	return filepath.Base(argv()[0])
+}
+
+func argv() []string {
 	editor := strings.Fields(os.Getenv("VISUAL"))
 	if len(editor) == 0 {
 		editor = strings.Fields(os.Getenv("EDITOR"))
@@ -36,5 +48,5 @@ func Command(path string) *exec.Cmd {
 	if len(editor) == 0 {
 		editor = []string{"vi"}
 	}
-	return exec.Command(editor[0], append(editor[1:], path)...)
+	return editor
 }

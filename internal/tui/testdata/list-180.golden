@@ -1,0 +1,44 @@
+ ◆ taskship  myproject                                                                                                                                                       ? help
+
+  1 Board   2 List
+ ┏ 9 tasks ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ sorted by priority ↓  o change ┓
+ ┃ REF     TITLE                                                                                                              STATUS         PRIORITY ↓  LABELS     UPDATED       ┃
+ ┃ PROJ-8  Fix flaky login test                                                                                               ◐ in progress  urgent      #bug       Nov 11, 09:20 ┃
+ ┃ PROJ-1  Upgrade to Postgres 16                                                                                             ● done         high        #infra     Nov 11, 09:20 ┃
+ ┃ PROJ-5  Rate-limit webhook retries                                                                                         ○ todo         high        #api #bug  Nov 11, 09:20 ┃
+ ┃ PROJ-6  Add --json to the status command                                                                                   ○ todo         medium      #cli       Nov 11, 09:20 ┃
+ ┃ PROJ-9  Weekly habit tracker view                                                                                          ◐ in progress  medium      #web       Nov 11, 09:20 ┃
+ ┃ PROJ-2  Keyboard help overlay                                                                                              ● done         low         #cli       Nov 11, 09:20 ┃
+ ┃▌PROJ-3  Document the export format                                                                                         ◇ backlog      low         #docs      Nov 11, 09:20 ┃
+ ┃ PROJ-7  Rename the sync settings                                                                                           ○ todo         low                    Nov 11, 09:20 ┃
+ ┃ PROJ-4  Try a compact board layout                                                                                         ◇ backlog      —                      Nov 11, 09:20 ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+ j k move  enter open  o sort  n new task  s status  p priority  # labels  a archive  / filter  A show archived  1 2 board/list  P projects  ? help  q quit

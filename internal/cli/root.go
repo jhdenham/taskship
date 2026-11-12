@@ -17,6 +17,14 @@ func NewRootCmd(version string) *cobra.Command {
 		Version:       resolveVersion(version),
 		SilenceUsage:  true,
 		SilenceErrors: true, // Execute prints errors and picks the exit code
+		// Bare "taskship" opens the TUI in a terminal, and prints help
+		// anywhere else.
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if !hasTerminal(cmd) {
+				return cmd.Help()
+			}
+			return runTUI(cmd)
+		},
 	}
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return usageError{err}
@@ -33,6 +41,7 @@ func NewRootCmd(version string) *cobra.Command {
 		newRunCmd(),
 		newRunsCmd(),
 		newInitCmd(),
+		newTUICmd(),
 	)
 	return root
 }

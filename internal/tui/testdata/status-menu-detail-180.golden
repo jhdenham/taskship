@@ -1,0 +1,44 @@
+ ◆ taskship  myproject
+
+  1 Board   2 List
+ ┌ backlog 2 ────────────┐ ┌ todo 3 ───────────────┐ ┌ in progress 2 ────────┐ ┌ done 2 ───────────────┐ ┌ PROJ-9 · details ─────────────────────────────────────────── esc close ┐
+ │┌─────────────────────┐│ │┌─────────────────────┐│ │┌─────────────────────┐│ │┌─────────────────────┐│ │ Weekly habit tracker view                                              │
+ ││ PROJ-3          low ││ ││ PROJ-5         high ││ ││ PROJ-8       urgent ││ ││ PROJ-1         high ││ │                                                                        │
+ ││ Document the expor… ││ ││ Rate-limit webhook… ││ ││ Fix flaky login te… ││ ││ Upgrade to Postgre… ││ │▌status    in progress                                                  │
+ ││ #docs               ││ ││ #api #bug           ││ ││ #bug                ││ ││ #infra              ││ │ priority  medium                                                       │
+ │└─────────────────────┘│ │└─────────────────────┘│ │└─────────────────────┘│ │└─────────────────────┘│ │ labels    #web                                                         │
+ │┌─────────────────────┐│ │┌─────────────────────┐│ │┌─────────────────────┐│ │┌─────────────────────┐│ │ updated   Nov 11, 09:20                                                │
+ ││ PROJ-4              ││ ││ PROJ-6       medium ││ ││ PROJ-9       medium ││ ││ PROJ-2          low ││ │                                                                        │
+ ││ Try a compact boar… ││ ││ Add --json to the … ││ ││ Weekly habit track… ││ ││ Keyboard help over… ││ │ ── Description ─────────────────────────────────────────────────────── │
+ │└─────────────────────┘│ ││ #cli                ││ ││ #web                ││ ││ #cli                ││ │ Show each habit as a row and the days of the current week as columns.  │
+ │                       │ │└─────────────────────┘│ │└─────────────────────┘│ │└─────────────────────┘│ │ Clicking a cell toggles it.                                            │
+ │                       │ │┌─────────────────────┐│ │                       │ │                       │ │                                                                        │
+ │                       │ ││ PROJ-7          low ││ │                       │ │                       │ │ Acceptance criteria   1 of 3 done                                      │
+ │                       │ ││ Rename the sync se… ││ │                       │ │                       │ │ [x] Weekly view shows each habit                                       │
+ │                       │ │└─────────────────────┘│ │                       │ │                       │ │ [ ] Data persists across restarts                                      │
+ │                       │ │                       │ │                       │ │                       │ │ [ ] Works at 80 columns                                                │
+ │                       │ │                       │ │                      ┏ Status of PROJ-9 ━━━━━━━━┓ │                                                                        │
+ │                       │ │                       │ │                      ┃  backlog                 ┃ │ ── Comments (2) ────────────────────────────────────────────────────── │
+ │                       │ │                       │ │                      ┃  todo                    ┃ │ #1 · Nov 11, 09:20                                                     │
+ │                       │ │                       │ │                      ┃▌ in progress      current┃ │ Started with a plain table; a grid component felt like overkill.       │
+ │                       │ │                       │ │                      ┃  done                    ┃ │                                                                        │
+ │                       │ │                       │ │                      ┃  canceled                ┃ │ #2 · Nov 11, 09:20 · edited                                            │
+ │                       │ │                       │ │                      ┗ enter set  esc cancel ━━━┛ │ Persistence blocked on the storage refactor in PROJ-6.                 │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │                                                                        │
+ │                       │ │                       │ │                       │ │                       │ │ ────────────────────────────────────────────────────────────────────── │
+ │                       │ │                       │ │                       │ │                       │ │ r launch agent · e edit · s status · p priority · # labels · c comment │
+ │                       │ │                       │ │                       │ │                       │ │ a archive · y copy ref                                                 │
+ └───────────────────────┘ └───────────────────────┘ └───────────────────────┘ └───────────────────────┘ └────────────────────────────────────────────────────────────────────────┘
+
+

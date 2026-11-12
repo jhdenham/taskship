@@ -1,0 +1,24 @@
+ ◆ myproject
+
+  1 Board   2 List
+ ┌ PROJ-9 · details ─────────────────────────────────────────────── esc close ┐
+ │ Weekly habit tracker view                                                  │
+ │                                                                            │
+ ┏ New comment #3 on PROJ-9 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ ┃ ── ctrl-r show 2 earlier comments ──────────────────────────────────────── ┃
+ ┃ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃
+ ┃ ┃ Picking it back up.                                                    ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃
+ ┗ enter new line  ctrl-s save  ctrl-e open in vi  esc cancel ━━━━━━━━━━━━━━━━┛
+ │ r launch agent · e edit · s status · p priority · # labels · c comment     │
+ │ a archive · y copy ref                                                     │
+ └────────────────────────────────────────────────────────────── ↓ j k scroll ┘
+
+

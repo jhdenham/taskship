@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/display"
 )
 
 func TestRunDryRun(t *testing.T) {
@@ -150,7 +151,7 @@ func TestRunLaunchesClaude(t *testing.T) {
 	t.Chdir(filepath.Join(repo, "internal"))
 
 	r := run(t, "", "PROJ-1")
-	if r.code != 0 || r.stdout != "✓ Moved PROJ-1 from todo to in_progress\n✓ Launching Claude for PROJ-1 in "+displayPath(repo)+"\n" || r.stderr != "" {
+	if r.code != 0 || r.stdout != "✓ Moved PROJ-1 from todo to in_progress\n✓ Launching Claude for PROJ-1 in "+display.Path(repo)+"\n" || r.stderr != "" {
 		t.Fatalf("exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
 	}
 	data, err := os.ReadFile(out)

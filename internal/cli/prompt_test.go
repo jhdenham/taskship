@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/jhdenham/taskship/internal/display"
 )
 
 func testPrompter(input string) (*prompter, *bytes.Buffer) {
@@ -102,8 +104,8 @@ func TestDisplayPath(t *testing.T) {
 		"/tmp/x":                   "/tmp/x",
 		"relative/dir":             "relative/dir",
 	} {
-		if got := displayPath(in); got != want {
-			t.Errorf("displayPath(%q) = %q, want %q", in, got, want)
+		if got := display.Path(in); got != want {
+			t.Errorf("display.Path(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

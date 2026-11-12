@@ -1,0 +1,24 @@
+ ◆ myproject                                                             ? help
+
+  1 Board   2 List
+ ┏ PROJ-1 · details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ esc close ┓
+ ┃ Upgrade to Postgres 16                                                     ┃
+ ┃                                                                            ┃
+ ┃ status     done                                                            ┃
+ ┃ priority   high                                                            ┃
+ ┃ labels     #infra                                                          ┃
+ ┃ updated    Nov 11, 09:20                                                   ┃
+ ┃ completed  Nov 11, 09:20                                                   ┃
+ ┃                                                                            ┃
+ ┃ ── Description ─────────────────────────────────────────────────────────── ┃
+ ┃ No description. e opens the editor.                                        ┃
+ ┃                                                                            ┃
+ ┃ ── Comments ────────────────────────────────────────────────────────────── ┃
+ ┃ No comments yet. c adds one.                                               ┃
+ ┃                                                                            ┃
+ ┃ ────────────────────────────────────────────────────────────────────────── ┃
+ ┃ r launch agent · e edit · s status · p priority · # labels · c comment     ┃
+ ┃ a archive · y copy ref                                                     ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+ esc close  j k scroll  [ ] pick comment  ? help  q quit

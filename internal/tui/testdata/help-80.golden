@@ -1,0 +1,24 @@
+ ◆ myproject
+    ┏ Keys ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  1 ┃ Move                              Tasks                              ┃
+ ┌ b┃ h j k l     move (or arrows)      enter       open                   ┃──┐
+ │┌─┃ g G         first / last          n           new task               ┃─┐│
+ ││ ┃                                   H L         move left / right      ┃ ││
+ ││ ┃ Views                             s           status                 ┃ ││
+ ││ ┃ 1 2         board / list          p           priority               ┃ ││
+ │└─┃ P           projects              #           labels                 ┃─┘│
+ │┌─┃ /           filter                e           edit (ctrl-e: vi)      ┃─┐│
+ ││ ┃ o           sort (list)           a           archive / restore      ┃ ││
+ ││ ┃ C           show canceled                                            ┃ ││
+ │└─┃ A           show archived         Detail                             ┃ ││
+ │  ┃ R           refresh               r           launch agent           ┃─┘│
+ │  ┃                                   c           add comment            ┃  │
+ │  ┃ Boxes                             [ ]         pick a comment         ┃  │
+ │  ┃ tab         title ↔ description   e d         edit / delete it       ┃  │
+ │  ┃ ctrl-s      save                  y           copy ref               ┃  │
+ │  ┃ ctrl-e      open in vi            esc         close                  ┃  │
+ │  ┃ ctrl-r      earlier comments                                         ┃  │
+ │  ┃                                                                      ┃  │
+ └──┃ Click selects, opens and presses; the wheel scrolls.                 ┃──┘
+    ┃ Mouse is captured: Shift-drag selects text (Option-drag in iTerm2).  ┃
+    ┗ esc close ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛

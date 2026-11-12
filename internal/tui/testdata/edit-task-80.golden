@@ -1,0 +1,24 @@
+ ◆ myproject
+
+  1 Board   2 List
+ ┏ Edit PROJ-9 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ ┃ Title                                                                      ┃
+ ┃ ┌────────────────────────────────────────────────────────────────────────┐ ┃
+ ┃ │ Weekly habit tracker view                                              │ ┃
+ ┃ └────────────────────────────────────────────────────────────────────────┘ ┃
+ ┃ Description                                                                ┃
+ ┃ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃
+ ┃ ┃ Show each habit as a row and the days of the current week as columns.  ┃ ┃
+ ┃ ┃ Clicking a cell toggles it.                                            ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃ ## Acceptance criteria                                                 ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃ - [x] Weekly view shows each habit                                     ┃ ┃
+ ┃ ┃ - [ ] Data persists across restarts                                    ┃ ┃
+ ┃ ┃ - [ ] Works at 80 columns                                              ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃
+ ┗ tab title/description  ctrl-s save  ctrl-e open in vi  esc cancel ━━━━━━━━━┛
+
+

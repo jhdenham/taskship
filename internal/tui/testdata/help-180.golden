@@ -1,0 +1,44 @@
+ ◆ taskship  myproject
+
+  1 Board   2 List
+ ┌ backlog 2 ───────────────────────────────┐ ┌ todo 3 ──────────────────────────────────┐ ┌ in progress 2 ───────────────────────────┐ ┌ done 2 ─────────────────────────────────┐
+ │┌────────────────────────────────────────┐│ │┌────────────────────────────────────────┐│ │┌────────────────────────────────────────┐│ │┌───────────────────────────────────────┐│
+ ││ PROJ-3                             low ││ ││ PROJ-5                            high ││ ││ PROJ-8                          urgent ││ ││ PROJ-1                           high ││
+ ││ Document the export format             ││ ││ Rate-limit webhook retries             ││ ││ Fix flaky login test                   ││ ││ Upgrade to Postgres 16                ││
+ ││ #docs                            ┏ Keys ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ra                                ││
+ │└──────────────────────────────────┃ Move                              Tasks                             Detail                             ┃──────────────────────────────────┘│
+ │┌──────────────────────────────────┃ h j k l     move (or arrows)      enter       open                  r           launch agent           ┃──────────────────────────────────┐│
+ ││ PROJ-4                           ┃ g G         first / last          n           new task              c           add comment            ┃-2                            low ││
+ ││ Try a compact board layout       ┃ tab         board ↔ detail        H L         move left / right     [ ]         pick a comment         ┃oard help overlay                 ││
+ │└──────────────────────────────────┃                                   s           status                e d         edit / delete it       ┃                                  ││
+ │                                   ┃ Views                             p           priority              y           copy ref               ┃──────────────────────────────────┘│
+ │                                   ┃ 1 2         board / list          #           labels                esc         close                  ┃                                   │
+ │                                   ┃ P           projects              e           edit (ctrl-e: vi)                                        ┃                                   │
+ │                                   ┃ /           filter                a           archive / restore     Mouse                              ┃                                   │
+ │                                   ┃ o           sort (list)                                             click       select, open, press    ┃                                   │
+ │                                   ┃ C           show canceled         Boxes                             wheel       scroll                 ┃                                   │
+ │                                   ┃ A           show archived         tab         title ↔ description                                      ┃                                   │
+ │                                   ┃ R           refresh               ctrl-s      save                  General                            ┃                                   │
+ │                                   ┃                                   ctrl-e      open in vi            ?           this help              ┃                                   │
+ │                                   ┃                                   ctrl-r      earlier comments      q           quit                   ┃                                   │
+ │                                   ┃                                                                                                        ┃                                   │
+ │                                   ┃ Mouse is captured: Shift-drag selects text (Option-drag in iTerm2).                                    ┃                                   │
+ │                                   ┗ esc close ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                   │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ │                                          │ │                                          │ │                                          │ │                                         │
+ └──────────────────────────────────────────┘ └──────────────────────────────────────────┘ └──────────────────────────────────────────┘ └─────────────────────────────────────────┘
+
+

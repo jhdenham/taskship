@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/term"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/display"
 )
 
 // Styles for human-readable output. Print styled text with lipgloss.Fprint
@@ -66,8 +67,7 @@ func banner(w io.Writer, title string) {
 		lipgloss.Fprintln(w, heading.Render(title))
 		return
 	}
-	rest := max(termWidth(w)-lipgloss.Width(title)-4, 3)
-	lipgloss.Fprintln(w, faint.Render("── "+title+" "+strings.Repeat("─", rest)))
+	lipgloss.Fprintln(w, faint.Render(display.Rule(title, termWidth(w))))
 }
 
 // cell is a table cell: its text and, if not nil, a style for it.
@@ -157,7 +157,7 @@ func wrap(s string, width int, indent string) string {
 
 // pathRef shortens a path like displayPath and colors it as a value.
 func pathRef(path string) string {
-	return value.Render(displayPath(path))
+	return value.Render(display.Path(path))
 }
 
 // headingf formats a heading in bold, with each %s argument in the value

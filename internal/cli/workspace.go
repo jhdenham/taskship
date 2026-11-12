@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/display"
 	"github.com/jhdenham/taskship/internal/store"
 	"github.com/jhdenham/taskship/internal/workspace"
 )
@@ -105,7 +106,7 @@ func newWorkspaceListCmd() *cobra.Command {
 				if _, err := os.Stat(ws.Path); err != nil {
 					mark = " (missing)"
 				}
-				fmt.Fprintf(w, "%s\t%s%s\n", ws.Project, displayPath(ws.Path), mark)
+				fmt.Fprintf(w, "%s\t%s%s\n", ws.Project, display.Path(ws.Path), mark)
 			}
 			return w.Flush()
 		},

@@ -1,0 +1,24 @@
+ ◆ myproject                                                             ? help
+
+  1 Board   2 List
+ ┏ PROJ-9 · details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ esc close ┓
+ ┃ Show each habit as a row and the days of the current week as columns.      ┃
+ ┃ Clicking a cell toggles it.                                                ┃
+ ┃                                                                            ┃
+ ┃ Acceptance criteria   1 of 3 done                                          ┃
+ ┃ [x] Weekly view shows each habit                                           ┃
+ ┃ [ ] Data persists across restarts                                          ┃
+ ┃ [ ] Works at 80 columns                                                    ┃
+ ┃                                                                            ┃
+ ┃ ── Comments (2) ────────────────────────────────────────────────────────── ┃
+ ┃ #1 · Nov 11, 09:20                                                         ┃
+ ┃ Started with a plain table; a grid component felt like overkill.           ┃
+ ┃                                                                            ┃
+ ┃ ▌Delete comment #2? y delete  n keep                                       ┃
+ ┃ ▌Persistence blocked on the storage refactor in PROJ-6.                    ┃
+ ┃ ────────────────────────────────────────────────────────────────────────── ┃
+ ┃ r launch agent · e edit · s status · p priority · # labels · c comment     ┃
+ ┃ a archive · y copy ref                                                     ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ↑ j k scroll ┛
+
+ y delete  n keep

@@ -8,6 +8,7 @@ import (
 
 	"github.com/jhdenham/taskship/internal/core"
 	"github.com/jhdenham/taskship/internal/dispatch"
+	"github.com/jhdenham/taskship/internal/display"
 	"github.com/jhdenham/taskship/internal/store"
 	"github.com/jhdenham/taskship/internal/workspace"
 )
@@ -46,7 +47,7 @@ corresponding folder, usually its top level.`,
 			if agent != "claude" {
 				return fmt.Errorf("%w: unknown agent %q (valid: claude)", core.ErrInvalid, agent)
 			}
-			if !dryRun && (!inputIsTerminal(cmd.InOrStdin()) || !isTerminal(cmd.OutOrStdout())) {
+			if !dryRun && !hasTerminal(cmd) {
 				return usageError{errors.New("launching an agent needs a terminal; use --dry-run to preview the run")}
 			}
 			ctx := cmd.Context()
@@ -75,7 +76,7 @@ corresponding folder, usually its top level.`,
 				return kindError{fmt.Sprintf("%s isn't linked to a folder on this machine. Run %s in its repository to link it.", value.Render(nf.Project), cmdRef("taskship init")), err}
 			}
 			if dryRun {
-				fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(plan.Dir), plan.Prompt)
+				fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, display.Path(plan.Dir), plan.Prompt)
 				return nil
 			}
 			if err := plan.Ready(); err != nil {

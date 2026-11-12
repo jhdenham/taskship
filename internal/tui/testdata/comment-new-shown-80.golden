@@ -1,0 +1,24 @@
+ ◆ myproject
+
+  1 Board   2 List
+ ┌ PROJ-9 · details ─────────────────────────────────────────────── esc close ┐
+ ┏ New comment #3 on PROJ-9 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ ┃ #1 · Nov 11, 09:20                                                         ┃
+ ┃ Started with a plain table; a grid component felt like overkill.           ┃
+ ┃                                                                            ┃
+ ┃ #2 · Nov 11, 09:20 · edited                                                ┃
+ ┃ Persistence blocked on the storage refactor in PROJ-6.                     ┃
+ ┃ ── ctrl-r hide comments ────────────────────────────────────────────────── ┃
+ ┃ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃
+ ┃ ┃ Picking it back up.                                                    ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┃                                                                        ┃ ┃
+ ┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃
+ ┗ enter new line  ctrl-s save  ctrl-e open in vi  esc cancel ━━━━━━━━━━━━━━━━┛
+ │ a archive · y copy ref                                                     │
+ └────────────────────────────────────────────────────────────── ↓ j k scroll ┘
+
+
