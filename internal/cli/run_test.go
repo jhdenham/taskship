@@ -147,7 +147,7 @@ func TestRunLaunchesClaude(t *testing.T) {
 	t.Chdir(filepath.Join(repo, "internal"))
 
 	r := run(t, "", "PROJ-1")
-	if r.code != 0 || r.stdout != "✓ Launching Claude for PROJ-1 in "+displayPath(repo)+"\n" || r.stderr != "" {
+	if r.code != 0 || r.stdout != "✓ Moved PROJ-1 from todo to in_progress\n✓ Launching Claude for PROJ-1 in "+displayPath(repo)+"\n" || r.stderr != "" {
 		t.Fatalf("exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
 	}
 	data, err := os.ReadFile(out)
@@ -172,10 +172,15 @@ func TestRunLaunchesClaude(t *testing.T) {
 		t.Errorf("runs = %+v", runs)
 	}
 
-	// Claude's exit code becomes taskship's, with nothing more printed.
+	if st := taskJSON(t, "PROJ-1")["status"]; st != "in_progress" {
+		t.Errorf("status after launch = %v", st)
+	}
+
+	// Claude's exit code becomes taskship's, with nothing more printed. A task
+	// already in progress stays as it is.
 	t.Setenv("FAKE_CLAUDE_EXIT", "3")
-	if r := run(t, "", "PROJ-1"); r.code != 3 || r.stderr != "" {
-		t.Errorf("exit %d, stderr %q", r.code, r.stderr)
+	if r := run(t, "", "PROJ-1"); r.code != 3 || r.stderr != "" || strings.Contains(r.stdout, "Moved") {
+		t.Errorf("exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
 	}
 	if runs := runsOf(t, "PROJ-1"); len(runs) != 2 || runs[0].ExitCode == nil || *runs[0].ExitCode != 3 {
 		t.Errorf("runs = %+v", runs)
@@ -191,6 +196,21 @@ func TestRunLaunchesClaude(t *testing.T) {
 	var listed []core.Run
 	if err := json.Unmarshal([]byte(mustRun(t, "runs", "PROJ-1", "--json")), &listed); err != nil || len(listed) != 2 || listed[1].SessionID != args[3] {
 		t.Errorf("runs --json = %+v, %v", listed, err)
+	}
+
+	// If Claude can't start, the run fails and the task's status goes back.
+	mustRun(t, "add", "Plan the import", "-p", "myproject", "--status", "backlog")
+	if err := os.WriteFile(filepath.Join(filepath.Dir(out), "claude"), []byte("#!/nonexistent/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if r := run(t, "", "PROJ-2"); r.code != exitLaunchFailed || !strings.Contains(r.stderr, "Couldn't start Claude") {
+		t.Errorf("unstartable claude: exit %d, stderr %q", r.code, r.stderr)
+	}
+	if runs := runsOf(t, "PROJ-2"); len(runs) != 1 || runs[0].State != core.RunFailed {
+		t.Errorf("unstartable claude runs = %+v", runs)
+	}
+	if st := taskJSON(t, "PROJ-2")["status"]; st != "backlog" {
+		t.Errorf("status after a failed launch = %v, want backlog", st)
 	}
 
 	// Without claude on PATH: exit 6 and no run.

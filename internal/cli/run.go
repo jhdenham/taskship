@@ -11,6 +11,7 @@ import (
 
 	"github.com/jhdenham/taskship/internal/core"
 	"github.com/jhdenham/taskship/internal/dispatch"
+	"github.com/jhdenham/taskship/internal/store"
 	"github.com/jhdenham/taskship/internal/workspace"
 )
 
@@ -23,9 +24,10 @@ func newRunCmd() *cobra.Command {
 		Long: `Launch Claude Code on a task in this terminal. "taskship PROJ-42" is short
 for "taskship run PROJ-42".
 
-Claude starts in plan mode with the task as its first message: it inspects the
-repository, assesses the task, and proposes a plan, and it asks you to
-approve the plan before it edits files. Each launch is recorded as a run
+A task in backlog or todo moves to in_progress. Claude starts in plan mode
+with the task as its first message: it inspects the repository, assesses the
+task, and proposes a plan, and it asks you to approve the plan before it edits
+files. Each launch is recorded as a run
 ("taskship runs PROJ-42"). When Claude exits, taskship exits with its exit
 code.
 
@@ -98,11 +100,34 @@ corresponding folder, usually its top level.`,
 			if err != nil {
 				return fmt.Errorf("%w: %w", core.ErrInvalid, err)
 			}
+			// Launching starts work on a task that hasn't started yet. If the
+			// agent can't be started, the status goes back.
+			moved := t.Status == core.StatusBacklog || t.Status == core.StatusTodo
+			setStatus := func(st core.Status) error {
+				_, err := s.UpdateTask(ctx, t.Ref, store.TaskPatch{Status: &st})
+				return err
+			}
+			restoreStatus := func() {
+				if moved {
+					if err := setStatus(t.Status); err != nil {
+						printError(cmd.ErrOrStderr(), fmt.Errorf("couldn't move %s back to %s: %w", t.Ref, t.Status, err))
+					}
+				}
+			}
+			if moved {
+				if err := setStatus(core.StatusInProgress); err != nil {
+					return err
+				}
+			}
 			machine, _ := os.Hostname()
 			r, err := s.CreateRun(ctx, core.Run{TaskID: t.ID, TaskRef: t.Ref, Agent: agent,
 				Machine: machine, WorkspacePath: dir, SessionID: sessionID})
 			if err != nil {
+				restoreStatus()
 				return err
+			}
+			if moved {
+				success(cmd.OutOrStdout(), "Moved %s from %s to %s", t.Ref, t.Status, core.StatusInProgress)
 			}
 			success(cmd.OutOrStdout(), "Launching Claude for %s in %s", t.Ref, pathRef(dir))
 			var recordErr error
@@ -111,6 +136,7 @@ corresponding folder, usually its top level.`,
 				if ferr := s.FinishRun(ctx, r.ID, nil); ferr != nil {
 					printError(cmd.ErrOrStderr(), fmt.Errorf("couldn't record the failed run: %w", ferr))
 				}
+				restoreStatus()
 				return kindError{fmt.Sprintf("Couldn't start Claude: %v", err), errLaunch}
 			}
 			if err := s.FinishRun(ctx, r.ID, &code); err != nil && recordErr == nil {
