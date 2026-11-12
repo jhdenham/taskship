@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -13,14 +14,15 @@ import (
 	"github.com/jhdenham/taskship/internal/store"
 )
 
-// Exit codes. Codes 5 (backend/auth unavailable) and 6 (agent launch
-// failed) are reserved for later commands.
+// Exit codes. Code 5 (backend/auth unavailable) is reserved for later
+// commands.
 const (
 	exitOK           = 0
 	exitFailure      = 1
 	exitInvalidInput = 2
 	exitNotFound     = 3
 	exitAmbiguous    = 4
+	exitLaunchFailed = 6
 )
 
 // Execute runs the root command cmd with args (without the program name),
@@ -34,6 +36,10 @@ func Execute(cmd *cobra.Command, args []string) int {
 	if errors.Is(err, errDeclined) {
 		return exitFailure
 	}
+	var agentExit agentExitError
+	if errors.As(err, &agentExit) {
+		return int(agentExit)
+	}
 	printError(cmd.ErrOrStderr(), err)
 	var usage usageError
 	switch {
@@ -43,6 +49,8 @@ func Execute(cmd *cobra.Command, args []string) int {
 		return exitNotFound
 	case errors.Is(err, core.ErrAmbiguous):
 		return exitAmbiguous
+	case errors.Is(err, errLaunch):
+		return exitLaunchFailed
 	default:
 		return exitFailure
 	}
@@ -77,6 +85,15 @@ func (e kindError) Unwrap() error { return e.err }
 // errDeclined ends a command the user declined to go on with. The command
 // has already said what happened, so it isn't printed, but it exits 1.
 var errDeclined = errors.New("declined")
+
+// agentExitError ends a run whose agent exited with a nonzero code; taskship
+// exits with the same code and prints nothing more.
+type agentExitError int
+
+func (e agentExitError) Error() string { return fmt.Sprintf("agent exited with code %d", int(e)) }
+
+// errLaunch marks an agent that couldn't be launched (exit code 6).
+var errLaunch = errors.New("agent launch failed")
 
 // usageError marks bad command-line usage (wrong args, unknown flags).
 type usageError struct{ error }
