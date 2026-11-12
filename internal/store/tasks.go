@@ -99,10 +99,16 @@ func createTask(ctx context.Context, tx *sql.Tx, project string, t core.Task) (c
 		return core.Task{}, err
 	}
 
+	// A task created as done is completed now.
+	var completedAt any
+	t.CompletedAt, t.CompletedRunID, t.CompletedBy = nil, "", nil
+	if t.Status == core.StatusDone {
+		t.CompletedAt, completedAt = &ts, ts.Format(timeLayout)
+	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO tasks (id, project_id, sequence_number, title, description,
-		status, priority, archived_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
+		status, priority, archived_at, created_at, updated_at, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
 		id.String(), t.ProjectID, t.Sequence, t.Title, t.Description, t.Status, t.Priority,
-		ts.Format(timeLayout), ts.Format(timeLayout))
+		ts.Format(timeLayout), ts.Format(timeLayout), completedAt)
 	if err != nil {
 		return core.Task{}, err
 	}

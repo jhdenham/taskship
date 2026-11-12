@@ -316,3 +316,25 @@ func TestCopyTask(t *testing.T) {
 		t.Errorf("tasks after copies = %d, want 3", len(tasks))
 	}
 }
+
+func TestCreateDoneTaskIsCompleted(t *testing.T) {
+	ctx := context.Background()
+	s := openTest(t, t.TempDir())
+	seedProjects(t, s)
+	in := newTask("Already done")
+	in.Status = core.StatusDone
+	created := mustCreateTask(t, s, "myproject", in)
+	if created.CompletedAt == nil || !created.CompletedAt.Equal(created.CreatedAt) {
+		t.Errorf("created done = %+v", created)
+	}
+	if got, _ := s.GetTask(ctx, created.Ref); !reflect.DeepEqual(got, created) {
+		t.Errorf("stored %+v, created %+v", got, created)
+	}
+	if todo := mustCreateTask(t, s, "myproject", newTask("Todo")); todo.CompletedAt != nil {
+		t.Errorf("todo task completed: %+v", todo)
+	}
+	copied, err := s.CopyTask(ctx, created.Ref, "", "", core.StatusDone)
+	if err != nil || copied.CompletedAt == nil {
+		t.Errorf("copied as done = %+v, %v", copied, err)
+	}
+}
