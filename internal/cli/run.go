@@ -3,10 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"os"
-	"os/exec"
 
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -15,10 +12,8 @@ import (
 	"github.com/jhdenham/taskship/internal/workspace"
 )
 
-// runIDEnv names the environment variable that tells taskship commands run by
-// an agent which run they belong to. The store records it only for a running
-// run of the same task, so a stale or unrelated value is ignored.
-const runIDEnv = "TASKSHIP_RUN_ID"
+// runIDEnv names the environment variable that ties commands to an agent run.
+const runIDEnv = dispatch.RunIDEnv
 
 func newRunCmd() *cobra.Command {
 	var agent, workspacePath string
@@ -68,15 +63,8 @@ corresponding folder, usually its top level.`,
 			if dir == "" {
 				dir = "."
 			}
-			loc, err := workspace.Inspect(ctx, dir)
+			plan, err := dispatch.Prepare(ctx, s, t, dir, workspacePath != "")
 			if err != nil {
-				return err
-			}
-			ws, err := s.ListWorkspaces(ctx, "")
-			if err != nil {
-				return err
-			}
-			if dir, err = workspace.ForTask(ctx, t, loc, workspacePath != "", ws); err != nil {
 				var nf *workspace.NoFolderError
 				if !errors.As(err, &nf) {
 					return err
@@ -86,79 +74,45 @@ corresponding folder, usually its top level.`,
 				}
 				return kindError{fmt.Sprintf("%s isn't linked to a folder on this machine. Run %s in its repository to link it.", value.Render(nf.Project), cmdRef("taskship init")), err}
 			}
-			comments, err := s.ListComments(ctx, t.ID)
-			if err != nil {
-				return err
-			}
-			prompt := dispatch.BuildPrompt(t, comments, dispatch.TaskshipCommand())
 			if dryRun {
-				fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(dir), prompt)
+				fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, displayPath(plan.Dir), plan.Prompt)
 				return nil
 			}
-
-			path, err := exec.LookPath("claude")
-			if err != nil {
-				return kindError{"Claude Code isn't installed, or isn't on your PATH. Install it from https://claude.com/claude-code and try again.", errLaunch}
-			}
-			sessionID := uuid.NewString()
-			agentArgs, err := dispatch.ClaudeArgs(sessionID, prompt)
-			if err != nil {
-				return fmt.Errorf("%w: %w", core.ErrInvalid, err)
-			}
-			// Launching starts work on a task that hasn't started yet. If the
-			// agent can't be started, the status goes back.
-			moved := t.Status == core.StatusBacklog || t.Status == core.StatusTodo
-			setStatus := func(st core.Status) error {
-				_, err := s.UpdateTask(ctx, t.Ref, store.TaskPatch{Status: &st})
+			if err := plan.Ready(); err != nil {
+				if errors.Is(err, dispatch.ErrAgentMissing) {
+					return kindError{"Claude Code isn't installed, or isn't on your PATH. Install it from https://claude.com/claude-code and try again.", errLaunch}
+				}
 				return err
 			}
-			restoreStatus := func() {
-				if moved {
-					if err := setStatus(t.Status); err != nil {
-						printError(cmd.ErrOrStderr(), fmt.Errorf("couldn't move %s back to %s: %w", t.Ref, t.Status, err))
-					}
-				}
-			}
-			if moved {
-				if err := setStatus(core.StatusInProgress); err != nil {
-					return err
-				}
-			}
-			machine, _ := os.Hostname()
-			r, err := s.CreateRun(ctx, core.Run{TaskID: t.ID, TaskRef: t.Ref, Agent: agent,
-				Machine: machine, WorkspacePath: dir, SessionID: sessionID})
-			if err != nil {
-				restoreStatus()
-				return err
-			}
-			if moved {
-				success(cmd.OutOrStdout(), "Moved %s from %s to %s", t.Ref, t.Status, core.StatusInProgress)
-			}
-			success(cmd.OutOrStdout(), "Launching Claude for %s in %s", t.Ref, pathRef(dir))
-			var recordErr error
-			env := append(os.Environ(), runIDEnv+"="+r.ID)
-			code, err := dispatch.Launch(path, agentArgs, env, dir, func() { recordErr = s.StartRun(ctx, r.ID) })
-			if err != nil {
-				if ferr := s.FinishRun(ctx, r.ID, nil); ferr != nil {
-					printError(cmd.ErrOrStderr(), fmt.Errorf("couldn't record the failed run: %w", ferr))
-				}
-				restoreStatus()
-				return kindError{fmt.Sprintf("Couldn't start Claude: %v", err), errLaunch}
-			}
-			if err := s.FinishRun(ctx, r.ID, &code); err != nil && recordErr == nil {
-				recordErr = err
-			}
-			if recordErr != nil {
-				printError(cmd.ErrOrStderr(), fmt.Errorf("Claude ran, but the run wasn't recorded: %w", recordErr))
-			}
-			if code != 0 {
-				return agentExitError(code)
-			}
-			return nil
+			return launch(cmd, s, plan)
 		},
 	}
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the workspace and prompt without launching the agent")
 	cmd.Flags().StringVarP(&agent, "agent", "a", "claude", "agent to run")
 	cmd.Flags().StringVar(&workspacePath, "workspace", "", "checkout or worktree to run in (default: chosen as described above)")
 	return cmd
+}
+
+// launch runs a Ready plan in this terminal, as "taskship run" does: it
+// prints the status move and launch lines, and ends with the agent's exit
+// code.
+func launch(cmd *cobra.Command, s *store.Store, plan dispatch.Plan) error {
+	t := plan.Task
+	code, err := dispatch.Execute(cmd.Context(), s, plan, func(moved bool) {
+		if moved {
+			success(cmd.OutOrStdout(), "Moved %s from %s to %s", t.Ref, t.Status, core.StatusInProgress)
+		}
+		success(cmd.OutOrStdout(), "Launching Claude for %s in %s", t.Ref, pathRef(plan.Dir))
+	}, func(err error) { printError(cmd.ErrOrStderr(), err) })
+	var start *dispatch.StartError
+	if errors.As(err, &start) {
+		return kindError{fmt.Sprintf("Couldn't start Claude: %v", start.Err), errLaunch}
+	}
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return agentExitError(code)
+	}
+	return nil
 }
