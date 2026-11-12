@@ -30,6 +30,7 @@ func NewRootCmd(version string) *cobra.Command {
 		newExportCmd(),
 		newWorkspaceCmd(),
 		newRunCmd(),
+		newRunsCmd(),
 		newInitCmd(),
 	)
 	return root

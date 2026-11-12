@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"os"
 	"os/exec"
@@ -180,6 +181,18 @@ func TestRunLaunchesClaude(t *testing.T) {
 		t.Errorf("runs = %+v", runs)
 	}
 
+	// runs lists them newest first; --json has every field.
+	list := mustRun(t, "runs", "proj-1")
+	lines := strings.Split(strings.TrimSpace(list), "\n")
+	if len(lines) != 5 || !strings.HasPrefix(lines[0], "STARTED ") || !strings.Contains(lines[1], " claude  ended  3 ") ||
+		!strings.HasSuffix(lines[2], args[3]) || lines[4] != "To resume a session, run \"claude --resume SESSION\" in its folder." {
+		t.Errorf("runs output:\n%s", list)
+	}
+	var listed []core.Run
+	if err := json.Unmarshal([]byte(mustRun(t, "runs", "PROJ-1", "--json")), &listed); err != nil || len(listed) != 2 || listed[1].SessionID != args[3] {
+		t.Errorf("runs --json = %+v, %v", listed, err)
+	}
+
 	// Without claude on PATH: exit 6 and no run.
 	t.Setenv("PATH", gitDir(t))
 	if _, err := exec.LookPath("claude"); err == nil {
@@ -190,6 +203,17 @@ func TestRunLaunchesClaude(t *testing.T) {
 	}
 	if runs := runsOf(t, "PROJ-1"); len(runs) != 2 {
 		t.Errorf("no claude recorded a run: %+v", runs)
+	}
+}
+
+func TestRunsEmptyAndMissing(t *testing.T) {
+	seedCLIProjects(t)
+	mustRun(t, "add", "Fix export", "-p", "myproject")
+	if out := mustRun(t, "runs", "PROJ-1"); out != "No runs for PROJ-1 yet. Run \"taskship PROJ-1\" to launch Claude.\n" {
+		t.Errorf("no runs: %q", out)
+	}
+	if r := run(t, "", "runs", "PROJ-9"); r.code != exitNotFound {
+		t.Errorf("missing task: exit %d", r.code)
 	}
 }
 
