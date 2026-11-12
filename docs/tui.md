@@ -26,7 +26,7 @@ Status, priority, and labels change in place. To edit the title or description, 
 
 Launch an agent from a task's detail view. If you have more than one agent installed, the TUI asks which one.
 
-Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise the TUI closes, leaves a line such as `✓ Launching Claude for PROJ-42 in ~/code/myproject` in your terminal, and starts the agent exactly as `taskship PROJ-42` would. The agent has the whole terminal, and Ctrl-C goes to it. When the agent exits, you're back at your shell; run `taskship` to return to the TUI.
+Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise the TUI closes, leaves lines such as `✓ Launching Claude for PROJ-42 in ~/code/myproject` in your terminal (after `✓ Moved PROJ-42 from todo to in_progress` when the task hadn't started yet), and starts the agent exactly as `taskship PROJ-42` would. The agent has the whole terminal, and Ctrl-C goes to it. When the agent exits, you're back at your shell; run `taskship` to return to the TUI.
 
 ## Labels and comments
 

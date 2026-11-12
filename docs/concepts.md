@@ -125,10 +125,11 @@ When the output is piped, that line is left out so scripts get only the table; `
 
 ```text
 $ taskship PROJ-1
+✓ Moved PROJ-1 from todo to in_progress
 ✓ Launching Claude for PROJ-1 in ~/code/myproject
 ```
 
-Claude starts in plan mode, with the task as its first message. It reviews the repository and the task, proposes a plan, and asks you to approve the plan before it edits any files; that approval is Claude's own, not just a request in the prompt. From there you work in Claude as usual. Ctrl-C goes to Claude, and when Claude exits, `taskship` exits with Claude's exit code. Launching needs a terminal, and Claude Code must be on your `PATH` (otherwise the command fails with exit code 6). The agent is chosen with `--agent` (`-a`); only `claude` exists for now.
+A task in `backlog` or `todo` moves to `in_progress` when the agent launches; Taskship does this itself, and moves it back if the agent can't be started. Other statuses don't change. Claude starts in plan mode, with the task as its first message. It reviews the repository and the task, proposes a plan, and asks you to approve the plan before it edits any files; that approval is Claude's own, not just a request in the prompt. From there you work in Claude as usual. When the work is done, Claude summarizes what changed and how it checked it, suggests manual checks or a smoke test for bigger changes, and offers to add its summary as a comment on the task and to mark the task done. It does either only if you agree. Ctrl-C goes to Claude, and when Claude exits, `taskship` exits with Claude's exit code. Launching needs a terminal, and Claude Code must be on your `PATH` (otherwise the command fails with exit code 6). The agent is chosen with `--agent` (`-a`); only `claude` exists for now.
 
 `taskship PROJ-1 --dry-run` shows what a run would do without launching anything: the agent, the folder it would start in, and the exact prompt it would receive.
 
@@ -140,7 +141,7 @@ The agent always starts at the project's folder, never in a deeper subfolder, so
 
 In a Git worktree, the agent starts at the same position in the worktree as the project's folder has in the main checkout. That is usually the worktree's top level. For a project set up at a monorepo subfolder such as `~/code/mono/api`, it is that subfolder of the worktree. A bare repository has no files to work on, so from outside its worktrees the command fails and says to run it from one of them.
 
-The prompt contains only the task's ref, project, title, description (acceptance criteria are part of the description), and comments, oldest first, never configuration or environment variables, so it can't carry credentials. The title and description, and the comments, are fenced and marked as untrusted, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. Plan mode enforces the approval step inside Claude, but neither is a security boundary: keep using Claude's own permission settings.
+The prompt contains only the task's ref, project, title, description (acceptance criteria are part of the description), and comments, oldest first, never configuration or environment variables, so it can't carry credentials. It tells the agent how to run Taskship: `taskship`, or the full path of the `taskship` you launched when the one on your `PATH` is missing or a different file, such as a build in `./bin`. The title and description, and the comments, are fenced and marked as untrusted, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. Plan mode enforces the approval step inside Claude, but neither is a security boundary: keep using Claude's own permission settings.
 
 ## Leave no trace and worktree discovery
 
