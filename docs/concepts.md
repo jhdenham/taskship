@@ -20,6 +20,8 @@ taskship comment delete PROJ-1 2       # asks first; --yes skips the question
 
 `taskship task copy PROJ-3` creates a new task from an existing one, in the same project or, with `--project`, in another. The title, description, priority, and labels are copied; comments, runs, and the completion date stay with the original. The copy starts in `todo` (or `--status`), can get a new title with `--title`, and its first comment says `Copied from PROJ-3.`
 
+`taskship add` and `taskship task copy` take `--edit` to open the new task in your editor right away, the same way `taskship task edit` does. The task is created first, so closing the editor without changes keeps it as it is, and invalid changes are kept in a file for `--from`. `--edit` needs a terminal and can't be combined with `--json`.
+
 ## Setting up a repository
 
 Run `taskship init` in a repository (or pass its path) to start using Taskship there:
@@ -67,7 +69,7 @@ Track habits per week.
 ```
 
 - `taskship show PROJ-1 --md` prints a task in this format.
-- `taskship task edit PROJ-1` with no flags opens it in `$VISUAL` or `$EDITOR`. `--from FILE` (or `--from -` for stdin) applies a document without an editor, which is how scripts and agents edit tasks.
+- `taskship task edit PROJ-1` with no flags opens it in `$VISUAL` or `$EDITOR` (as does `--edit` on `add` and `task copy`). `--from FILE` (or `--from -` for stdin) applies a document without an editor, which is how scripts and agents edit tasks.
 - `taskship export DIR` writes each task to `DIR/PROJ-1.md`. The files are a snapshot; editing them doesn't change the tasks.
 
 `show --md` and `export` add a task's comments at the end, after a `<!-- taskship:comments ... -->` line, as a `## Comments` section with one `### #1 · 2026-11-12 14:03` heading per comment. That part is read-only: when a document is applied, everything from that line on is ignored, so the comments never become part of the description. `task edit` in your editor leaves the comments out.

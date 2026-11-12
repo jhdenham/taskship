@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -40,13 +41,14 @@ func newTaskCmd() *cobra.Command {
 func newTaskAddCmd(name string) *cobra.Command {
 	var project, description, status, priority string
 	var labels []string
-	var asJSON bool
+	var asJSON, edit bool
 	cmd := &cobra.Command{
-		Use:   name + " TITLE [--project NAME]",
+		Use:   name + " TITLE [--project NAME] [--edit]",
 		Short: "Create a task",
 		Long: `Create a task. Without --project, the project is the one set up for the
 current folder, its repository, or any worktree of it (see "taskship init").
-If no project exists yet, add offers to set one up first.`,
+If no project exists yet, add offers to set one up first. --edit opens the
+new task in $VISUAL or $EDITOR, as "taskship task edit" does.`,
 		Example: "  taskship " + name + " \"Fix export\"\n  taskship " + name + " \"Fix export\" --project myproject --label bug,cli",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,6 +61,9 @@ If no project exists yet, add offers to set one up first.`,
 				return err
 			}
 			if labels, err = core.NormalizeLabels(labels); err != nil {
+				return err
+			}
+			if err := checkEditFlag(cmd, edit, asJSON); err != nil {
 				return err
 			}
 			s, err := openStore(cmd.Context())
@@ -95,6 +100,11 @@ If no project exists yet, add offers to set one up first.`,
 				return writeJSON(cmd, t)
 			}
 			success(cmd.OutOrStdout(), "Created %s: %s", t.Ref, t.Title)
+			if edit {
+				if err := editInEditor(cmd, s, t); err != nil {
+					return err
+				}
+			}
 			if setUp {
 				lipgloss.Fprintln(cmd.OutOrStdout(), "\nRun "+cmdRef("taskship tasks")+" to list this project's tasks.")
 			}
@@ -106,6 +116,7 @@ If no project exists yet, add offers to set one up first.`,
 	cmd.Flags().StringVar(&status, "status", string(core.StatusTodo), "initial status")
 	cmd.Flags().StringVar(&priority, "priority", string(core.PriorityNone), "priority: none, low, medium, high, urgent")
 	cmd.Flags().StringSliceVarP(&labels, "label", "l", nil, "labels (comma-separated or repeated)")
+	cmd.Flags().BoolVar(&edit, "edit", false, "open the new task in your editor")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
 }
@@ -482,6 +493,47 @@ func markdownPatch(t core.Task, src string) (store.TaskPatch, error) {
 	return patch, nil
 }
 
+// checkEditFlag rejects --edit where it can't work: with --json, or without
+// a terminal. Commands check it before changing anything.
+func checkEditFlag(cmd *cobra.Command, edit, asJSON bool) error {
+	switch {
+	case edit && asJSON:
+		return usageError{errors.New("--edit and --json cannot be used together")}
+	case edit && !inputIsTerminal(cmd.InOrStdin()):
+		return usageError{errors.New("--edit needs a terminal to open your editor")}
+	}
+	return nil
+}
+
+// editInEditor opens t as Markdown in the user's editor and applies the
+// changes, like "task edit" without flags. If they can't be applied, the
+// edits are kept in a file and the error says how to apply them.
+func editInEditor(cmd *cobra.Command, s *store.Store, t core.Task) error {
+	draft, src, err := editMarkdown(cmd, t)
+	if err != nil {
+		return err
+	}
+	keepDraft := func(err error) error {
+		return fmt.Errorf("%w\nYour edits are saved in %s. Fix them and run: %s", err, pathRef(draft), command.Render("taskship task edit "+t.Ref+" --from "+draft))
+	}
+	patch, err := markdownPatch(t, string(src))
+	if err != nil {
+		return keepDraft(err)
+	}
+	if patch == (store.TaskPatch{}) {
+		removeDraft(draft)
+		fmt.Fprintf(cmd.OutOrStdout(), "No changes to %s\n", t.Ref)
+		return nil
+	}
+	patch.RunID = os.Getenv(runIDEnv)
+	if t, err = s.UpdateTask(cmd.Context(), t.Ref, patch); err != nil {
+		return keepDraft(err)
+	}
+	removeDraft(draft)
+	success(cmd.OutOrStdout(), "Updated %s: %s", t.Ref, t.Title)
+	return nil
+}
+
 // editMarkdown writes the task to a temporary Markdown file, opens it in the
 // user's editor, and returns the file's path and edited contents.
 func editMarkdown(cmd *cobra.Command, t core.Task) (string, []byte, error) {
@@ -542,19 +594,23 @@ func readFrom(cmd *cobra.Command, path string) ([]byte, error) {
 
 func newTaskCopyCmd() *cobra.Command {
 	var project, title, status string
-	var asJSON bool
+	var asJSON, edit bool
 	cmd := &cobra.Command{
-		Use:   "copy TASK_REF [--project NAME] [--title TITLE] [--status STATUS]",
+		Use:   "copy TASK_REF [--project NAME] [--title TITLE] [--status STATUS] [--edit]",
 		Short: "Copy a task, in its project or to another one",
 		Long: `Create a new task from an existing one. The title, description, priority,
 and labels are copied; comments, runs, and the completion date stay with the
 original. The copy starts in todo (or --status), in the original's project
-(or --project), and its first comment says where it was copied from.`,
+(or --project), and its first comment says where it was copied from. --edit
+opens the copy in $VISUAL or $EDITOR, as "taskship task edit" does.`,
 		Example: "  taskship task copy PROJ-3\n  taskship task copy PROJ-3 --project other --title \"Fix export in other\"",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			st, err := core.ParseStatus(status)
 			if err != nil {
+				return err
+			}
+			if err := checkEditFlag(cmd, edit, asJSON); err != nil {
 				return err
 			}
 			s, err := openStore(cmd.Context())
@@ -571,12 +627,16 @@ original. The copy starts in todo (or --status), in the original's project
 			}
 			prefix, seq, _ := core.ParseTaskRef(args[0]) // valid: the copy succeeded
 			success(cmd.OutOrStdout(), "Copied %s to %s: %s", core.FormatTaskRef(prefix, seq), t.Ref, t.Title)
+			if edit {
+				return editInEditor(cmd, s, t)
+			}
 			return nil
 		},
 	}
 	cmd.Flags().StringVarP(&project, "project", "p", "", "project for the copy (default: the original's project)")
 	cmd.Flags().StringVar(&title, "title", "", "title for the copy (default: the original's title)")
 	cmd.Flags().StringVar(&status, "status", string(core.StatusTodo), "status for the copy")
+	cmd.Flags().BoolVar(&edit, "edit", false, "open the copy in your editor")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	return cmd
 }

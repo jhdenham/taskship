@@ -250,3 +250,33 @@ func TestTaskCopy(t *testing.T) {
 		}
 	}
 }
+
+func TestAddAndCopyEdit(t *testing.T) {
+	seedCLIProjects(t)
+	tmp := fakeEditor(t, "---\nlabels: [cli]\n---\n# Fix export in other\n\nUse the other project's paths.\n")
+
+	// Without a terminal, or with --json, nothing is created.
+	for _, args := range [][]string{{"add", "Fix export", "-p", "myproject", "--edit"}, {"add", "Fix export", "-p", "myproject", "--edit", "--json"}} {
+		if r := run(t, "", args...); r.code != exitInvalidInput {
+			t.Errorf("%v: exit %d, stderr %q", args, r.code, r.stderr)
+		}
+	}
+	if out := mustRun(t, "tasks", "-p", "myproject"); strings.Contains(out, "PROJ-") {
+		t.Errorf("a refused --edit created a task:\n%s", out)
+	}
+
+	if r := runInput(t, "", "add", "Fix export", "-p", "myproject", "--edit"); r.code != 0 ||
+		r.stdout != "✓ Created PROJ-1: Fix export\n✓ Updated PROJ-1: Fix export in other\n" {
+		t.Errorf("add --edit: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	assertNoDrafts(t, tmp)
+	fakeEditor(t, "---\ntitle: nope\n---\n# T\n")
+	r := runInput(t, "", "task", "copy", "PROJ-1", "-p", "other", "--edit")
+	if r.code != exitInvalidInput || !strings.HasPrefix(r.stdout, "✓ Copied PROJ-1 to OTH-1: Fix export in other\n") ||
+		!strings.Contains(r.stderr, "taskship task edit OTH-1 --from ") {
+		t.Errorf("copy --edit with invalid edits: exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	if got := taskJSON(t, "OTH-1"); got["title"] != "Fix export in other" || fmt.Sprint(got["labels"]) != "[cli]" {
+		t.Errorf("copy after invalid edits = %v", got)
+	}
+}
