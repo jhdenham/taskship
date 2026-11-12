@@ -19,7 +19,7 @@ const maxPromptBytes = 128<<10 - 1
 // with "-" from being read as an option.
 func ClaudeArgs(sessionID, prompt string) ([]string, error) {
 	if len(prompt) > maxPromptBytes {
-		return nil, fmt.Errorf("the prompt is %d KB, more than the %d KB an agent can be given; shorten the task's description",
+		return nil, fmt.Errorf("the prompt is %d KB, more than the %d KB an agent can be given; shorten the task's description or its comments",
 			len(prompt)>>10, (maxPromptBytes+1)>>10)
 	}
 	return []string{"--permission-mode", "plan", "--session-id", sessionID, "--", prompt}, nil
