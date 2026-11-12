@@ -101,9 +101,11 @@ new task in $VISUAL or $EDITOR, as "taskship task edit" does.`,
 			}
 			success(cmd.OutOrStdout(), "Created %s: %s", t.Ref, t.Title)
 			if edit {
-				if err := editInEditor(cmd, s, t); err != nil {
+				t, changed, err := editInEditor(cmd, s, t)
+				if err != nil {
 					return err
 				}
+				reportEdit(cmd, t, changed, false)
 			}
 			if setUp {
 				lipgloss.Fprintln(cmd.OutOrStdout(), "\nRun "+cmdRef("taskship tasks")+" to list this project's tasks.")
@@ -404,52 +406,35 @@ for the format.`,
 			}
 			defer s.Close()
 
-			// draft is the editor's temporary file. It is kept if the edits
-			// cannot be applied, so they are not lost.
-			var draft string
-			keepDraft := func(err error) error {
-				if draft == "" {
-					return err
-				}
-				return fmt.Errorf("%w\nYour edits are saved in %s. Fix them and run: %s", err, pathRef(draft), command.Render("taskship task edit "+args[0]+" --from "+draft))
-			}
 			if patch == (store.TaskPatch{}) {
 				t, err := s.GetTask(ctx, args[0])
 				if err != nil {
 					return err
 				}
-				var src []byte
-				if fromFile {
-					src, err = readFrom(cmd, from)
-				} else {
-					draft, src, err = editMarkdown(cmd, t)
+				if !fromFile {
+					t, changed, err := editInEditor(cmd, s, t)
+					if err != nil {
+						return err
+					}
+					return reportEdit(cmd, t, changed, asJSON)
 				}
+				src, err := readFrom(cmd, from)
 				if err != nil {
 					return err
 				}
 				if patch, err = markdownPatch(t, string(src)); err != nil {
-					return keepDraft(err)
+					return err
 				}
 				if patch == (store.TaskPatch{}) {
-					removeDraft(draft)
-					if asJSON {
-						return writeJSON(cmd, t)
-					}
-					fmt.Fprintf(cmd.OutOrStdout(), "No changes to %s\n", t.Ref)
-					return nil
+					return reportEdit(cmd, t, false, asJSON)
 				}
 			}
 			patch.RunID = os.Getenv(runIDEnv)
 			t, err := s.UpdateTask(ctx, args[0], patch)
 			if err != nil {
-				return keepDraft(err)
+				return err
 			}
-			removeDraft(draft)
-			if asJSON {
-				return writeJSON(cmd, t)
-			}
-			success(cmd.OutOrStdout(), "Updated %s: %s", t.Ref, t.Title)
-			return nil
+			return reportEdit(cmd, t, true, asJSON)
 		},
 	}
 	cmd.Flags().StringVar(&title, "title", "", "new title")
@@ -506,31 +491,45 @@ func checkEditFlag(cmd *cobra.Command, edit, asJSON bool) error {
 }
 
 // editInEditor opens t as Markdown in the user's editor and applies the
-// changes, like "task edit" without flags. If they can't be applied, the
-// edits are kept in a file and the error says how to apply them.
-func editInEditor(cmd *cobra.Command, s *store.Store, t core.Task) error {
+// changes, returning the task as it is afterwards and whether it changed.
+// If the edits can't be applied, they are kept in a file (the editor's
+// draft) and the error says how to apply them.
+func editInEditor(cmd *cobra.Command, s *store.Store, t core.Task) (core.Task, bool, error) {
 	draft, src, err := editMarkdown(cmd, t)
 	if err != nil {
-		return err
+		return t, false, err
 	}
 	keepDraft := func(err error) error {
 		return fmt.Errorf("%w\nYour edits are saved in %s. Fix them and run: %s", err, pathRef(draft), command.Render("taskship task edit "+t.Ref+" --from "+draft))
 	}
 	patch, err := markdownPatch(t, string(src))
 	if err != nil {
-		return keepDraft(err)
+		return t, false, keepDraft(err)
 	}
 	if patch == (store.TaskPatch{}) {
 		removeDraft(draft)
-		fmt.Fprintf(cmd.OutOrStdout(), "No changes to %s\n", t.Ref)
-		return nil
+		return t, false, nil
 	}
 	patch.RunID = os.Getenv(runIDEnv)
-	if t, err = s.UpdateTask(cmd.Context(), t.Ref, patch); err != nil {
-		return keepDraft(err)
+	updated, err := s.UpdateTask(cmd.Context(), t.Ref, patch)
+	if err != nil {
+		return t, false, keepDraft(err)
 	}
 	removeDraft(draft)
-	success(cmd.OutOrStdout(), "Updated %s: %s", t.Ref, t.Title)
+	return updated, true, nil
+}
+
+// reportEdit prints the result of an edit: the task as JSON, "No changes to
+// REF", or "✓ Updated REF: Title".
+func reportEdit(cmd *cobra.Command, t core.Task, changed, asJSON bool) error {
+	switch {
+	case asJSON:
+		return writeJSON(cmd, t)
+	case !changed:
+		fmt.Fprintf(cmd.OutOrStdout(), "No changes to %s\n", t.Ref)
+	default:
+		success(cmd.OutOrStdout(), "Updated %s: %s", t.Ref, t.Title)
+	}
 	return nil
 }
 
@@ -628,7 +627,11 @@ opens the copy in $VISUAL or $EDITOR, as "taskship task edit" does.`,
 			prefix, seq, _ := core.ParseTaskRef(args[0]) // valid: the copy succeeded
 			success(cmd.OutOrStdout(), "Copied %s to %s: %s", core.FormatTaskRef(prefix, seq), t.Ref, t.Title)
 			if edit {
-				return editInEditor(cmd, s, t)
+				t, changed, err := editInEditor(cmd, s, t)
+				if err != nil {
+					return err
+				}
+				return reportEdit(cmd, t, changed, false)
 			}
 			return nil
 		},
