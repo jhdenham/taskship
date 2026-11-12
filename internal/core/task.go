@@ -87,6 +87,13 @@ func ValidateTask(t Task) error {
 	if strings.ContainsAny(t.Title, "\r\n") {
 		return fmt.Errorf("%w: title must be a single line", ErrInvalid)
 	}
+	// The marker starts the read-only comments section of a task document,
+	// so in a description it would cut the description short when parsed.
+	for _, line := range strings.Split(t.Description, "\n") {
+		if strings.TrimSpace(line) == CommentsMarker {
+			return fmt.Errorf("%w: description must not contain the line %s", ErrInvalid, CommentsMarker)
+		}
+	}
 	if _, err := ParseStatus(string(t.Status)); err != nil {
 		return err
 	}

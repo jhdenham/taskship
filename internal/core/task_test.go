@@ -42,6 +42,12 @@ func TestValidateTask(t *testing.T) {
 		"unknown status":   func(t *Task) { t.Status = "open" },
 		"empty status":     func(t *Task) { t.Status = "" },
 		"unknown priority": func(t *Task) { t.Priority = "p1" },
+		"comments marker":  func(t *Task) { t.Description = "Body\n  " + CommentsMarker + "\n## Comments" },
+	}
+	mentioned := valid
+	mentioned.Description = "The marker is " + CommentsMarker + " on its own line."
+	if err := ValidateTask(mentioned); err != nil {
+		t.Errorf("marker inside a line: %v", err)
 	}
 	for name, mutate := range tests {
 		task := valid
