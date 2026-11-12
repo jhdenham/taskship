@@ -61,7 +61,9 @@ Taskship's internal SQLite/PostgreSQL store is one source. Future sources includ
 
 ## Agent runs
 
-A run records an attempt to work on a task, including agent, machine, plan, and outcome where available. Runs are separate from task workflow status.
+A run records one launch of an agent for a task: the agent, the machine, the folder, the agent's session, when it started and ended, and its exit code. A run is `running` while the agent is open, `ended` once it exits, and `failed` if the agent couldn't be started. Runs are separate from task workflow status: a run ending doesn't change the task.
+
+`taskship runs PROJ-1` lists a task's runs, newest first (`--json` for scripts). To pick up a Claude session where it stopped, run `claude --resume SESSION` from the run's folder.
 
 ## Which project a folder belongs to
 
@@ -102,9 +104,16 @@ When the output is piped, that line is left out so scripts get only the table; `
 
 ## Plan-first dispatch
 
-The default agent workflow reviews task readiness and proposes a plan before code changes. Explicit approval is required; agent-native permissions remain important.
+`taskship PROJ-1` (short for `taskship run PROJ-1`) launches Claude Code on the task in your terminal:
 
-`taskship PROJ-1 --dry-run` (short for `taskship run PROJ-1 --dry-run`) shows what a run would do without launching anything: the agent (`--agent`, `-a`; only `claude` for now), the folder it would start in, and the exact prompt it would receive. Launching agents is not implemented yet, so `--dry-run` is required.
+```text
+$ taskship PROJ-1
+✓ Launching Claude for PROJ-1 in ~/code/myproject
+```
+
+Claude starts in plan mode, with the task as its first message. It reviews the repository and the task, proposes a plan, and asks you to approve the plan before it edits any files; that approval is Claude's own, not just a request in the prompt. From there you work in Claude as usual. Ctrl-C goes to Claude, and when Claude exits, `taskship` exits with Claude's exit code. Launching needs a terminal, and Claude Code must be on your `PATH` (otherwise the command fails with exit code 6). The agent is chosen with `--agent` (`-a`); only `claude` exists for now.
+
+`taskship PROJ-1 --dry-run` shows what a run would do without launching anything: the agent, the folder it would start in, and the exact prompt it would receive.
 
 The agent always starts at the project's folder, never in a deeper subfolder, so it can see the whole checkout. The folder is chosen in this order:
 
@@ -114,7 +123,7 @@ The agent always starts at the project's folder, never in a deeper subfolder, so
 
 In a Git worktree, the agent starts at the same position in the worktree as the project's folder has in the main checkout. That is usually the worktree's top level. For a project set up at a monorepo subfolder such as `~/code/mono/api`, it is that subfolder of the worktree. A bare repository has no files to work on, so from outside its worktrees the command fails and says to run it from one of them.
 
-The prompt contains only the task's ref, project, title, and description (acceptance criteria are part of the description), never configuration or environment variables, so it can't carry credentials. The title and description are fenced and marked as untrusted requirements, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. This is a request to the agent, not an enforcement mechanism.
+The prompt contains only the task's ref, project, title, and description (acceptance criteria are part of the description), never configuration or environment variables, so it can't carry credentials. The title and description are fenced and marked as untrusted requirements, so text in a task can't pose as instructions. The prompt asks the agent to inspect the repository, assess whether the task is ready, ask questions if critical information is missing, and propose a plan without changing files until you approve it. Plan mode enforces the approval step inside Claude, but neither is a security boundary: keep using Claude's own permission settings.
 
 ## Leave no trace and worktree discovery
 
