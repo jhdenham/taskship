@@ -1,6 +1,9 @@
 package core
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // RunState is the state of an agent run.
 type RunState string
@@ -15,6 +18,7 @@ const (
 // Run records one launch of an agent for a task on this machine.
 type Run struct {
 	ID            string     `json:"id"`
+	Number        int        `json:"number"` // per task: #1, #2, ...
 	TaskID        string     `json:"task_id"`
 	TaskRef       string     `json:"task_ref"`
 	Agent         string     `json:"agent"`
@@ -25,4 +29,22 @@ type Run struct {
 	ExitCode      *int       `json:"exit_code,omitempty"`
 	StartedAt     time.Time  `json:"started_at"`
 	EndedAt       *time.Time `json:"ended_at,omitempty"`
+}
+
+// RunRef names a run for display, e.g. "Claude (run #2)".
+type RunRef struct {
+	Agent  string
+	Number int
+}
+
+func (r RunRef) String() string {
+	return fmt.Sprintf("%s (run #%d)", AgentName(r.Agent), r.Number)
+}
+
+// AgentName returns an agent's display name, e.g. "Claude" for "claude".
+func AgentName(agent string) string {
+	if agent == "claude" {
+		return "Claude"
+	}
+	return agent
 }

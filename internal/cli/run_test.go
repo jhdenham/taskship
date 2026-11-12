@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -192,7 +193,7 @@ func TestRunLaunchesClaude(t *testing.T) {
 	// runs lists them newest first; --json has every field.
 	list := mustRun(t, "runs", "proj-1")
 	lines := strings.Split(strings.TrimSpace(list), "\n")
-	if len(lines) != 5 || !strings.HasPrefix(lines[0], "STARTED ") || !strings.Contains(lines[1], " claude  ended  3 ") ||
+	if len(lines) != 5 || !strings.HasPrefix(lines[0], "RUN  STARTED ") || !strings.HasPrefix(lines[1], "#2 ") || !strings.Contains(lines[1], " claude  ended  3 ") ||
 		!strings.HasSuffix(lines[2], args[3]) || lines[4] != "To resume a session, run \"claude --resume SESSION\" in its folder." {
 		t.Errorf("runs output:\n%s", list)
 	}
@@ -298,11 +299,34 @@ func TestRunIDFromEnvironment(t *testing.T) {
 		t.Errorf("comments = %+v, %v", comments, err)
 	}
 
+	// What people see: the completing run in show and runs, and comment headings.
+	show := mustRun(t, "show", "PROJ-1")
+	if !regexp.MustCompile(`\nCompleted:  \d{4}-\d\d-\d\d \d\d:\d\d:\d\d by Claude \(run #1\)\n`).MatchString(show) ||
+		!regexp.MustCompile(`\n#1 · \d{4}-\d\d-\d\d \d\d:\d\d · Claude \(run #1\)\nDone: fixed the CSV path.\n`).MatchString(show) {
+		t.Errorf("show =\n%s", show)
+	}
+	if md := mustRun(t, "show", "PROJ-1", "--md"); !strings.Contains(md, " · Claude (run #1)\n\nDone: fixed the CSV path.\n") {
+		t.Errorf("show --md =\n%s", md)
+	}
+	if runs := mustRun(t, "runs", "PROJ-1"); !regexp.MustCompile(`(?m)^#1   \S+ \S+  claude  running  -     ✓          /w `).MatchString(runs) {
+		t.Errorf("runs =\n%s", runs)
+	}
+
 	// Without it, nothing is credited.
 	t.Setenv(runIDEnv, "")
 	mustRun(t, "task", "edit", "PROJ-1", "--status", "todo")
 	mustRun(t, "task", "edit", "PROJ-1", "--status", "done")
 	if got := taskJSON(t, "PROJ-1"); got["completed_run_id"] != nil || got["completed_at"] == nil {
 		t.Errorf("task = %v", got)
+	}
+	if show := mustRun(t, "show", "PROJ-1"); !regexp.MustCompile(`\nCompleted:  \S+ \S+\n`).MatchString(show) {
+		t.Errorf("show completed by hand =\n%s", show)
+	}
+	mustRun(t, "task", "edit", "PROJ-1", "--status", "in_progress")
+	if show := mustRun(t, "show", "PROJ-1"); strings.Contains(show, "Completed:") {
+		t.Errorf("show after reopening =\n%s", show)
+	}
+	if runs := mustRun(t, "runs", "PROJ-1"); strings.Contains(runs, "✓") {
+		t.Errorf("runs after reopening =\n%s", runs)
 	}
 }

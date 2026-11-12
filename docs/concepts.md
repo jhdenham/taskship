@@ -80,9 +80,18 @@ Taskship's internal SQLite/PostgreSQL store is one source. Future sources includ
 
 A run records one launch of an agent for a task: the agent, the machine, the folder, the agent's session, when it started and ended, and its exit code. A run is `running` while the agent is open, `ended` once it exits, and `failed` if the agent couldn't be started. Runs are separate from task workflow status: a run ending doesn't change the task.
 
-`taskship runs PROJ-1` lists a task's runs, newest first (`--json` for scripts). To pick up a Claude session where it stopped, run `claude --resume SESSION` from the run's folder.
+Runs are numbered per task: the first run of `PROJ-1` is run #1, and Taskship calls it, for example, "Claude (run #1)". `taskship runs PROJ-1` lists a task's runs, newest first (`--json` for scripts):
 
-When a task moves to `done`, Taskship records when; the time is cleared if the task leaves `done` again. While an agent runs, its `TASKSHIP_RUN_ID` environment variable tells the `taskship` commands it runs which run they belong to: if the agent marks the task done, the task records that run as the one that completed it, and comments the agent adds record the run too. Taskship only accepts a run that is still running and belongs to the same task, so a leftover value does nothing. `--json` output includes `completed_at`, `completed_run_id`, and a comment's `run_id`.
+```text
+$ taskship runs PROJ-1
+RUN  STARTED           AGENT   STATE  EXIT  COMPLETED  FOLDER            SESSION
+#2   2026-11-12 14:03  claude  ended  0     ✓          ~/code/myproject  6320422c-f7e9-4ccc-9db9-b2ff8d38d95e
+#1   2026-11-12 13:40  claude  ended  130              ~/code/myproject  a3036f1a-1c58-4c6d-a349-a29c3f35f74d
+```
+
+COMPLETED marks the run whose agent marked the task done. To pick up a Claude session where it stopped, run `claude --resume SESSION` from the run's folder.
+
+When a task moves to `done`, Taskship records when, and `show` prints it, such as `Completed:  2026-11-12 14:31:40 by Claude (run #2)`; the time is cleared if the task leaves `done` again. While an agent runs, its `TASKSHIP_RUN_ID` environment variable tells the `taskship` commands it runs which run they belong to: if the agent marks the task done, the task records that run as the one that completed it, and comments the agent adds record the run too, shown in their heading: `#2 · 2026-11-12 14:30 · Claude (run #2)`. Taskship only accepts a run that is still running and belongs to the same task, so a leftover value does nothing. `--json` output includes `completed_at`, `completed_run_id`, and a comment's `run_id`.
 
 ## Which project a folder belongs to
 

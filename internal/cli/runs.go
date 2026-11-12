@@ -15,8 +15,10 @@ func newRunsCmd() *cobra.Command {
 		Short: "List a task's agent runs",
 		Long: `List the agent runs launched for a task on this machine, newest first.
 
-A run is "running" while its agent is open, "ended" with the agent's exit
-code once it exits, and "failed" if the agent couldn't be started. Resume a
+Runs are numbered per task (#1, #2, ...). A run is "running" while its agent
+is open, "ended" with the agent's exit code once it exits, and "failed" if the
+agent couldn't be started. COMPLETED marks the run whose agent marked the task
+done. Resume a
 Claude session with "claude --resume SESSION" from the run's folder.`,
 		Example: "  taskship runs PROJ-42",
 		Args:    exactArgs(1),
@@ -44,14 +46,18 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 				return nil
 			}
 			w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "STARTED\tAGENT\tSTATE\tEXIT\tFOLDER\tSESSION")
+			fmt.Fprintln(w, "RUN\tSTARTED\tAGENT\tSTATE\tEXIT\tCOMPLETED\tFOLDER\tSESSION")
 			for _, r := range runs {
 				exit := "-"
 				if r.ExitCode != nil {
 					exit = fmt.Sprint(*r.ExitCode)
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n", r.StartedAt.Local().Format("2006-01-02 15:04"),
-					r.Agent, r.State, exit, displayPath(r.WorkspacePath), r.SessionID)
+				completed := ""
+				if r.ID == t.CompletedRunID {
+					completed = "✓"
+				}
+				fmt.Fprintf(w, "#%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", r.Number, r.StartedAt.Local().Format("2006-01-02 15:04"),
+					r.Agent, r.State, exit, completed, displayPath(r.WorkspacePath), r.SessionID)
 			}
 			if err := w.Flush(); err != nil {
 				return err

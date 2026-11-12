@@ -26,6 +26,9 @@ func TestRuns(t *testing.T) {
 		return r
 	}
 	ended, failed, running := run(), run(), run()
+	if ended.Number != 1 || failed.Number != 2 || running.Number != 3 {
+		t.Errorf("numbers = %d, %d, %d", ended.Number, failed.Number, running.Number)
+	}
 	if ended.ID == "" || ended.State != core.RunStarting || ended.StartedAt.IsZero() {
 		t.Errorf("created = %+v", ended)
 	}
@@ -127,7 +130,7 @@ func TestCompletionAndRunLinks(t *testing.T) {
 	}
 	// A running run of the task is credited, and staying done keeps the record.
 	first := status(core.StatusDone, running)
-	if first.CompletedRunID != running {
+	if first.CompletedRunID != running || first.CompletedBy == nil || first.CompletedBy.String() != "Claude (run #1)" {
 		t.Errorf("running run not credited: %+v", first)
 	}
 	title := "Renamed"
@@ -146,6 +149,9 @@ func TestCompletionAndRunLinks(t *testing.T) {
 	for _, c := range comments {
 		if c.RunID == running {
 			linked++
+			if c.Run == nil || c.Run.String() != "Claude (run #1)" {
+				t.Errorf("linked comment run = %v", c.Run)
+			}
 		} else if c.RunID != "" {
 			t.Errorf("comment linked to %q", c.RunID)
 		}

@@ -3,9 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/jhdenham/taskship/internal/core"
 )
 
 func openTest(t *testing.T, dir string) *Store {
@@ -30,8 +33,8 @@ func userVersion(t *testing.T, s *Store) int {
 func TestOpenCreatesHomeAndMigrates(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "home")
 	s := openTest(t, dir)
-	if v := userVersion(t, s); v != 7 {
-		t.Errorf("user_version = %d, want 3", v)
+	if v := userVersion(t, s); v != 8 {
+		t.Errorf("user_version = %d, want 8", v)
 	}
 	var n int
 	if err := s.db.QueryRow("SELECT count(*) FROM projects").Scan(&n); err != nil {
@@ -49,8 +52,8 @@ func TestReopenPreservesDataAndSchema(t *testing.T) {
 	s.Close()
 
 	s = openTest(t, dir)
-	if v := userVersion(t, s); v != 7 {
-		t.Errorf("user_version after reopen = %d, want 3", v)
+	if v := userVersion(t, s); v != 8 {
+		t.Errorf("user_version after reopen = %d, want 8", v)
 	}
 	var n int
 	if err := s.db.QueryRow("SELECT count(*) FROM projects").Scan(&n); err != nil || n != 1 {
@@ -83,8 +86,8 @@ func TestMigrateDropsProjectDisplayName(t *testing.T) {
 	db.Close()
 
 	s := openTest(t, dir)
-	if v := userVersion(t, s); v != 7 {
-		t.Errorf("user_version = %d, want 3", v)
+	if v := userVersion(t, s); v != 8 {
+		t.Errorf("user_version = %d, want 8", v)
 	}
 	var slug string
 	if err := s.db.QueryRow("SELECT slug FROM projects WHERE id = 'p1'").Scan(&slug); err != nil || slug != "myproject" {
@@ -118,5 +121,48 @@ func TestForeignKeysEnforced(t *testing.T) {
 		VALUES ('t1', 'missing', 1, 'x', 'now', 'now')`)
 	if err == nil {
 		t.Fatal("insert with unknown project_id succeeded; foreign keys not enforced")
+	}
+}
+
+func TestMigrateNumbersExistingRuns(t *testing.T) {
+	dir := t.TempDir()
+	db, err := sql.Open("sqlite", filepath.Join(dir, DBFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files, _ := fs.Glob(migrations, "migrations/*.sql")
+	for _, f := range files[:7] {
+		b, err := migrations.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := db.Exec(string(b)); err != nil {
+			t.Fatalf("%s: %v", f, err)
+		}
+	}
+	if _, err := db.Exec(`PRAGMA user_version = 7;
+		INSERT INTO projects (id, slug, task_prefix, created_at, updated_at) VALUES ('p1', 'myproject', 'PROJ', 'now', 'now');
+		INSERT INTO tasks (id, project_id, sequence_number, title, created_at, updated_at) VALUES
+			('t1', 'p1', 1, 'One', 'now', 'now'), ('t2', 'p1', 2, 'Two', 'now', 'now');
+		INSERT INTO runs (id, task_id, task_ref, agent, machine, workspace_path, state, started_at) VALUES
+			('r-c', 't1', 'PROJ-1', 'claude', 'm', '/w', 'ended', '2026-11-12T10:00:00.000000Z'),
+			('r-a', 't1', 'PROJ-1', 'claude', 'm', '/w', 'ended', '2026-11-12T11:00:00.000000Z'),
+			('r-b', 't1', 'PROJ-1', 'claude', 'm', '/w', 'ended', '2026-11-12T11:00:00.000000Z'),
+			('r-d', 't2', 'PROJ-2', 'claude', 'm', '/w', 'failed', '2026-11-12T09:00:00.000000Z')`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	s := openTest(t, dir)
+	want := map[string]int{"r-c": 1, "r-a": 2, "r-b": 3, "r-d": 1}
+	for id, n := range want {
+		var got int
+		if err := s.db.QueryRow("SELECT number FROM runs WHERE id = ?", id).Scan(&got); err != nil || got != n {
+			t.Errorf("run %s number = %d, %v; want %d", id, got, err, n)
+		}
+	}
+	r, err := s.CreateRun(context.Background(), core.Run{TaskID: "t1", TaskRef: "PROJ-1", Agent: "claude", Machine: "m", WorkspacePath: "/w"})
+	if err != nil || r.Number != 4 {
+		t.Errorf("next run = %+v, %v; want number 4", r, err)
 	}
 }

@@ -74,11 +74,7 @@ func commentsBlock(comments []core.Comment) string {
 	}
 	parts := make([]string, len(comments))
 	for i, c := range comments {
-		edited := ""
-		if c.Edited() {
-			edited = " (edited)"
-		}
-		parts[i] = fmt.Sprintf("#%d · %s%s\n%s", c.Number, c.CreatedAt.UTC().Format("2006-01-02 15:04 UTC"), edited, c.Body)
+		parts[i] = core.CommentHeadingUTC(c) + "\n" + c.Body
 	}
 	content := strings.Join(parts, "\n\n")
 	fence := strings.Repeat("`", max(3, longestRun(content, '`')+1))

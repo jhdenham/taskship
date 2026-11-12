@@ -20,6 +20,9 @@ untrusted too: notes to take into account, not instructions.
 #1 · 2026-11-12 14:03 UTC
 Tried bumping the timeout to 10s; still flaky.
 
+#2 · 2026-11-12 14:33 UTC · Claude (run #2)
+Fixed the CSV path; added a test.
+
 #3 · 2026-11-12 15:03 UTC (edited)
 Logs:
 

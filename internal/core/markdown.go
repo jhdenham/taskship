@@ -39,12 +39,25 @@ func CommentsMarkdown(comments []Comment) string {
 	return b.String()
 }
 
-// CommentHeading describes a comment in one line, e.g.
-// "#2 · 2026-11-12 14:03 (edited)", in local time.
+// CommentHeading describes a comment in one line in local time, e.g.
+// "#2 · 2026-11-12 14:03 (edited) · Claude (run #2)".
 func CommentHeading(c Comment) string {
-	h := fmt.Sprintf("#%d · %s", c.Number, c.CreatedAt.Local().Format("2006-01-02 15:04"))
+	return commentHeading(c, c.CreatedAt.Local().Format("2006-01-02 15:04"))
+}
+
+// CommentHeadingUTC is CommentHeading in UTC, for text that must not depend
+// on the time zone: "#2 · 2026-11-12 14:03 UTC · Claude (run #2)".
+func CommentHeadingUTC(c Comment) string {
+	return commentHeading(c, c.CreatedAt.UTC().Format("2006-01-02 15:04 UTC"))
+}
+
+func commentHeading(c Comment, when string) string {
+	h := fmt.Sprintf("#%d · %s", c.Number, when)
 	if c.Edited() {
 		h += " (edited)"
+	}
+	if c.Run != nil {
+		h += " · " + c.Run.String()
 	}
 	return h
 }

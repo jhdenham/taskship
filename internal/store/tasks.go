@@ -17,8 +17,8 @@ import (
 const taskSelect = `SELECT t.id, p.task_prefix, t.project_id, p.slug, t.sequence_number, t.title,
 	t.description, t.status, t.priority, t.archived_at, t.created_at, t.updated_at,
 	(SELECT group_concat(label, ',') FROM task_labels WHERE task_id = t.id),
-	t.completed_at, COALESCE(t.completed_run_id, '')
-	FROM tasks t JOIN projects p ON p.id = t.project_id`
+	t.completed_at, COALESCE(t.completed_run_id, ''), COALESCE(cr.agent, ''), COALESCE(cr.number, 0)
+	FROM tasks t JOIN projects p ON p.id = t.project_id LEFT JOIN runs cr ON cr.id = t.completed_run_id`
 
 // CreateTask validates t and stores it in the project with the given name,
 // assigning the next sequence number in that project.
@@ -149,7 +149,7 @@ func (s *Store) UpdateTask(ctx context.Context, ref string, patch TaskPatch) (co
 	switch isDone := t.Status == core.StatusDone; {
 	case isDone && !wasDone:
 		t.CompletedAt = &t.UpdatedAt
-		if t.CompletedRunID, err = activeRun(ctx, tx, patch.RunID, t.ID); err != nil {
+		if t.CompletedRunID, _, err = activeRun(ctx, tx, patch.RunID, t.ID); err != nil {
 			return core.Task{}, err
 		}
 	case !isDone:
@@ -166,6 +166,9 @@ func (s *Store) UpdateTask(ctx context.Context, ref string, patch TaskPatch) (co
 		completed_at = ?, completed_run_id = ? WHERE id = ?`,
 		t.Title, t.Description, t.Status, t.Priority, t.UpdatedAt.Format(timeLayout), completedAt, completedRun, t.ID)
 	if err != nil {
+		return core.Task{}, err
+	}
+	if t, err = getTask(ctx, tx, t.Ref); err != nil {
 		return core.Task{}, err
 	}
 	return t, tx.Commit()
@@ -275,10 +278,14 @@ func scanTask(row interface{ Scan(...any) error }) (core.Task, error) {
 	var t core.Task
 	var prefix, created, updated string
 	var archived, labels, completed sql.NullString
+	var by core.RunRef
 	if err := row.Scan(&t.ID, &prefix, &t.ProjectID, &t.Project, &t.Sequence, &t.Title,
 		&t.Description, &t.Status, &t.Priority, &archived, &created, &updated, &labels,
-		&completed, &t.CompletedRunID); err != nil {
+		&completed, &t.CompletedRunID, &by.Agent, &by.Number); err != nil {
 		return core.Task{}, err
+	}
+	if t.CompletedRunID != "" {
+		t.CompletedBy = &by
 	}
 	t.Labels = []string{}
 	if labels.Valid {

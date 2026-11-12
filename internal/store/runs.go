@@ -12,26 +12,36 @@ import (
 	"github.com/jhdenham/taskship/internal/core"
 )
 
-const runSelect = `SELECT id, task_id, task_ref, agent, machine, workspace_path, session_id,
+const runSelect = `SELECT id, number, task_id, task_ref, agent, machine, workspace_path, session_id,
 state, exit_code, started_at, ended_at FROM runs`
 
-// CreateRun records r as starting now and returns it with its ID and start
-// time set. Record a run before starting the agent, so failed launches are
-// recorded too.
+// CreateRun records r as starting now and returns it with its ID, number and
+// start time set. Record a run before starting the agent, so failed launches
+// are recorded too.
 func (s *Store) CreateRun(ctx context.Context, r core.Run) (core.Run, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
 		return core.Run{}, err
 	}
 	r.ID, r.State, r.StartedAt = id.String(), core.RunStarting, now()
-	_, err = s.db.ExecContext(ctx,
-		`INSERT INTO runs (id, task_id, task_ref, agent, machine, workspace_path, session_id, state, started_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		r.ID, r.TaskID, r.TaskRef, r.Agent, r.Machine, r.WorkspacePath, r.SessionID, r.State, r.StartedAt.Format(timeLayout))
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return core.Run{}, err
 	}
-	return r, nil
+	defer tx.Rollback()
+	// Runs are never deleted, so MAX + 1 never reuses a number.
+	if err := tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(number), 0) + 1 FROM runs WHERE task_id = ?", r.TaskID).
+		Scan(&r.Number); err != nil {
+		return core.Run{}, err
+	}
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO runs (id, number, task_id, task_ref, agent, machine, workspace_path, session_id, state, started_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		r.ID, r.Number, r.TaskID, r.TaskRef, r.Agent, r.Machine, r.WorkspacePath, r.SessionID, r.State, r.StartedAt.Format(timeLayout))
+	if err != nil {
+		return core.Run{}, err
+	}
+	return r, tx.Commit()
 }
 
 // StartRun marks a run as running once its agent process has started.
@@ -63,19 +73,23 @@ func (s *Store) updateRun(ctx context.Context, query string, args ...any) error 
 	return nil
 }
 
-// activeRun returns runID if it is a running run of the task, and "" if it
-// isn't (or is empty): a stale or foreign TASKSHIP_RUN_ID is ignored.
-func activeRun(ctx context.Context, q querier, runID, taskID string) (string, error) {
+// activeRun returns runID and its display name if it is a running run of the
+// task, and "" and nil if it isn't (or is empty): a stale or foreign
+// TASKSHIP_RUN_ID is ignored.
+func activeRun(ctx context.Context, q querier, runID, taskID string) (string, *core.RunRef, error) {
 	if runID == "" {
-		return "", nil
+		return "", nil, nil
 	}
-	var id string
-	err := q.QueryRowContext(ctx, "SELECT id FROM runs WHERE id = ? AND task_id = ? AND state = ?",
-		runID, taskID, core.RunRunning).Scan(&id)
+	var ref core.RunRef
+	err := q.QueryRowContext(ctx, "SELECT agent, number FROM runs WHERE id = ? AND task_id = ? AND state = ?",
+		runID, taskID, core.RunRunning).Scan(&ref.Agent, &ref.Number)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
+		return "", nil, nil
 	}
-	return id, err
+	if err != nil {
+		return "", nil, err
+	}
+	return runID, &ref, nil
 }
 
 // ListRuns returns a task's runs, newest first.
@@ -91,7 +105,7 @@ func (s *Store) ListRuns(ctx context.Context, taskID string) ([]core.Run, error)
 		var exit sql.NullInt64
 		var started string
 		var ended sql.NullString
-		if err := rows.Scan(&r.ID, &r.TaskID, &r.TaskRef, &r.Agent, &r.Machine, &r.WorkspacePath,
+		if err := rows.Scan(&r.ID, &r.Number, &r.TaskID, &r.TaskRef, &r.Agent, &r.Machine, &r.WorkspacePath,
 			&r.SessionID, &r.State, &exit, &started, &ended); err != nil {
 			return nil, err
 		}

@@ -56,6 +56,7 @@ type Task struct {
 	// task leaves done. CompletedRunID is the agent run that did it, if any.
 	CompletedAt    *time.Time `json:"completed_at,omitempty"`
 	CompletedRunID string     `json:"completed_run_id,omitempty"`
+	CompletedBy    *RunRef    `json:"-"` // names CompletedRunID for display
 }
 
 // ParseStatus validates a status name.

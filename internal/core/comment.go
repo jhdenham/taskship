@@ -15,6 +15,7 @@ type Comment struct {
 	Number    int       `json:"number"`
 	Body      string    `json:"body"`             // Markdown
 	RunID     string    `json:"run_id,omitempty"` // the agent run that added it, if any
+	Run       *RunRef   `json:"-"`                // names RunID for display
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

@@ -312,6 +312,13 @@ func newTaskShowCmd(name string) *cobra.Command {
 			}
 			fmt.Fprintf(w, "Created:\t%s\n", t.CreatedAt.Local().Format(time.DateTime))
 			fmt.Fprintf(w, "Updated:\t%s\n", t.UpdatedAt.Local().Format(time.DateTime))
+			if t.CompletedAt != nil {
+				by := ""
+				if t.CompletedBy != nil {
+					by = " by " + t.CompletedBy.String()
+				}
+				fmt.Fprintf(w, "Completed:\t%s%s\n", t.CompletedAt.Local().Format(time.DateTime), by)
+			}
 			if t.ArchivedAt != nil {
 				fmt.Fprintf(w, "Archived:\t%s\n", t.ArchivedAt.Local().Format(time.DateTime))
 			}

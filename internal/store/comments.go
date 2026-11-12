@@ -12,7 +12,8 @@ import (
 	"github.com/jhdenham/taskship/internal/core"
 )
 
-const commentSelect = "SELECT id, task_id, number, body, COALESCE(run_id, ''), created_at, updated_at FROM comments"
+const commentSelect = `SELECT c.id, c.task_id, c.number, c.body, COALESCE(c.run_id, ''), COALESCE(r.agent, ''), COALESCE(r.number, 0),
+	c.created_at, c.updated_at FROM comments c LEFT JOIN runs r ON r.id = c.run_id`
 
 // AddComment adds a comment to the task with the given ref and returns it
 // with the task's next comment number. runID is the agent run adding it, if
@@ -37,7 +38,7 @@ func (s *Store) AddComment(ctx context.Context, ref, body, runID string) (core.C
 	}
 	c := core.Comment{ID: id.String(), TaskID: t.ID, Body: body, CreatedAt: now()}
 	c.UpdatedAt = c.CreatedAt
-	if c.RunID, err = activeRun(ctx, tx, runID, t.ID); err != nil {
+	if c.RunID, c.Run, err = activeRun(ctx, tx, runID, t.ID); err != nil {
 		return core.Comment{}, err
 	}
 	var run any
@@ -59,7 +60,7 @@ func (s *Store) AddComment(ctx context.Context, ref, body, runID string) (core.C
 
 // ListComments returns a task's comments, oldest first.
 func (s *Store) ListComments(ctx context.Context, taskID string) ([]core.Comment, error) {
-	rows, err := s.db.QueryContext(ctx, commentSelect+" WHERE task_id = ? ORDER BY number", taskID)
+	rows, err := s.db.QueryContext(ctx, commentSelect+" WHERE c.task_id = ? ORDER BY c.number", taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +131,7 @@ func getComment(ctx context.Context, q querier, ref string, n int) (core.Comment
 	if err != nil {
 		return core.Comment{}, err
 	}
-	c, err := scanComment(q.QueryRowContext(ctx, commentSelect+" WHERE task_id = ? AND number = ?", t.ID, n))
+	c, err := scanComment(q.QueryRowContext(ctx, commentSelect+" WHERE c.task_id = ? AND c.number = ?", t.ID, n))
 	if errors.Is(err, sql.ErrNoRows) {
 		return core.Comment{}, fmt.Errorf("%s has no comment #%d: %w", t.Ref, n, core.ErrNotFound)
 	}
@@ -140,8 +141,12 @@ func getComment(ctx context.Context, q querier, ref string, n int) (core.Comment
 func scanComment(row interface{ Scan(...any) error }) (core.Comment, error) {
 	var c core.Comment
 	var created, updated string
-	if err := row.Scan(&c.ID, &c.TaskID, &c.Number, &c.Body, &c.RunID, &created, &updated); err != nil {
+	var run core.RunRef
+	if err := row.Scan(&c.ID, &c.TaskID, &c.Number, &c.Body, &c.RunID, &run.Agent, &run.Number, &created, &updated); err != nil {
 		return core.Comment{}, err
+	}
+	if c.RunID != "" {
+		c.Run = &run
 	}
 	var err error
 	if c.CreatedAt, err = time.Parse(timeLayout, created); err != nil {
