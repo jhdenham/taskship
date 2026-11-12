@@ -35,9 +35,10 @@ internal/store/     SQLite persistence and embedded migrations
 internal/workspace/ project and workspace resolution from directories and Git metadata
 internal/dispatch/  agent run preparation: the plan-first prompt
 docs/               user-facing documentation (planned behavior)
+website/            Astro site for taskship.dev; renders docs/ as its docs pages
 ```
 
-Planned additions: `internal/` packages for the domain, storage, dispatch and server code, plus `website/` for the public site and docs.
+Planned additions: `internal/` packages for the domain, storage, dispatch and server code.
 
 ## Development
 
@@ -53,6 +54,19 @@ gofmt -l .
 ```
 
 Release builds set the version with `-ldflags "-X main.version=v0.1.0"`. `go install` builds report the module version.
+
+### Website
+
+The site in `website/` is built with [Astro](https://astro.build) and requires Node 22 or later (`website/.nvmrc` pins the version for `nvm use`).
+
+```sh
+cd website
+npm ci
+npm run dev       # local server at http://localhost:4321
+npm run build     # static site in website/dist/
+```
+
+The docs pages are rendered from `docs/*.md` in place, so edit the docs there. `website/src/nav.ts` sets the sidebar order and must list every file in `docs/`; the build fails otherwise. CI builds the site on pushes to main and on pull requests.
 
 ## License
 
