@@ -108,6 +108,14 @@ func (m *model) header() string {
 		if m.showCanceled {
 			right = append(right, m.th.faint.Render("showing ")+m.th.value.Bold(true).Render("canceled"))
 		}
+		switch {
+		case m.stale:
+			right = append(right, m.th.keyBold.Render("↻ Changes detected"))
+		case m.updated:
+			right = append(right, m.th.ok.Render("↻ Updated   ")) // as wide as "Up to date"
+		default:
+			right = append(right, m.th.faint.Render("✓ Up to date"))
+		}
 	}
 	// "? help" goes while a box is open, like the footer: ? doesn't open
 	// the help then (the project picker lists it with its own keys).

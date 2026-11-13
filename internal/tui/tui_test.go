@@ -701,3 +701,195 @@ func TestPickerScrolls(t *testing.T) {
 		t.Errorf("enter opened %q", m.project.Name)
 	}
 }
+
+// header is the screen's first line.
+func header(m *model) string { return strings.SplitN(screen(m), "\n", 2)[0] }
+
+// Changes made elsewhere show on the next check, keeping the selection and
+// the open detail view.
+func TestAutoRefresh(t *testing.T) {
+	m, s := myproject(t, 140, 40)
+	ctx := context.Background()
+	m.selectRef("PROJ-9")
+	press(m, "enter") // the detail view, beside the board
+	if m.detailRef != "PROJ-9" || m.selRef != "PROJ-9" {
+		t.Fatalf("setup: detail %q, selected %q", m.detailRef, m.selRef)
+	}
+	if !strings.Contains(header(m), "✓ Up to date") {
+		t.Fatalf("header: %q", header(m))
+	}
+	m.Update(checkMsg{})
+	if m.updated {
+		t.Error("a check without changes says Updated")
+	}
+
+	if _, err := s.CreateTask(ctx, "myproject", core.Task{Title: "Made elsewhere", Status: core.StatusTodo, Priority: core.PriorityNone}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.UpdateTask(ctx, "PROJ-5", store.TaskPatch{Title: ptr("Retitled elsewhere")}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SetTaskArchived(ctx, "PROJ-6", true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.AddComment(ctx, "PROJ-9", "From another terminal.", ""); err != nil {
+		t.Fatal(err)
+	}
+	_, cmd := m.Update(checkMsg{})
+	got := screen(m)
+	for _, want := range []string{"PROJ-10", "From another terminal.", "↻ Updated"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("after the check, missing %q:\n%s", want, got)
+		}
+	}
+	if p5, _ := m.task("PROJ-5"); p5.Title != "Retitled elsewhere" {
+		t.Errorf("PROJ-5 title: %q", p5.Title)
+	}
+	if p6, _ := m.task("PROJ-6"); p6.ArchivedAt == nil || strings.Contains(got, "Add --json") {
+		t.Errorf("PROJ-6 not archived:\n%s", got)
+	}
+	if m.selRef != "PROJ-9" || !m.detailOpen || m.detailRef != "PROJ-9" || len(m.comments) != 3 {
+		t.Errorf("selected %q, detail %v %q, %d comments", m.selRef, m.detailOpen, m.detailRef, len(m.comments))
+	}
+	if cmd == nil {
+		t.Fatal("the check didn't schedule anything")
+	}
+	m.Update(updatedDoneMsg{m.updatedGen})
+	if !strings.Contains(header(m), "✓ Up to date") {
+		t.Errorf("after the flash: %q", header(m))
+	}
+
+	// A comment edited elsewhere is a change too.
+	if _, err := s.UpdateComment(ctx, "PROJ-9", 3, "Edited elsewhere."); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(checkMsg{})
+	if !strings.Contains(screen(m), "Edited elsewhere.") {
+		t.Errorf("edited comment missing:\n%s", screen(m))
+	}
+}
+
+// While a box, menu or question is open, a check changes nothing on screen
+// but the header; the board refreshes once it closes.
+func TestRefreshWaitsForBox(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		open  []string
+		close []string
+	}{
+		{"comment", []string{"c", "text:Half a thought"}, []string{"esc", "y"}},
+		{"status menu", []string{"s"}, []string{"esc"}},
+		{"filter", []string{"/", "text:x"}, []string{"esc"}},
+		{"edit", []string{"e", "text:New "}, []string{"esc", "y"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			m, s := myproject(t, 100, 30)
+			press(m, "l")
+			press(m, tt.open...)
+			before, mode, text := len(m.tasks), m.mode, m.area.Value()
+			if _, err := s.CreateTask(context.Background(), "myproject", core.Task{Title: "Made elsewhere", Status: core.StatusTodo, Priority: core.PriorityNone}); err != nil {
+				t.Fatal(err)
+			}
+			m.Update(checkMsg{})
+			if len(m.tasks) != before || m.mode != mode || m.area.Value() != text {
+				t.Fatalf("the check changed the screen: %d tasks, mode %d, text %q", len(m.tasks), m.mode, m.area.Value())
+			}
+			if !strings.Contains(header(m), "↻ Changes detected") {
+				t.Errorf("header: %q", header(m))
+			}
+			press(m, tt.close...)
+			if m.mode != modeNormal || len(m.tasks) != before+1 || !strings.Contains(header(m), "↻ Updated") {
+				t.Errorf("after closing: mode %d, %d tasks, header %q", m.mode, len(m.tasks), header(m))
+			}
+		})
+	}
+}
+
+// R reloads at once.
+func TestReloadKey(t *testing.T) {
+	m, s := myproject(t, 80, 24)
+	if _, err := s.CreateTask(context.Background(), "myproject", core.Task{Title: "Made elsewhere", Status: core.StatusTodo, Priority: core.PriorityNone}); err != nil {
+		t.Fatal(err)
+	}
+	press(m, "R")
+	if _, ok := m.task("PROJ-10"); !ok {
+		t.Errorf("R didn't reload:\n%s", screen(m))
+	}
+}
+
+// Saving the edit box over a change made elsewhere asks first.
+func TestEditConflict(t *testing.T) {
+	m, s := myproject(t, 80, 24)
+	ctx := context.Background()
+	press(m, "l", "e", "text:Mine. ")
+	if _, err := s.UpdateTask(ctx, "PROJ-5", store.TaskPatch{Description: ptr("Theirs.")}); err != nil {
+		t.Fatal(err)
+	}
+	press(m, "ctrl+s")
+	if m.mode != modeConfirm || !strings.Contains(screen(m), "PROJ-5 changed elsewhere. Overwrite?") {
+		t.Fatalf("no question:\n%s", screen(m))
+	}
+	if got := task(t, s, "PROJ-5").Description; got != "Theirs." {
+		t.Fatalf("saved before asking: %q", got)
+	}
+	press(m, "n")
+	if m.mode != modeEditTask || m.area.Value() != "Mine. " {
+		t.Fatalf("n: mode %d, text %q", m.mode, m.area.Value())
+	}
+	press(m, "ctrl+s", "y")
+	if got := task(t, s, "PROJ-5").Description; m.mode != modeNormal || got != "Mine. " {
+		t.Errorf("y: mode %d, description %q", m.mode, got)
+	}
+
+	// A change elsewhere to a field the edit doesn't touch is kept, without
+	// asking.
+	press(m, "e", "tab", "text: now")
+	if _, err := s.UpdateTask(ctx, "PROJ-5", store.TaskPatch{Status: ptr(core.StatusInProgress)}); err != nil {
+		t.Fatal(err)
+	}
+	press(m, "ctrl+s")
+	got := task(t, s, "PROJ-5")
+	if m.mode != modeNormal || got.Title != "Rate-limit webhook retries now" || got.Status != core.StatusInProgress {
+		t.Errorf("mode %d, %q, %s", m.mode, got.Title, got.Status)
+	}
+}
+
+// Saving from the editor over a change made elsewhere asks first; the draft
+// is kept if not.
+func TestEditorConflict(t *testing.T) {
+	m, s := myproject(t, 80, 24)
+	ctx := context.Background()
+	base := task(t, s, "PROJ-5")
+	m.editTask(base, "") // makes the draft and sets the base; the editor doesn't run
+	draft := m.editDraft
+	t.Cleanup(func() { os.Remove(draft) })
+	mine := base
+	mine.Description = "Mine."
+	if err := os.WriteFile(draft, []byte(core.TaskMarkdown(mine)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.UpdateTask(ctx, "PROJ-5", store.TaskPatch{Description: ptr("Theirs."), Priority: ptr(core.PriorityUrgent)}); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(editedMsg{"PROJ-5", draft, nil})
+	if m.mode != modeConfirm || !strings.Contains(screen(m), "PROJ-5 changed elsewhere. Overwrite?") {
+		t.Fatalf("no question:\n%s", screen(m))
+	}
+	press(m, "n")
+	if _, err := os.Stat(draft); err != nil || m.mode != modeEditError || !strings.Contains(screen(m), "changed elsewhere while you edited it") {
+		t.Fatalf("n: draft %v, mode %d\n%s", err, m.mode, screen(m))
+	}
+	if got := task(t, s, "PROJ-5").Description; got != "Theirs." {
+		t.Fatalf("n saved: %q", got)
+	}
+
+	m.Update(editedMsg{"PROJ-5", draft, nil}) // as if e reopened it unchanged
+	press(m, "y")
+	got := task(t, s, "PROJ-5")
+	if m.mode != modeNormal || got.Description != "Mine." || got.Priority != core.PriorityUrgent {
+		t.Errorf("y: mode %d, %q, priority %s (the other change must stay)", m.mode, got.Description, got.Priority)
+	}
+	if _, err := os.Stat(draft); !os.IsNotExist(err) {
+		t.Errorf("draft kept after saving: %v", err)
+	}
+}

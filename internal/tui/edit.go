@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -17,7 +18,7 @@ import (
 // startEditTask opens the edit box on t, with the focus on the
 // description.
 func (m *model) startEditTask(t core.Task) tea.Cmd {
-	m.mode, m.editTitle, m.editRef = modeEditTask, false, t.Ref
+	m.mode, m.editTitle, m.editRef, m.editBase = modeEditTask, false, t.Ref, t
 	m.titleIn.SetValue(t.Title)
 	m.titleIn.CursorEnd()
 	m.titleIn.Blur()
@@ -47,10 +48,7 @@ func (m *model) editTaskKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "ctrl+s":
 		return m.saveTaskEdit()
 	case "ctrl+e":
-		t, ok := m.task(m.editRef)
-		if !ok {
-			return nil
-		}
+		t := m.editBase
 		t.Title, t.Description = m.titleIn.Value(), restoreTabs(m.area.Value(), t.Description)
 		draft, err := editor.Draft(t.Ref+"-*.md", core.TaskMarkdown(t))
 		if err != nil {
@@ -98,12 +96,10 @@ func (m *model) endEditTask() {
 	m.area.Blur()
 }
 
-// taskEditPatch is the change the form makes to the task.
-func (m *model) taskEditPatch() (store.TaskPatch, bool) {
-	t, ok := m.task(m.editRef)
-	if !ok {
-		return store.TaskPatch{}, false
-	}
+// taskEditPatch is the change the form makes to the task as it was when
+// the edit started.
+func (m *model) taskEditPatch() store.TaskPatch {
+	t := m.editBase
 	var patch store.TaskPatch
 	if title := strings.TrimSpace(m.titleIn.Value()); title != t.Title {
 		patch.Title = &title
@@ -111,36 +107,67 @@ func (m *model) taskEditPatch() (store.TaskPatch, bool) {
 	if desc := strings.Trim(restoreTabs(m.area.Value(), t.Description), "\n"); desc != strings.Trim(t.Description, "\n") {
 		patch.Description = &desc
 	}
-	return patch, true
+	return patch
 }
 
 func (m *model) taskEditChanged() bool {
-	patch, _ := m.taskEditPatch()
-	return patch != store.TaskPatch{}
+	return m.taskEditPatch() != store.TaskPatch{}
 }
 
 // saveTaskEdit saves the form. An invalid change keeps the form open with
-// the error shown.
+// the error shown. If a field it changes was also changed elsewhere since
+// the edit started, it asks before overwriting.
 func (m *model) saveTaskEdit() tea.Cmd {
-	patch, ok := m.taskEditPatch()
-	if !ok {
-		m.endEditTask()
-		return nil
-	}
+	patch := m.taskEditPatch()
 	if patch == (store.TaskPatch{}) {
 		m.endEditTask()
 		m.msg = message{[]string{"No changes to " + m.editRef}}
 		return nil
 	}
+	if cur, err := m.s.GetTask(m.ctx, m.editRef); err == nil && conflicts(m.editBase, cur, patch) {
+		m.askOverwrite(m.editRef, modeEditTask, "keep editing",
+			func() tea.Cmd { return m.saveTaskPatch(patch) },
+			func() tea.Cmd { return m.focusEditField(m.editTitle) })
+		return nil
+	}
+	return m.saveTaskPatch(patch)
+}
+
+// saveTaskPatch saves the form's change, keeping the form open on an error.
+func (m *model) saveTaskPatch(patch store.TaskPatch) tea.Cmd {
 	t, err := m.s.UpdateTask(m.ctx, m.editRef, patch)
 	if err != nil {
 		m.msg = errMsg(m.th, m.editRef+" wasn't saved: "+errText(err))
-		return nil
+		m.mode = modeEditTask
+		return m.focusEditField(m.editTitle)
 	}
 	m.endEditTask()
 	m.reload()
 	m.msg = okMsg(m.th, "Updated "+t.Ref+": "+t.Title)
 	return nil
+}
+
+// conflicts reports whether a field that patch changes was changed
+// elsewhere: it differs between base, the task when the edit started, and
+// cur, the task now.
+func conflicts(base, cur core.Task, patch store.TaskPatch) bool {
+	return patch.Title != nil && cur.Title != base.Title ||
+		patch.Description != nil && cur.Description != base.Description ||
+		patch.Status != nil && cur.Status != base.Status ||
+		patch.Priority != nil && cur.Priority != base.Priority ||
+		patch.Labels != nil && !slices.Equal(cur.Labels, base.Labels)
+}
+
+// askOverwrite asks whether to save an edit over changes made elsewhere. n
+// goes back to mode back.
+func (m *model) askOverwrite(ref string, back mode, no string, onYes, onNo func() tea.Cmd) {
+	m.confirm = confirm{
+		question: m.th.err.Bold(true).Render(ref + " changed elsewhere. Overwrite?"),
+		yes:      "overwrite", no: no, back: back, onYes: onYes, onNo: onNo,
+	}
+	m.mode = modeConfirm
+	m.titleIn.Blur() // no cursor while the box asks
+	m.area.Blur()
 }
 
 // drawEditTask draws the edit box in the middle of the body area.

@@ -7,8 +7,10 @@ package tui
 import (
 	"context"
 	"errors"
+	"reflect"
 	"slices"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/textarea"
 	"charm.land/bubbles/v2/textinput"
@@ -25,6 +27,10 @@ const minWidth, minHeight = 80, 24
 // wideWidth is the width from which the detail pane sits beside the board
 // or list instead of replacing it.
 const wideWidth = 140
+
+// checkEvery is how often the TUI checks for changes made elsewhere, and
+// updatedFor how long the header says "Updated" after picking them up.
+const checkEvery, updatedFor = 5 * time.Second, 1500 * time.Millisecond
 
 // Options says where the TUI starts.
 type Options struct {
@@ -156,6 +162,7 @@ type model struct {
 	detailRect    rect
 	inputRef      string
 	editRef       string         // the task an edit or comment box is for
+	editBase      core.Task      // the task as it was when its edit started
 	commentNumber int            // the number a new comment will likely get
 	earlier       []core.Comment // the comments shown above the comment box, oldest first
 	showEarlier   bool           // the comment box shows them (ctrl-r; off whenever a box opens)
@@ -175,6 +182,12 @@ type model struct {
 	menu      menu
 	confirm   confirm
 	msg       message
+
+	// Changes made elsewhere: stale while a box holds them back, updated
+	// while the header says so.
+	stale      bool
+	updated    bool
+	updatedGen int
 }
 
 func newModel(ctx context.Context, s *store.Store, opts Options) *model {
@@ -199,39 +212,108 @@ func newModel(ctx context.Context, s *store.Store, opts Options) *model {
 }
 
 func (m *model) Init() tea.Cmd {
-	return tea.RequestBackgroundColor
+	return tea.Batch(tea.RequestBackgroundColor, tick())
+}
+
+type (
+	checkMsg       struct{}
+	updatedDoneMsg struct{ gen int }
+)
+
+func tick() tea.Cmd {
+	return tea.Tick(checkEvery, func(time.Time) tea.Msg { return checkMsg{} })
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	cmd := m.update(msg)
+	// Changes held back while a box was open show once it closes.
+	if m.stale && m.mode == modeNormal {
+		m.reload()
+		cmd = tea.Batch(cmd, m.flashUpdated())
+	}
+	return m, cmd
+}
+
+func (m *model) update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
-		return m, nil
+		return nil
 	case tea.BackgroundColorMsg:
 		m.th = newTheme(msg.IsDark())
-		return m, nil
+		return nil
 	case tea.KeyPressMsg:
-		return m, m.keyPress(msg)
+		return m.keyPress(msg)
 	case tea.PasteMsg:
-		return m, m.forwardToInput(msg)
+		return m.forwardToInput(msg)
 	case tea.MouseClickMsg:
 		if msg.Button != tea.MouseLeft {
-			return m, nil
+			return nil
 		}
 		for i := len(m.zones) - 1; i >= 0; i-- {
 			if m.zones[i].r.has(msg.X, msg.Y) {
-				return m, m.zones[i].click()
+				return m.zones[i].click()
 			}
 		}
-		return m, nil
+		return nil
 	case tea.MouseWheelMsg:
-		return m, m.wheel(msg)
+		return m.wheel(msg)
 	case editedMsg:
-		return m, m.edited(msg)
+		return m.edited(msg)
 	case commentEditedMsg:
-		return m, m.commentEdited(msg)
+		return m.commentEdited(msg)
+	case checkMsg:
+		return tea.Batch(m.check(), tick())
+	case updatedDoneMsg:
+		if msg.gen == m.updatedGen {
+			m.updated = false
+		}
+		return nil
 	}
-	return m, m.forwardToInput(msg)
+	return m.forwardToInput(msg)
+}
+
+// check looks for changes made elsewhere to the open project's tasks and
+// the detail view's comments. It shows them at once in the normal view;
+// while a box, menu or question is open, it only marks the board stale so
+// nothing moves under the user.
+func (m *model) check() tea.Cmd {
+	if m.project.ID == "" || m.mode == modeProjects || m.stale || !m.changed() {
+		return nil
+	}
+	if m.mode != modeNormal {
+		m.stale = true
+		return nil
+	}
+	m.reload()
+	return m.flashUpdated()
+}
+
+// changed reports whether the stored tasks or the detail view's comments
+// differ from the ones shown. A failed read counts as no change; the next
+// check tries again, and R shows the error.
+func (m *model) changed() bool {
+	tasks, err := m.s.ListTasks(m.ctx, store.TaskFilter{Project: m.project.Name, IncludeArchived: true})
+	if err != nil {
+		return false
+	}
+	if !reflect.DeepEqual(tasks, m.tasks) {
+		return true
+	}
+	t, ok := m.task(m.detailRef)
+	if !m.detailOpen || !ok {
+		return false
+	}
+	cs, err := m.s.ListComments(m.ctx, t.ID)
+	return err == nil && !reflect.DeepEqual(cs, m.comments)
+}
+
+// flashUpdated makes the header say "Updated" for a moment.
+func (m *model) flashUpdated() tea.Cmd {
+	m.updatedGen++
+	m.updated = true
+	gen := m.updatedGen
+	return tea.Tick(updatedFor, func(time.Time) tea.Msg { return updatedDoneMsg{gen} })
 }
 
 // forwardToInput passes other messages (cursor blinks, pastes) to the active
@@ -470,7 +552,7 @@ func (m *model) reload() {
 		m.fail(err)
 		return
 	}
-	m.tasks = tasks
+	m.tasks, m.stale = tasks, false
 	if m.detailOpen {
 		if _, ok := m.task(m.detailRef); !ok {
 			m.detailOpen = false

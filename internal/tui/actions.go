@@ -388,9 +388,11 @@ type editedMsg struct {
 }
 
 // editTask opens a task in the editor, from draft if it isn't empty (to
-// reopen invalid changes). The TUI suspends until the editor exits.
+// reopen invalid changes, or an edit moved from the box, which has set
+// editBase). The TUI suspends until the editor exits.
 func (m *model) editTask(t core.Task, draft string) tea.Cmd {
 	if draft == "" {
+		m.editBase = t
 		var err error
 		if draft, err = editor.Draft(t.Ref+"-*.md", core.TaskMarkdown(t)); err != nil {
 			m.fail(err)
@@ -416,24 +418,48 @@ func (m *model) edited(msg editedMsg) tea.Cmd {
 		m.fail(err)
 		return nil
 	}
-	t, err := m.s.GetTask(m.ctx, msg.ref)
+	cur, err := m.s.GetTask(m.ctx, msg.ref)
 	if err != nil {
 		m.cleanUpDraft()
 		m.fail(err)
 		return nil
 	}
-	patch, err := store.PatchFromMarkdown(t, string(src))
+	// The draft is compared with the task as it was when the edit started,
+	// so only the fields changed in it are saved.
+	base := m.editBase
+	if base.Ref != cur.Ref {
+		base = cur
+	}
+	patch, err := store.PatchFromMarkdown(base, string(src))
 	if err == nil && patch == (store.TaskPatch{}) {
 		m.cleanUpDraft()
-		m.msg = message{[]string{"No changes to " + t.Ref}}
+		m.msg = message{[]string{"No changes to " + cur.Ref}}
 		return nil
 	}
-	if err == nil {
-		t, err = m.s.UpdateTask(m.ctx, t.Ref, patch)
+	if err == nil && conflicts(base, cur, patch) {
+		m.askOverwrite(cur.Ref, modeEditError, "keep my draft",
+			func() tea.Cmd { return m.saveEdited(msg.ref, patch) },
+			func() tea.Cmd {
+				m.msg = errMsg(m.th, msg.ref+" changed elsewhere while you edited it. Your text is kept in "+display.Path(msg.draft)+".")
+				return nil
+			})
+		return nil
 	}
 	if err != nil {
 		m.mode = modeEditError
-		m.msg = errMsg(m.th, msg.ref+" wasn't saved: "+errText(err)) // t is empty after a failed update
+		m.msg = errMsg(m.th, msg.ref+" wasn't saved: "+errText(err))
+		return nil
+	}
+	return m.saveEdited(msg.ref, patch)
+}
+
+// saveEdited saves a change made in the editor. An invalid change keeps
+// the draft for e or esc.
+func (m *model) saveEdited(ref string, patch store.TaskPatch) tea.Cmd {
+	t, err := m.s.UpdateTask(m.ctx, ref, patch)
+	if err != nil {
+		m.mode = modeEditError
+		m.msg = errMsg(m.th, ref+" wasn't saved: "+errText(err)) // t is empty after a failed update
 		return nil
 	}
 	m.cleanUpDraft()

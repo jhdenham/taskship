@@ -33,6 +33,18 @@ Status, priority, labels, the title and description, and comments change in a bo
 
 `c` opens a box for a new comment on the selected task, from any view. `ctrl-r` shows the task's most recent comments above the text, as many as fit, and hides them again. They start hidden each time the box opens. In the box, `enter` starts a new line, `ctrl-s` saves, `ctrl-e` moves the text to your editor instead (the comment is saved when you close it), and `esc` cancels, asking first if you wrote something. In the detail view, `[` and `]` pick a comment; `e` then edits it in the same box and `d` deletes it after a `y`/`n` question.
 
+## Changes from other terminals
+
+Every 5 seconds, the TUI checks for changes made outside it: tasks added, edited, archived, or commented on with `taskship` in another terminal, or by an agent. It shows them without a key press, keeping the selected task and the open detail view, with its new comments. `R` reloads at once.
+
+The header shows where things stand:
+
+- `✓ Up to date`: nothing new since the last check.
+- `↻ Updated`: the last check picked up changes. It shows for a moment, then goes back to `✓ Up to date`.
+- `↻ Changes detected`: tasks changed while a box, menu, or `y`/`n` question was open. To leave your typing and the box alone, the TUI doesn't change the screen until you close it, then shows the changes.
+
+If you save an edit to a task (in the box or in your editor) and a field you changed was also changed elsewhere since you started, the TUI asks before saving: "PROJ-42 changed elsewhere. Overwrite?" `y` saves your version of the fields you changed. `n` keeps your text: the box stays open, or, from the editor, your draft is kept for `e` (reopen) or `esc` (discard). Changes elsewhere to fields you didn't touch are kept without asking.
+
 ## Launching an agent
 
 Press `r` in the detail view to launch an agent on the task.
