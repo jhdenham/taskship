@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -32,8 +33,12 @@ files. Each launch is recorded as a run
 ("taskship runs PROJ-42"). When Claude exits, taskship exits with its exit
 code.
 
---dry-run prints the chosen workspace and the exact prompt the agent would
-receive, and launches nothing.
+Claude may run the taskship commands the prompt mentions without asking
+you again: reads, adding tasks, and commenting on or changing the status of
+this task. Other commands go through Claude's usual permission checks.
+
+--dry-run prints the chosen workspace, those commands, and the exact prompt
+the agent would receive, and launches nothing.
 
 The agent runs at the root of a workspace, never in a subfolder. The workspace
 is the one containing --workspace if given (it must belong to the task's
@@ -69,9 +74,14 @@ that fit with this one, and tasks that should come first. It changes tasks
 only after you approve. Its prompt includes Taskship's guide to writing
 tasks and your conventions ("taskship skill guide" prints both).
 
+Once you approve, Claude may run the taskship commands that apply the
+changes without asking you again: reading tasks, editing, adding,
+commenting on, and archiving them. Other commands go through Claude's usual
+permission checks.
+
 Refining doesn't change the task's status. It is recorded as a run
-("taskship runs PROJ-42"). --dry-run prints the chosen folder and the exact
-prompt, and launches nothing.`,
+("taskship runs PROJ-42"). --dry-run prints the chosen folder, those
+commands, and the exact prompt, and launches nothing.`,
 		Example: "  taskship refine PROJ-42\n  taskship refine PROJ-42 --dry-run",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -119,7 +129,8 @@ func runAgent(cmd *cobra.Command, mode core.RunMode, ref, agent, workspacePath s
 		return kindError{fmt.Sprintf("%s isn't linked to a folder on this machine. Run %s in its repository to link it.", value.Render(nf.Project), cmdRef("taskship init")), err}
 	}
 	if dryRun {
-		fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\n\n%s", agent, display.Path(plan.Dir), plan.Prompt)
+		fmt.Fprintf(cmd.OutOrStdout(), "Dry run: nothing was launched.\nAgent:     %s\nWorkspace: %s\nAllowed:   %s\n\n%s",
+			agent, display.Path(plan.Dir), strings.Join(plan.Allowed, "\n           "), plan.Prompt)
 		return nil
 	}
 	if err := plan.Ready(); err != nil {

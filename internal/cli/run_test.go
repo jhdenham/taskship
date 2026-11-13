@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/dispatch"
 	"github.com/jhdenham/taskship/internal/display"
 )
 
@@ -30,7 +31,11 @@ func TestRunDryRun(t *testing.T) {
 	// From the worktree, the worktree is used.
 	t.Chdir(worktree)
 	out := mustRun(t, "run", "proj-1", "--dry-run", "-a", "claude")
-	header := "Dry run: nothing was launched.\nAgent:     claude\nWorkspace: " + worktree + "\n\nYou are beginning a Taskship agent run.\n"
+	tc := dispatch.TaskshipCommand()
+	header := "Dry run: nothing was launched.\nAgent:     claude\nWorkspace: " + worktree + "\nAllowed:   Bash(" + tc + " show *)\n" +
+		"           Bash(" + tc + " tasks *)\n           Bash(" + tc + " runs *)\n           Bash(" + tc + " comment list *)\n" +
+		"           Bash(" + tc + " skill guide *)\n           Bash(" + tc + " add *)\n           Bash(" + tc + " comment add PROJ-1 *)\n" +
+		"           Bash(" + tc + " task edit PROJ-1 --status *)\n\nYou are beginning a Taskship agent run.\n"
 	if !strings.HasPrefix(out, header) || !strings.Contains(out, "Task reference: PROJ-1\n") ||
 		!strings.Contains(out, "# Add weekly habit tracker\n\n## Acceptance criteria\n\n- [ ] Weekly view\n```\n") {
 		t.Errorf("dry run output:\n%s", out)
@@ -212,8 +217,9 @@ func TestRunLaunchesClaude(t *testing.T) {
 	if cwd != repo {
 		t.Errorf("claude ran in %q, want %q", cwd, repo)
 	}
-	if len(args) != 6 || args[0] != "--permission-mode" || args[1] != "plan" || args[2] != "--session-id" ||
-		args[4] != "--" || args[5] != prompt {
+	if len(args) != 15 || args[0] != "--permission-mode" || args[1] != "plan" || args[2] != "--session-id" ||
+		args[4] != "--allowedTools" || args[12] != "Bash("+dispatch.TaskshipCommand()+" task edit PROJ-1 --status *)" ||
+		args[13] != "--" || args[14] != prompt {
 		t.Errorf("claude args = %q", args)
 	}
 	if _, err := os.Stat(filepath.Join(repo, "internal", "pwned")); err == nil {

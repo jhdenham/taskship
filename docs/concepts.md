@@ -150,7 +150,9 @@ $ taskship PROJ-1
 
 A task in `backlog` or `todo` moves to `in_progress` when the agent launches; Taskship does this itself, and moves it back if the agent can't be started. Other statuses don't change. Claude starts in plan mode, with the task as its first message. It reviews the repository and the task, proposes a plan, and asks you to approve the plan before it edits any files; that approval is Claude's own, not just a request in the prompt. From there you work in Claude as usual. When the work is done, Claude summarizes what changed and how it checked it, suggests manual checks or a smoke test for bigger changes, and offers to add its summary as a comment on the task and to mark the task done. It does either only if you agree. Ctrl-C goes to Claude, and when Claude exits, `taskship` exits with Claude's exit code. Launching needs a terminal, and Claude Code must be on your `PATH` (otherwise the command fails with exit code 6). The agent is chosen with `--agent` (`-a`); only `claude` exists for now.
 
-`taskship PROJ-1 --dry-run` shows what a run would do without launching anything: the agent, the folder it would start in, and the exact prompt it would receive.
+`taskship PROJ-1 --dry-run` shows what a run would do without launching anything: the agent, the folder it would start in, the commands it may run without asking, and the exact prompt it would receive.
+
+Taskship passes Claude permission rules for the `taskship` commands its prompt mentions, so Claude's own permission check (auto mode, for example) doesn't block them after you approve the plan. A run may read tasks, add tasks, and comment on or change the status of its own task, and nothing else in Taskship. Every other command goes through Claude's permission settings as usual. The rules apply only to the session Taskship launches; nothing is written to your Claude settings.
 
 The agent always starts at the project's folder, never in a deeper subfolder, so it can see the whole checkout. The folder is chosen in this order:
 

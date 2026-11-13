@@ -26,7 +26,7 @@ Refining looks beyond the one task. Claude reads the project's other tasks and p
 - **tasks that fit with this one**, such as a bug in the same code, to do together;
 - **tasks that should come first or after**, noted with a line such as "Blocked by PROJ-12" (Taskship has no dependency field).
 
-Claude changes tasks only after you approve, using the same commands you would: `task edit --from`, `add`, `task archive`, and `comment add`. Refining doesn't change the task's status, and it is recorded as a run with the mode `refine` (see [Agent runs](concepts.md#agent-runs)). `taskship refine PROJ-1 --dry-run` shows the folder and the exact prompt.
+Claude changes tasks only after you approve, using the same commands you would: `task edit --from`, `add`, `task archive`, and `comment add`. Taskship allows those commands in the session it launches, so Claude's permission check doesn't block them once you've approved; `--dry-run` lists them. Refining doesn't change the task's status, and it is recorded as a run with the mode `refine` (see [Agent runs](concepts.md#agent-runs)). `taskship refine PROJ-1 --dry-run` shows the folder and the exact prompt.
 
 ## The Taskship skill
 
@@ -46,6 +46,25 @@ codex   not installed           ~/.agents/skills/taskship
 The skill can be installed for `claude` and `codex`, or with `taskship skill install all` for every one of them on your `PATH` (the others are skipped, with a note). `taskship skill uninstall all` removes it from every agent it's installed for. It goes in the agent's own folder for skills, `~/.claude/skills/taskship` (or `$CLAUDE_CONFIG_DIR/skills`) and `~/.agents/skills/taskship`, never in a repository. `~/.agents/skills` is the folder Codex documents for personal skills, and other agents that follow the Agent Skills standard may read it too. Launching Codex on a task isn't supported yet, but the skill works in any Codex session.
 
 The skill runs `taskship` from your `PATH`, so `install` needs it there. Run `taskship skill install` again after upgrading Taskship to update the skill; an older `taskship` leaves a newer skill alone. Updating replaces the whole skill file, so don't edit it: put your preferences in [your conventions](#your-conventions), which the skill reads every time. If the agent already has a skill named `taskship` that Taskship didn't install, `install` asks before replacing it (or needs `--yes` without a terminal), and `uninstall` leaves it alone. `uninstall` removes only the file Taskship installed.
+
+In a session Taskship didn't launch, Claude's permission settings apply to `taskship` commands like any other, so auto mode may stop to check a command that changes a task. To allow them, add rules to `~/.claude/settings.json`, for example:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskship show *)",
+      "Bash(taskship tasks *)",
+      "Bash(taskship skill guide *)",
+      "Bash(taskship add *)",
+      "Bash(taskship comment add *)",
+      "Bash(taskship task edit *)"
+    ]
+  }
+}
+```
+
+Taskship never changes your Claude settings itself.
 
 ## The task-writing guide
 

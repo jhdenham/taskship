@@ -38,6 +38,9 @@ type Plan struct {
 	Agent  string
 	Dir    string
 	Prompt string
+	// Allowed are the Bash commands the agent may run without asking (see
+	// AllowedCommands).
+	Allowed []string
 
 	path, sessionID string
 	args            []string
@@ -70,7 +73,9 @@ func Prepare(ctx context.Context, s *store.Store, t core.Task, mode core.RunMode
 	if mode == core.RunModeRefine {
 		build = BuildRefinePrompt
 	}
-	return Plan{Task: t, Mode: mode, Agent: "claude", Dir: dir, Prompt: build(t, comments, TaskshipCommand(), conventions)}, nil
+	taskship := TaskshipCommand()
+	return Plan{Task: t, Mode: mode, Agent: "claude", Dir: dir, Prompt: build(t, comments, taskship, conventions),
+		Allowed: AllowedCommands(mode, t.Ref, taskship)}, nil
 }
 
 // Ready checks that the agent can be launched: its executable is on PATH
@@ -81,7 +86,7 @@ func (p *Plan) Ready() error {
 		return ErrAgentMissing
 	}
 	sessionID := uuid.NewString()
-	args, err := ClaudeArgs(sessionID, p.Prompt)
+	args, err := ClaudeArgs(sessionID, p.Prompt, p.Allowed)
 	if err != nil {
 		return fmt.Errorf("%w: %w", core.ErrInvalid, err)
 	}

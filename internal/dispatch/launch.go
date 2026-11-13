@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"github.com/jhdenham/taskship/internal/core"
 )
 
 // maxPromptBytes keeps the prompt within Linux's limit on a single argument
@@ -14,15 +16,36 @@ import (
 const maxPromptBytes = 128<<10 - 1
 
 // ClaudeArgs returns the arguments that start Claude Code interactively in
-// plan mode with prompt as the first message. Plan mode makes Claude ask for
-// approval of its plan before it edits files. "--" keeps a prompt that starts
-// with "-" from being read as an option.
-func ClaudeArgs(sessionID, prompt string) ([]string, error) {
+// plan mode with prompt as the first message, allowing the Bash commands in
+// allowed (see AllowedCommands) without asking. Plan mode makes Claude ask
+// for approval of its plan before it edits files. "--" ends the allowed list
+// and keeps a prompt that starts with "-" from being read as an option.
+func ClaudeArgs(sessionID, prompt string, allowed []string) ([]string, error) {
 	if len(prompt) > maxPromptBytes {
 		return nil, fmt.Errorf("the prompt is %d KB, more than the %d KB an agent can be given; shorten the task's description, its comments, or your conventions",
 			len(prompt)>>10, (maxPromptBytes+1)>>10)
 	}
-	return []string{"--permission-mode", "plan", "--session-id", sessionID, "--", prompt}, nil
+	args := []string{"--permission-mode", "plan", "--session-id", sessionID}
+	if len(allowed) > 0 {
+		args = append(append(args, "--allowedTools"), allowed...)
+	}
+	return append(args, "--", prompt), nil
+}
+
+// AllowedCommands returns the Claude Code permission rules for the taskship
+// commands the prompt for mode tells the agent to run on task ref, so
+// Claude's own permission check doesn't block them once the user approves
+// the plan. Reads are always allowed. Refining may change any task, since it
+// merges duplicates and notes related tasks; a run may add tasks, and
+// comment on and change the status of only its own task. taskship is the
+// command the prompt names (see TaskshipCommand).
+func AllowedCommands(mode core.RunMode, ref, taskship string) []string {
+	rule := func(args string) string { return "Bash(" + taskship + " " + args + " *)" }
+	rules := []string{rule("show"), rule("tasks"), rule("runs"), rule("comment list"), rule("skill guide"), rule("add")}
+	if mode == core.RunModeRefine {
+		return append(rules, rule("task edit"), rule("comment add"), rule("task archive"))
+	}
+	return append(rules, rule("comment add "+ref), rule("task edit "+ref+" --status"))
 }
 
 // Launch runs the agent executable at path with args and environment env in
