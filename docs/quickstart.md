@@ -35,8 +35,8 @@ taskship PROJ-1 --dry-run
 # Launch Claude Code on the task in this terminal (works without the skill)
 taskship PROJ-1
 
-# Planned: install the optional Taskship skill in Claude's user configuration
+# Optional: teach Claude to use Taskship in any session
 taskship skill install claude
 ```
 
-`taskship init` sets up a project for the repository you're in and writes nothing to the repository itself. Installation, `--help`, and `--version` create no files. Installing the skill is planned. Claude Code must be installed separately.
+`taskship init` sets up a project for the repository you're in and writes nothing to the repository itself. Installation, `--help`, and `--version` create no files. The skill goes in Claude's own folder for skills, never in the repository. Claude Code must be installed separately.

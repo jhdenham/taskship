@@ -18,7 +18,7 @@ $ taskship refine PROJ-1
 ✓ Launching Claude to refine PROJ-1 in ~/code/myproject
 ```
 
-Claude starts in plan mode, in the folder `taskship PROJ-1` would use, so it can check the task against the code. It reads Taskship's guide to writing tasks and your conventions, and asks about gaps only you can fill. Then it proposes a rewritten task: a clear title, the why and context, the scope, and acceptance criteria. It also suggests a split if the task is too big.
+Claude starts in plan mode, in the folder `taskship PROJ-1` would use, so it can check the task against the code. It reads Taskship's guide to writing tasks and your own conventions, and asks about gaps only you can fill. Then it proposes a rewritten task: a clear title, the why and context, the scope, and acceptance criteria. It also suggests a split if the task is too big.
 
 Refining looks beyond the one task. Claude reads the project's other tasks and points out:
 
@@ -28,9 +28,28 @@ Refining looks beyond the one task. Claude reads the project's other tasks and p
 
 Claude changes tasks only after you approve, using the same commands you would: `task edit --from`, `add`, `task archive`, and `comment add`. Refining doesn't change the task's status, and it is recorded as a run with the mode `refine` (see [Agent runs](concepts.md#agent-runs)). `taskship refine PROJ-1 --dry-run` shows the folder and the exact prompt.
 
+## The Taskship skill
+
+`taskship PROJ-1` and `taskship refine PROJ-1` give the agent everything it needs in its prompt. The skill is for every other session: you're already in Claude and say "work on PROJ-42", "add a task for that", "what should I work on next?", or "clean up the backlog". The skill teaches the agent the Taskship commands and how to use them well: read before acting, write tasks that follow the guide, and ask before changing anything.
+
+```text
+$ taskship skill install claude
+✓ Installed the Taskship skill for Claude in ~/.claude/skills/taskship
+If an open session doesn't see it, restart it.
+
+$ taskship skill list
+AGENT   SKILL          VERSION  FOLDER
+claude  installed      v0.1.0   ~/.claude/skills/taskship
+codex   not installed           ~/.agents/skills/taskship
+```
+
+The skill can be installed for `claude` and `codex`, or with `taskship skill install all` for every one of them on your `PATH` (the others are skipped, with a note). `taskship skill uninstall all` removes it from every agent it's installed for. It goes in the agent's own folder for skills, `~/.claude/skills/taskship` (or `$CLAUDE_CONFIG_DIR/skills`) and `~/.agents/skills/taskship`, never in a repository. `~/.agents/skills` is the folder Codex documents for personal skills, and other agents that follow the Agent Skills standard may read it too. Launching Codex on a task isn't supported yet, but the skill works in any Codex session.
+
+The skill runs `taskship` from your `PATH`, so `install` needs it there. Run `taskship skill install` again after upgrading Taskship to update the skill; an older `taskship` leaves a newer skill alone. Updating replaces the whole skill file, so don't edit it: put your preferences in [your conventions](#your-conventions), which the skill reads every time. If the agent already has a skill named `taskship` that Taskship didn't install, `install` asks before replacing it (or needs `--yes` without a terminal), and `uninstall` leaves it alone. `uninstall` removes only the file Taskship installed.
+
 ## The task-writing guide
 
-`taskship skill guide` prints Taskship's guide to writing tasks, followed by your conventions. `taskship refine` includes both in its prompt, and agents read them before they write a task. You can read it too, to see what your agents are told.
+`taskship skill guide` prints Taskship's guide to writing tasks, followed by your conventions. `taskship refine` includes both in its prompt, and the skill has agents read them before they write a task. You can read it too, to see what your agents are told.
 
 ## Your conventions
 

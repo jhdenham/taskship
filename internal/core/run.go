@@ -52,8 +52,11 @@ func (r RunRef) String() string {
 
 // AgentName returns an agent's display name, e.g. "Claude" for "claude".
 func AgentName(agent string) string {
-	if agent == "claude" {
+	switch agent {
+	case "claude":
 		return "Claude"
+	case "codex":
+		return "Codex"
 	}
 	return agent
 }

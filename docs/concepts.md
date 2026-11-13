@@ -168,7 +168,7 @@ Taskship does not add metadata files to repositories. Projects are set up explic
 
 ## Storage and skills
 
-Taskship creates its local SQLite database on first use; there is no separate storage setup. Agent skills (planned) are optional user-level installations: Taskship can dispatch a self-contained plan-first prompt even without a skill.
+Taskship creates its local SQLite database on first use; there is no separate storage setup. The [Taskship skill](agents.md#the-taskship-skill) is an optional install in an agent's own folder for skills: Taskship gives a launched agent a self-contained plan-first prompt even without it.
 
 ## Advanced: managing workspaces
 

@@ -4,9 +4,9 @@ Taskship is in early development. This is the planned order of releases, not a s
 
 ## v0.1: Local-first
 
-Projects and tasks in a local SQLite database, with labels and comments, a CLI with JSON output, and a TUI for managing tasks and launching agents. `taskship init` sets up repositories without writing to them, and worktrees are recognized automatically. `taskship PROJ-1` launches Claude Code with a plan-first prompt, and an optional Claude skill improves the workflow without being required.
+Projects and tasks in a local SQLite database, with labels and comments, a CLI with JSON output, and a TUI for managing tasks and launching agents. `taskship init` sets up repositories without writing to them, and worktrees are recognized automatically. `taskship PROJ-1` launches Claude Code with a plan-first prompt, `taskship refine PROJ-1` launches it to make a task ready to work on, and an optional skill for Claude and Codex improves the workflow without being required.
 
-Task management (including labels and comments), setup, launching Claude, and the TUI work today. The skill is next.
+All of v0.1 works today.
 
 ## v0.2: Self-hosted server
 
@@ -18,7 +18,7 @@ Browse and dispatch GitHub Issues and Linear issues directly, without copying th
 
 ## v0.4: More agents
 
-Codex support, structured plans, a fuller record of each agent run, and optional status and comment updates when a run finishes.
+Launching Codex on tasks, structured plans, a fuller record of each agent run, and optional status and comment updates when a run finishes.
 
 ## Later
 
