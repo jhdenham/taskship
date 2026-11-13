@@ -23,7 +23,7 @@ func TestClaudeArgs(t *testing.T) {
 	if _, err := ClaudeArgs("sess", strings.Repeat("x", maxPromptBytes)); err != nil {
 		t.Errorf("prompt at the limit: %v", err)
 	}
-	if _, err := ClaudeArgs("sess", strings.Repeat("x", maxPromptBytes+1)); err == nil || !strings.Contains(err.Error(), "128 KB") || !strings.Contains(err.Error(), "description or its comments") {
+	if _, err := ClaudeArgs("sess", strings.Repeat("x", maxPromptBytes+1)); err == nil || !strings.Contains(err.Error(), "128 KB") || !strings.Contains(err.Error(), "its comments, or your conventions") {
 		t.Errorf("prompt over the limit: err = %v", err)
 	}
 }

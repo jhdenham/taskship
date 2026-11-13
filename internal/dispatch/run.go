@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/guide"
 	"github.com/jhdenham/taskship/internal/store"
 	"github.com/jhdenham/taskship/internal/workspace"
 )
@@ -42,7 +43,7 @@ type Plan struct {
 
 // Prepare chooses the folder to run task t in (see workspace.ForTask; dir is
 // the folder to start from, explicit if the user gave it) and builds the
-// prompt from the task and its comments.
+// prompt from the task, its comments, and the user's conventions.
 func Prepare(ctx context.Context, s *store.Store, t core.Task, dir string, explicit bool) (Plan, error) {
 	loc, err := workspace.Inspect(ctx, dir)
 	if err != nil {
@@ -59,7 +60,11 @@ func Prepare(ctx context.Context, s *store.Store, t core.Task, dir string, expli
 	if err != nil {
 		return Plan{}, err
 	}
-	return Plan{Task: t, Agent: "claude", Dir: dir, Prompt: BuildPrompt(t, comments, TaskshipCommand())}, nil
+	conventions, _, err := guide.Conventions()
+	if err != nil {
+		return Plan{}, err
+	}
+	return Plan{Task: t, Agent: "claude", Dir: dir, Prompt: BuildPrompt(t, comments, TaskshipCommand(), conventions)}, nil
 }
 
 // Ready checks that the agent can be launched: its executable is on PATH

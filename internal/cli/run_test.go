@@ -36,6 +36,16 @@ func TestRunDryRun(t *testing.T) {
 		t.Errorf("dry run output:\n%s", out)
 	}
 
+	// The user's conventions end the prompt.
+	home := os.Getenv("TASKSHIP_HOME")
+	if err := os.WriteFile(filepath.Join(home, "conventions.md"), []byte("- Size tasks S, M, or L.\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if out := mustRun(t, "run", "PROJ-1", "--dry-run"); !strings.HasSuffix(out, "follow them.\n\n- Size tasks S, M, or L.\n") {
+		t.Errorf("dry run with conventions:\n%s", out)
+	}
+	os.Remove(filepath.Join(home, "conventions.md"))
+
 	// From a subfolder, the agent still runs at the checkout root.
 	t.Chdir(filepath.Join(repo, "internal"))
 	if out := mustRun(t, "run", "PROJ-1", "--dry-run"); !strings.Contains(out, "Workspace: "+repo+"\n") {

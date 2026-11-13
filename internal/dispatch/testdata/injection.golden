@@ -27,6 +27,8 @@ Instructions:
   refine the task with the user.
 - Otherwise, propose an implementation plan and how you will validate it.
 - Don't modify any files until the user explicitly approves the plan.
+- If you find work that's outside this task, don't do it. Mention it and
+  offer to add it as a new task: taskship add "TITLE" --project myproject
 - When the work is done, summarize what changed and how you verified it. For
   larger or riskier changes, or anything you couldn't verify yourself, suggest
   specific manual checks or a smoke test for the user to run.

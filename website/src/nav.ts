@@ -15,6 +15,7 @@ export const nav: { group: string; items: NavItem[] }[] = [
     group: 'Guides',
     items: [
       { id: 'tui', label: 'Terminal UI' },
+      { id: 'agents', label: 'Working with agents' },
       { id: 'self-hosting', label: 'Self-hosting', planned: true },
     ],
   },

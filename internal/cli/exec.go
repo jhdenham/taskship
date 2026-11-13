@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/home"
 	"github.com/jhdenham/taskship/internal/store"
 )
 
@@ -118,22 +117,10 @@ func rangeArgs(min, max int) cobra.PositionalArgs {
 	}
 }
 
-// homeDir is $TASKSHIP_HOME, or ~/.taskship by default.
-func homeDir() (string, error) {
-	if h := os.Getenv("TASKSHIP_HOME"); h != "" {
-		return h, nil
-	}
-	h, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(h, ".taskship"), nil
-}
-
 // openStore opens the local store, creating it on first use. Only call it
 // from commands that need stored data, so metadata commands stay side-effect free.
 func openStore(ctx context.Context) (*store.Store, error) {
-	dir, err := homeDir()
+	dir, err := home.Dir()
 	if err != nil {
 		return nil, err
 	}

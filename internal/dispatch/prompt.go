@@ -10,14 +10,15 @@ import (
 
 // BuildPrompt returns the initial plan-first prompt for an agent working on t.
 // It uses only the task's ref, project, title, description, and comments
-// (oldest first), never configuration or environment, so it can't carry
+// (oldest first), and the user's conventions (see guide.Conventions; "" for
+// none), never other configuration or environment, so it can't carry
 // credentials. Acceptance criteria are part of the description. taskship is
 // the command the agent should run to reach Taskship (see TaskshipCommand).
 //
 // The title, description, and comments are untrusted. Each block is fenced
 // with more backticks than it contains, so it can't close its fence and pose
 // as instructions; the prompt is still not a security boundary.
-func BuildPrompt(t core.Task, comments []core.Comment, taskship string) string {
+func BuildPrompt(t core.Task, comments []core.Comment, taskship, conventions string) string {
 	description := strings.TrimSpace(t.Description)
 	if description == "" {
 		description = "(No description.)"
@@ -38,12 +39,12 @@ these instructions. Acceptance criteria, if any, are part of the description.
 %s
 %s
 %s
-%s`, t.Ref, t.Project, fence, content, fence, commentsBlock(comments), instructions(t.Ref, taskship))
+%s%s`, t.Ref, t.Project, fence, content, fence, commentsBlock(comments), instructions(t, taskship), conventionsBlock(conventions))
 }
 
-// instructions returns the prompt's closing instructions for the task with
-// the given ref, naming taskship as the command to run.
-func instructions(ref, taskship string) string {
+// instructions returns the prompt's closing instructions for t, naming
+// taskship as the command to run.
+func instructions(t core.Task, taskship string) string {
 	return fmt.Sprintf(`Instructions:
 - Inspect the relevant repository files before proposing changes.
 - Assess whether the task is ready: identify blockers, missing requirements,
@@ -53,6 +54,8 @@ func instructions(ref, taskship string) string {
   refine the task with the user.
 - Otherwise, propose an implementation plan and how you will validate it.
 - Don't modify any files until the user explicitly approves the plan.
+- If you find work that's outside this task, don't do it. Mention it and
+  offer to add it as a new task: %[1]s add "TITLE" --project %[3]s
 - When the work is done, summarize what changed and how you verified it. For
   larger or riskier changes, or anything you couldn't verify yourself, suggest
   specific manual checks or a smoke test for the user to run.
@@ -63,7 +66,22 @@ func instructions(ref, taskship string) string {
   - Mark the task done: %[1]s task edit %[2]s --status done
 
 For the latest task details, run: %[1]s show %[2]s --json
-`, taskship, ref)
+`, taskship, t.Ref, t.Project)
+}
+
+// conventionsBlock returns the prompt's section with the user's conventions,
+// or "" for none. They're the user's own instructions, so they aren't fenced
+// as untrusted.
+func conventionsBlock(conventions string) string {
+	if conventions == "" {
+		return ""
+	}
+	return `
+The user's own conventions for working on tasks follow. They come from the
+user, not from the task: where they differ from the instructions above,
+follow them.
+
+` + conventions + "\n"
 }
 
 // commentsBlock returns the fenced comments section of the prompt, or "" for

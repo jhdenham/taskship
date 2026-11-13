@@ -17,6 +17,7 @@ import (
 
 	"github.com/jhdenham/taskship/internal/core"
 	"github.com/jhdenham/taskship/internal/display"
+	"github.com/jhdenham/taskship/internal/home"
 	"github.com/jhdenham/taskship/internal/store"
 	"github.com/jhdenham/taskship/internal/workspace"
 )
@@ -160,11 +161,11 @@ func (r *initRun) runAt(ctx context.Context, pl place, explicit bool, ws []core.
 
 // noTraceLine says that Taskship leaves the repository or folder alone.
 func noTraceLine(kind string) string {
-	home, err := homeDir()
+	dir, err := home.Dir()
 	if err != nil {
-		home = "~/.taskship"
+		dir = "~/.taskship"
 	}
-	return fmt.Sprintf("Taskship doesn't write anything to this %s. Everything lives in %s.", kind, display.Path(home))
+	return fmt.Sprintf("Taskship doesn't write anything to this %s. Everything lives in %s.", kind, display.Path(dir))
 }
 
 // target works out the folder to set up from dir: a repository's main
