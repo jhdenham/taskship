@@ -1,18 +1,27 @@
 ---
 // Terminal window chrome. Put a <pre> in the slot: whitespace in slotted
 // content is only kept when the <pre> is written by the caller.
+//   window   title bar with window controls (the hero demo)
+//   caption  title bar with just the title (examples beside running text)
+//   plain    no title bar (short examples inside cards)
 interface Props {
   title?: string;
+  chrome?: 'window' | 'caption' | 'plain';
 }
 
-const { title = 'terminal' } = Astro.props;
+const { title = 'terminal', chrome = 'window' } = Astro.props;
 ---
 
 <div class="terminal">
-  <div class="termbar">
-    <div class="dots"><i></i><i></i><i></i></div>
-    <span>{title}</span>
-    <span></span>
-  </div>
+  {
+    chrome === 'window' && (
+      <div class="termbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <span>{title}</span>
+        <span></span>
+      </div>
+    )
+  }
+  {chrome === 'caption' && <div class="termcaption">{title}</div>}
   <slot />
 </div>

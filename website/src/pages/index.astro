@@ -2,47 +2,49 @@
 import Base from '../layouts/Base.astro';
 import Terminal from '../components/Terminal.astro';
 import tuiBoard from '../assets/tui-board.html?raw';
+
+const check = '<svg class="check" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>';
 ---
 
-<Base title="Taskship · From task to agent, in one command">
+<Base title="Taskship · From task to agent, in one command" status>
   <main class="landing">
     <section class="hero">
-      <div class="eyebrow">Task management and dispatch for coding agents</div>
-      <h1>From task to agent,<br /><span>in one command.</span></h1>
-      <p class="lede">
-        Taskship briefs your coding agents so you don't have to. Capture work as it comes up,
-        launch an agent on any task, approve the plan, and see what it did. Local-first, no
-        account, and no trace in your repository.
-      </p>
-      <div class="install">
-        <code><span aria-hidden="true">$ </span><span id="install-cmd">curl -fsSL https://taskship.dev/install.sh | sh</span></code>
-        <button type="button" class="copy" data-copy="install-cmd">Copy</button>
+      <div>
+        <p class="eyebrow-pill"><span aria-hidden="true"></span>Terminal-first task management, with agent dispatch built in</p>
+        <h1>From task to agent, <span>in one command.</span></h1>
       </div>
-      <p class="trust">macOS and Linux · Works with Claude Code · Open source, Apache 2.0</p>
-      <div class="actions">
-        <a class="btn primary" href="/docs/quickstart/">Get started →</a>
-        <a class="btn" href="https://github.com/jhdenham/taskship">View on GitHub</a>
+      <div>
+        <p class="lede">
+          Taskship briefs your coding agents so you don't have to. Capture work as it comes up,
+          launch an agent on any task, approve the plan, and see what it did. Local-first, no
+          account, and no trace in your repository.
+        </p>
+        <div class="install">
+          <code><span aria-hidden="true">$ </span><span id="install-cmd">curl -fsSL https://taskship.dev/install.sh | sh</span></code>
+          <button type="button" class="copy" data-copy="install-cmd">Copy</button>
+        </div>
+        <p class="trust">macOS and Linux · Works with Claude Code · Open source, Apache 2.0</p>
       </div>
     </section>
 
     <div class="showcase">
       <div class="tabs" role="tablist" aria-label="Taskship in action">
-        <button type="button" role="tab" id="tab-watch" aria-controls="panel-watch" aria-selected="true">Watch</button>
-        <button type="button" role="tab" id="tab-capture" aria-controls="panel-capture" aria-selected="false" tabindex="-1">Capture</button>
-        <button type="button" role="tab" id="tab-launch" aria-controls="panel-launch" aria-selected="false" tabindex="-1">Launch</button>
-        <button type="button" role="tab" id="tab-tui" aria-controls="panel-tui" aria-selected="false" tabindex="-1">TUI</button>
+        <button type="button" role="tab" id="tab-capture" aria-controls="panel-capture" aria-selected="true">
+          <span class="tab-label">Capture</span>
+          <span class="tab-desc">Add tasks without leaving your terminal</span>
+        </button>
+        <button type="button" role="tab" id="tab-launch" aria-controls="panel-launch" aria-selected="false" tabindex="-1">
+          <span class="tab-label">Launch</span>
+          <span class="tab-desc">Hand a task to your agent and approve its plan</span>
+        </button>
+        <button type="button" role="tab" id="tab-manage" aria-controls="panel-manage" aria-selected="false" tabindex="-1">
+          <span class="tab-label">Manage</span>
+          <span class="tab-desc">Run your whole backlog from one board</span>
+        </button>
+        <span class="tab-pill" aria-hidden="true"></span>
       </div>
       <div class="panels">
-        <div class="panel" role="tabpanel" id="panel-watch" aria-labelledby="tab-watch">
-          <Terminal title="Taskship demo">
-            <div class="placeholder video">
-              <span class="play" aria-hidden="true">▶</span>
-              <strong>Video coming soon</strong>
-              <span>A task from capture to a finished change, start to end.</span>
-            </div>
-          </Terminal>
-        </div>
-        <div class="panel" role="tabpanel" id="panel-capture" aria-labelledby="tab-capture" hidden>
+        <div class="panel" role="tabpanel" id="panel-capture" aria-labelledby="tab-capture">
           <Terminal title="~/code/myproject/web">
             <pre class="wide"><span class="cmd">$ taskship add "Add CSV export to the reports page" --label reports --priority high</span>
 <span class="good">✓</span> Created PROJ-1: Add CSV export to the reports page
@@ -54,11 +56,11 @@ import tuiBoard from '../assets/tui-board.html?raw';
 <span class="good">✓</span> Added comment #1 to PROJ-1
 
 <span class="cmd">$ taskship tasks</span>
-Showing 2 tasks in myproject (this folder). Use --all-projects to see every project.
+<span class="dim">Showing 2 tasks in myproject (this folder). Use --all-projects to see every project.</span>
 
-REF     STATUS  PRIORITY  LABELS   TITLE
-PROJ-1  todo    high      <span class="dim">reports</span>  Add CSV export to the reports page
-PROJ-2  todo    urgent    <span class="dim">bug</span>      Fix flaky login test</pre>
+<span class="dim">REF     STATUS  PRIORITY  LABELS   TITLE</span>
+PROJ-1  todo    <span class="val">high</span>      <span class="dim">reports</span>  Add CSV export to the reports page
+PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span>      Fix flaky login test</pre>
           </Terminal>
         </div>
         <div class="panel" role="tabpanel" id="panel-launch" aria-labelledby="tab-launch" hidden>
@@ -96,7 +98,7 @@ PROJ-2  todo    urgent    <span class="dim">bug</span>      Fix flaky login test
 <span class="dim">╰──────────────────────────────────────────────────────────────╯</span></pre>
           </Terminal>
         </div>
-        <div class="panel" role="tabpanel" id="panel-tui" aria-labelledby="tab-tui" hidden>
+        <div class="panel" role="tabpanel" id="panel-manage" aria-labelledby="tab-manage" hidden>
           <Terminal title="~/code/myproject — taskship">
             <pre class="wide tui" set:html={tuiBoard} />
           </Terminal>
@@ -104,52 +106,56 @@ PROJ-2  todo    urgent    <span class="dim">bug</span>      Fix flaky login test
       </div>
     </div>
 
-    <section class="sectionhead">
-      <div class="eyebrow">How it works</div>
-      <h2>Set up once. Hand off any task.</h2>
+    <section id="how" class="band">
+      <div class="band-inner">
+        <div class="sectionhead">
+          <p class="eyebrow">How it works</p>
+          <h2>Set up once.<br />Hand off any task.</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="step-num">01 — Set up</span>
+            <code class="cmdchip">taskship init</code>
+            <p>
+              Suggests a project name and task prefix from your repository. Monorepos and
+              worktrees are handled for you.
+            </p>
+          </li>
+          <li>
+            <span class="step-num">02 — Capture</span>
+            <code class="cmdchip">taskship add "Add CSV export"</code>
+            <p>
+              Run it from any folder in the repository (or outside of it) and it's filed under
+              the right project as <code>PROJ-1</code>.
+            </p>
+          </li>
+          <li>
+            <span class="step-num">03 — Hand off</span>
+            <code class="cmdchip">taskship PROJ-1</code>
+            <p>
+              Starts your preferred coding agent at the project's root with the task and
+              instructions to plan first.
+            </p>
+          </li>
+        </ol>
+      </div>
     </section>
-    <ol class="steps">
-      <li>
-        <span class="num">1</span>
-        <h3>Set up a repository</h3>
-        <p>
-          <code>taskship init</code> suggests a project name and task prefix from your repository.
-          Monorepos and worktrees are handled for you.
-        </p>
-      </li>
-      <li>
-        <span class="num">2</span>
-        <h3>Capture work as it comes up</h3>
-        <p>
-          <code>taskship add "Add CSV export"</code> from any folder of the repository files it
-          under the right project as <code>PROJ-1</code>.
-        </p>
-      </li>
-      <li>
-        <span class="num">3</span>
-        <h3>Hand it to your agent</h3>
-        <p>
-          <code>taskship PROJ-1</code> starts Claude Code at the project's root with the task and
-          instructions to plan first.
-        </p>
-      </li>
-    </ol>
 
     <section class="feature">
       <div class="copy">
-        <div class="eyebrow">Plan-first dispatch</div>
+        <p class="eyebrow">Plan-first dispatch</p>
         <h2>A brief built to keep your agent on track.</h2>
-        <p>
+        <p class="feature-lede">
           Every run starts from the same short, safe brief: the task, and clear instructions to
           plan before touching anything.
         </p>
-        <ul>
-          <li>Task text is fenced off as untrusted requirements, so a task can't pose as instructions.</li>
-          <li>Only the task's ref, project, title, description, and comments are sent. Never configuration, environment variables, or credentials.</li>
-          <li>The agent assesses whether the task is ready and asks when something critical is missing. Claude starts in plan mode, so it can't edit until you approve.</li>
+        <ul class="checks">
+          <li><Fragment set:html={check} /><span><b>Task text is fenced off</b> as untrusted requirements, so a task can't pose as instructions.</span></li>
+          <li><Fragment set:html={check} /><span><b>Only the task is sent:</b> its ref, project, title, description and comments. Never configuration, environment variables, or credentials.</span></li>
+          <li><Fragment set:html={check} /><span><b>Nothing changes until you approve.</b> The agent asks when something critical is missing, and Claude starts in plan mode.</span></li>
         </ul>
       </div>
-      <Terminal title="What Claude receives">
+      <Terminal title="What Claude receives" chrome="caption">
         <pre>You are beginning a Taskship agent run.
 
 Task reference: <span class="val">PROJ-1</span>
@@ -183,19 +189,19 @@ Instructions:
 
     <section class="feature flip">
       <div class="copy">
-        <div class="eyebrow">Close the loop</div>
+        <p class="eyebrow">Close the loop</p>
         <h2>Every run leaves a record on the task.</h2>
-        <p>
+        <p class="feature-lede">
           When the work is done, Claude sums up what changed and how it checked it, then offers
           to write that back to Taskship. Nothing is recorded without your OK.
         </p>
-        <ul>
-          <li>Claude's summary becomes a comment on the task, next to your own notes.</li>
-          <li>When Claude marks the task done, the task records which run finished it.</li>
-          <li><code>taskship runs PROJ-1</code> lists every launch with its Claude session, so <code>claude --resume</code> picks up where a run stopped.</li>
+        <ul class="checks">
+          <li><Fragment set:html={check} /><span>Claude's summary becomes a comment on the task, next to your own notes.</span></li>
+          <li><Fragment set:html={check} /><span>When Claude marks the task done, the task records which run finished it.</span></li>
+          <li><Fragment set:html={check} /><span><code>taskship runs PROJ-1</code> lists every launch with its Claude session, so <code>claude --resume</code> picks up where a run stopped.</span></li>
         </ul>
       </div>
-      <Terminal title="~/code/myproject">
+      <Terminal title="~/code/myproject" chrome="caption">
         <pre><span class="cmd">$ taskship show PROJ-1</span>
 <span class="val">PROJ-1:</span> <b>Add CSV export to the reports page</b>
 
@@ -216,22 +222,18 @@ by hand: export a large report.</pre>
       </Terminal>
     </section>
 
-    <section class="feature">
-      <div class="copy">
-        <div class="eyebrow">Leave no trace</div>
-        <h2>Your repository stays exactly as it was.</h2>
-        <p>
-          No dotfile to commit, no folder to add to <code>.gitignore</code>, nothing for your
-          teammates to trip over. Everything Taskship knows lives in <code>~/.taskship</code>.
-        </p>
-        <ul>
-          <li>Worktrees are recognized from Git's own metadata, read-only, with no hooks run.</li>
-          <li>Nothing to clean up when you create or delete a worktree.</li>
-          <li>Use Taskship on any repository, including ones you don't own.</li>
-        </ul>
-      </div>
-      <Terminal title="~/code/myproject">
-        <pre><span class="cmd">$ taskship init</span>
+    <section class="band">
+      <div class="band-inner pair">
+        <article class="paircard">
+          <p class="eyebrow">Leave no trace</p>
+          <h2>Your repository stays exactly as it was.</h2>
+          <p>
+            No dotfile to commit, no folder to add to <code>.gitignore</code>, nothing for your
+            teammates to trip over. Everything Taskship knows lives in <code>~/.taskship</code>.
+            Use it on any repository, including ones you don't own.
+          </p>
+          <Terminal chrome="plain">
+            <pre><span class="cmd">$ taskship init</span>
 Setting up Taskship for <span class="val">~/code/myproject</span>
 Taskship doesn't write anything to this repository.
 Everything lives in <span class="val">~/.taskship</span>.
@@ -241,25 +243,18 @@ Everything lives in <span class="val">~/.taskship</span>.
 
 <span class="cmd">$ git status --short</span>
 <span class="dim"># nothing new, nothing to ignore</span></pre>
-      </Terminal>
-    </section>
-
-    <section class="feature flip">
-      <div class="copy">
-        <div class="eyebrow">Tasks as Markdown</div>
-        <h2>Write tasks the way you write everything else.</h2>
-        <p>
-          Every task reads and edits as a Markdown document, so a good task is just a good
-          description with a checklist.
-        </p>
-        <ul>
-          <li><code>taskship task edit PROJ-1</code> opens it in your <code>$EDITOR</code>.</li>
-          <li><code>--from</code> applies a document from a file or stdin, so scripts and agents can refine tasks too.</li>
-          <li><code>taskship export</code> writes every task to a folder of <code>.md</code> files.</li>
-        </ul>
-      </div>
-      <Terminal title="PROJ-1.md">
-        <pre><span class="dim">---
+          </Terminal>
+        </article>
+        <article class="paircard">
+          <p class="eyebrow">Export tasks as markdown</p>
+          <h2>Write tasks the way you write everything else.</h2>
+          <p>
+            <code>taskship task edit PROJ-1</code> opens a task in your <code>$EDITOR</code>.
+            <code>--from</code> applies a document from a file or stdin, and
+            <code>taskship export</code> writes every task to a folder of <code>.md</code> files.
+          </p>
+          <Terminal chrome="plain">
+            <pre><span class="dim">---
 ref: PROJ-1
 project: myproject
 status: todo
@@ -276,61 +271,50 @@ Users want to open report data in a spreadsheet.
 - [ ] "Export CSV" button on every report
 - [ ] Columns match the on-screen table
 - [ ] Large reports export without timing out</pre>
-      </Terminal>
+          </Terminal>
+        </article>
+      </div>
     </section>
 
-    <section class="sectionhead">
-      <h2>Built for the way you already work</h2>
+    <section id="roadmap" class="features">
+      <h2>Built for the way you already work.</h2>
+      <div class="grid">
+        <article>
+          <h3>Worktrees and monorepos</h3>
+          <p>Run Taskship from any worktree or subfolder. It works out the project from Git, with nothing to configure.</p>
+        </article>
+        <article>
+          <h3>Local-first</h3>
+          <p>One SQLite database under <code>~/.taskship</code>. No account, no server, no sign-up.</p>
+        </article>
+        <article>
+          <h3>Useful without an agent</h3>
+          <p>A fast task manager for the terminal, with JSON output for scripts.</p>
+        </article>
+        <article>
+          <h3>Claude Code first</h3>
+          <p>Claude Code is the first supported agent. Codex support is planned.</p>
+        </article>
+        <article>
+          <div class="cardhead"><h3>Shared across machines</h3><span class="pill">Planned</span></div>
+          <p>An optional self-hosted server shares tasks between your laptop and a remote machine.</p>
+        </article>
+        <article>
+          <div class="cardhead"><h3>Your existing issues</h3><span class="pill">Planned</span></div>
+          <p>Dispatch GitHub Issues and Linear issues directly, without copying them.</p>
+        </article>
+      </div>
     </section>
-    <div class="cards">
-      <article class="card">
-        <span class="ico">⑂</span>
-        <h3>Worktrees and monorepos</h3>
-        <p>
-          Run Taskship from any worktree or subfolder. It works out the project from Git, with
-          nothing to configure.
-        </p>
-      </article>
-      <article class="card">
-        <span class="ico">▤</span>
-        <h3>Local-first</h3>
-        <p>One SQLite database under <code>~/.taskship</code>. No account, no server, no sign-up.</p>
-      </article>
-      <article class="card">
-        <span class="ico">⌘</span>
-        <h3>Useful without an agent</h3>
-        <p>A fast task manager for the terminal, with JSON output for scripts.</p>
-      </article>
-      <article class="card">
-        <span class="ico">↗</span>
-        <h3>Claude Code first</h3>
-        <p>Claude Code is the first supported agent. Codex support is planned.</p>
-      </article>
-      <article class="card">
-        <span class="ico">⇄</span>
-        <span class="pill">Planned</span>
-        <h3>Shared across machines</h3>
-        <p>An optional self-hosted server shares tasks between your laptop and a remote machine.</p>
-      </article>
-      <article class="card">
-        <span class="ico">#</span>
-        <span class="pill">Planned</span>
-        <h3>Your issue tracker</h3>
-        <p>Dispatch GitHub Issues and Linear issues directly, without copying them.</p>
-      </article>
-    </div>
-
-    <p class="status">
-      Taskship is in early development. Setup, tasks with labels and comments, the TUI, and
-      launching Claude Code work today. <a href="/docs/roadmap/">See the roadmap →</a>
-    </p>
 
     <section class="cta">
-      <h2>Give your agent a better start.</h2>
-      <p>Set up your first repository in under a minute.</p>
+      <h2>Give your agents<br /><span>a better start.</span></h2>
+      <p>Set up your first project in under a minute.</p>
       <div class="actions">
         <a class="btn primary" href="/docs/quickstart/">Read the quickstart →</a>
-        <a class="btn" href="/docs/concepts/">How it works</a>
+        <a class="btn" href="https://github.com/jhdenham/taskship">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+          View on GitHub
+        </a>
       </div>
     </section>
   </main>
@@ -350,6 +334,20 @@ Users want to open report data in a spreadsheet.
       });
     }
 
+    // The selected tab's highlight is one pill behind the tabs. It slides to
+    // the selected tab with a transform; the CSS sets the timing.
+    const pill = document.querySelector<HTMLElement>('.tab-pill')!;
+    function placePill(animate: boolean) {
+      const tab = tabs.find((t) => t.getAttribute('aria-selected') === 'true')!;
+      pill.classList.toggle('sliding', animate);
+      pill.style.width = `${tab.offsetWidth}px`;
+      pill.style.height = `${tab.offsetHeight}px`;
+      pill.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`;
+    }
+    placePill(false);
+    // Tabs reflow with the window, so follow them without animating.
+    new ResizeObserver(() => placePill(false)).observe(pill.parentElement!);
+
     function select(tab: HTMLButtonElement) {
       // Mid-animation, this is the height the showcase has reached so far.
       const from = panels.offsetHeight;
@@ -359,6 +357,7 @@ Users want to open report data in a spreadsheet.
         t.tabIndex = on ? 0 : -1;
         document.getElementById(t.getAttribute('aria-controls')!)!.hidden = !on;
       }
+      placePill(true);
       settle();
       const to = panels.offsetHeight;
       if (reduceMotion.matches || from === to) return;

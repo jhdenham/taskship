@@ -10,34 +10,48 @@
    faint            #7e9b8a         #5f7068
 
    The site's terminals and code blocks are always dark, so they use the dark
-   terminal column. */
+   terminal column. In the light theme they keep the deep green of the brand;
+   in the dark theme they sit a step above the slate page. */
 :root {
   color-scheme: light dark;
-  --bg: light-dark(#f7f8f6, #0d1915);
-  --surface: light-dark(#ffffff, #12221c);
-  --ink: light-dark(#182723, #e2eee6);
-  --muted: light-dark(#5b6b64, #93a89d);
-  --line: light-dark(#dde4de, #233a30);
-  --accent: light-dark(#24684b, #86dc9b);
-  --accent-strong: light-dark(#2f7d52, #9cf2a6);
-  --tint: light-dark(#e9f3eb, #173026);
-  --tint-ink: light-dark(#19543b, #b4f0c0);
-  --shadow: light-dark(#193d2b19, #00000066);
-  --primary-bg: light-dark(#10231d, #9cf2a6);
-  --primary-ink: light-dark(#9cf2a6, #0d1915);
 
-  --term-bg: light-dark(#10231d, #08130f);
-  --term-ink: #d4ebda;
-  --term-line: #2c473b;
+  /* Page */
+  --bg: light-dark(#f7f6f2, #12181a);
+  --bg-alt: light-dark(#efede6, #161d1f);
+  --surface: light-dark(#ffffff, #1a2224);
+  --cell: light-dark(#ffffff, #12181a);
+  --chip: light-dark(#f3f2ec, #12181a);
+  --line: light-dark(#e3e0d6, #253033);
+  --border: light-dark(#dcd8cc, #2c383b);
+  --border-strong: light-dark(#c9c4b5, #39474a);
+  --ink: light-dark(#14201b, #e6edee);
+  --muted: light-dark(#46554d, #b0bdbe);
+  --dim: light-dark(#5c6b63, #8d9b9c);
+  --accent: light-dark(#22683a, #8fe09f);
+  --primary-bg: light-dark(#1b3a2c, #8fe09f);
+  --primary-ink: light-dark(#ffffff, #0c1210);
+  --warn: light-dark(#7a5200, #f2c46d);
+  --warn-line: light-dark(#e0c68c, #5a4a26);
+  --tint: light-dark(#e8f0e6, #1c2c29);
+  --tint-ink: light-dark(#1d5a33, #b4ecbf);
+  --shadow: light-dark(#14201b40, #000000b3);
+
+  /* Terminals */
+  --term-bg: light-dark(#111a17, #172022);
+  --term-bar: light-dark(#0f1714, #141b1d);
+  --term-line: light-dark(#24332d, #2c383b);
+  --term-ink: #e6eee9;
   --cli-command: #9cf2a6;
   --cli-success: #5fd38a;
   --cli-value: #f0c674;
   --cli-error: #ff8a7a;
-  --cli-faint: #7e9b8a;
+  --cli-faint: #8fa197;
 
-  --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --gutter: clamp(16px, 5vw, 78px);
+  --sans: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --display: 'Space Grotesk', var(--sans);
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --page: 1200px;
+  --gutter: 24px;
 }
 
 :root[data-theme='light'] {
@@ -52,11 +66,16 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-padding-top: 88px;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.65 var(--sans);
+  font: 16px/1.6 var(--sans);
+  letter-spacing: -0.005em;
 }
 
 a {
@@ -64,137 +83,36 @@ a {
   text-decoration: none;
 }
 
-/* Header and footer */
-
-.topbar {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--gutter);
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+h1,
+h2,
+h3 {
+  font-family: var(--display);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: 780;
-  letter-spacing: -0.7px;
+code {
+  font-family: var(--mono);
 }
 
-.mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--term-bg);
-  color: var(--cli-command);
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-}
-
-.toplinks {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.theme {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.theme:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.toplinks a:hover,
-.toplinks a[aria-current] {
-  color: var(--accent);
-}
-
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  justify-content: space-between;
-  padding: 28px var(--gutter);
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.footer a:hover {
-  color: var(--accent);
-}
-
-/* Landing */
-
-.landing {
-  max-width: 1040px;
-  margin: auto;
-  padding: 64px var(--gutter) 100px;
-}
-
-.eyebrow {
-  font-size: 12px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  font-weight: 800;
-  color: var(--accent-strong);
-}
-
-.hero h1 {
-  font-size: clamp(38px, 6vw, 68px);
-  line-height: 1.08;
-  letter-spacing: -0.045em;
-  max-width: 740px;
-  margin: 16px 0 22px;
-  font-weight: 800;
-}
-
-.hero h1 span {
-  color: var(--accent-strong);
-}
-
-.lede {
-  max-width: 630px;
-  color: var(--muted);
-  font-size: 18px;
-  line-height: 1.75;
-  margin: 0 0 30px;
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
+/* Buttons */
 
 .btn {
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 11px 18px;
-  font-weight: 700;
-  font-size: 14px;
-  background: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 13px 24px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .btn.primary {
@@ -204,58 +122,251 @@ a {
 }
 
 .btn:hover {
-  transform: translateY(-1px);
+  border-color: var(--accent);
 }
 
-.terminal {
-  margin: 48px 0 56px;
-  background: var(--term-bg);
-  color: var(--term-ink);
-  border-radius: 15px;
-  box-shadow: 0 20px 45px var(--shadow);
-  border: 1px solid var(--term-line);
-  overflow: hidden;
+.btn.primary:hover {
+  filter: brightness(1.08);
 }
 
-.termbar {
+.btn.small {
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+
+/* Status bar, header and footer */
+
+.statusbar {
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--line);
+}
+
+.statusbar p {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 10px var(--gutter);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.statusbar .badge {
+  font: 700 11px var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1a1406;
+  background: #f2c46d;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.statusbar a {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.statusbar a:hover {
+  text-decoration: underline;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar-inner {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 10px var(--gutter);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 19px;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: 700 20px var(--display);
+  letter-spacing: -0.01em;
+}
+
+.brand-mark {
+  flex: none;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.toplinks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+}
+
+.toplinks > a:not(.btn) {
+  color: var(--muted);
+  padding: 12px 14px;
+}
+
+.toplinks > a:not(.btn):hover,
+.toplinks > a[aria-current] {
+  color: var(--ink);
+}
+
+.toplinks .btn {
+  margin-left: 8px;
+}
+
+.toplinks .iconlink {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.toplinks .iconlink:hover {
+  color: var(--ink);
+}
+
+.iconlink svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The toggle shows the sun in the dark theme and the moon in the light one. */
+.theme .sun {
+  display: none;
+}
+
+:root[data-theme='dark'] .theme .sun {
+  display: block;
+}
+
+:root[data-theme='dark'] .theme .moon {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .theme .sun {
+    display: block;
+  }
+
+  :root:not([data-theme]) .theme .moon {
+    display: none;
+  }
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+}
+
+.footer-inner {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 28px var(--gutter);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.footer a:hover {
+  color: var(--accent);
+}
+
+/* Terminal window */
+
+.terminal {
+  background: var(--term-bg);
+  color: var(--term-ink);
+  border: 1px solid var(--term-line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px -40px var(--shadow);
+}
+
+.termbar {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 60px;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 16px;
+  background: var(--term-bar);
   border-bottom: 1px solid var(--term-line);
   color: var(--cli-faint);
-  font-size: 12px;
+  font: 12px var(--mono);
+}
+
+.termbar > span:first-of-type {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.termcaption {
+  padding: 10px 16px;
+  background: var(--term-bar);
+  border-bottom: 1px solid var(--term-line);
+  color: var(--cli-faint);
+  font: 12px var(--mono);
 }
 
 .dots {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .dots i {
-  height: 9px;
-  width: 9px;
+  height: 12px;
+  width: 12px;
   border-radius: 50%;
 }
 
 .dots i:nth-child(1) {
-  background: var(--cli-error);
+  background: #ec6a5e;
 }
 
 .dots i:nth-child(2) {
-  background: var(--cli-value);
+  background: #f4bf4f;
 }
 
 .dots i:nth-child(3) {
-  background: var(--cli-success);
+  background: #61c554;
 }
 
 .terminal pre {
   margin: 0;
-  padding: 22px 25px 27px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font: 13px/2 var(--mono);
+  padding: 22px 24px;
+  white-space: pre;
+  overflow-x: auto;
+  font: 13px/1.65 var(--mono);
 }
 
 .terminal .cmd {
@@ -270,92 +381,151 @@ a {
   color: var(--cli-value);
 }
 
+.terminal .err {
+  color: var(--cli-error);
+}
+
 .terminal .dim {
   color: var(--cli-faint);
 }
 
-.terminal .wide {
-  white-space: pre;
-  overflow-x: auto;
-}
-
-/* Claude Code's screen: tighter lines so box borders join up. Symbols that
-   may come from a fallback font are pinned to one cell so borders align. */
-.terminal .claude {
-  line-height: 1.3;
-}
-
-/* A real 140-column TUI screen (139 visible), with tight lines so its
-   borders join up. The font shrinks with the terminal so the screen fits,
-   down to 6px; narrower than that, it scrolls. A monospace cell is about
-   0.6em wide, so 139 cells need about 84em; 86 leaves room for slightly
-   wider fonts. */
-.panel .terminal {
-  container-type: inline-size;
-}
-
-.terminal .tui {
-  padding: 18px 16px 20px;
-  font-size: clamp(6px, (100cqw - 32px) / 86, 10px);
-  line-height: 1.25;
-}
-
-.terminal .ch {
-  display: inline-block;
-  width: 1ch;
-  text-align: center;
+.terminal .agent {
+  color: var(--cli-command);
+  font-weight: 700;
 }
 
 .terminal b {
   font-weight: 700;
 }
 
+/* Symbols that may come from a fallback font are pinned to one cell so
+   borders align. */
+.terminal .ch {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+}
+
+/* Inline code in running text */
+
+.landing p code,
+.landing li code {
+  font-size: 0.86em;
+  color: var(--ink);
+  background: var(--chip);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+/* Landing */
+
+.landing {
+  overflow-x: clip;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  font: 13px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hero {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 88px var(--gutter) 96px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+  gap: 56px;
+  align-items: end;
+}
+
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 6px 14px 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font: 13px var(--mono);
+  color: var(--muted);
+}
+
+.eyebrow-pill span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.hero h1 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(44px, 6.4vw, 84px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+.hero h1 span {
+  color: var(--accent);
+}
+
+.lede {
+  max-width: 520px;
+  margin: 0 0 28px;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
 .install {
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  width: fit-content;
-  margin: 0 0 22px;
-  padding: 6px 6px 6px 14px;
-  border: 1px solid var(--term-line);
-  border-radius: 9px;
+  gap: 12px;
+  max-width: 520px;
+  padding: 6px 6px 6px 18px;
   background: var(--term-bg);
+  border: 1px solid var(--term-line);
+  border-radius: 10px;
 }
 
-.landing .install code {
+.install code {
+  flex: 1;
   min-width: 0;
   overflow-x: auto;
   white-space: nowrap;
-  padding: 0;
-  background: none;
-  color: var(--term-ink);
   font-size: 14px;
+  color: var(--term-ink);
 }
 
 .install code span[aria-hidden] {
   color: var(--cli-faint);
 }
 
-.trust {
-  margin: -12px 0 26px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .install .copy {
   flex: none;
-  font: 700 12px var(--sans);
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 0 16px;
   border: 1px solid var(--term-line);
-  border-radius: 6px;
-  background: none;
-  color: var(--cli-command);
+  border-radius: 7px;
+  background: #ffffff0f;
+  color: var(--term-ink);
+  font: 500 14px var(--sans);
   cursor: pointer;
 }
 
 .install .copy:hover {
-  background: #ffffff14;
+  background: #ffffff1f;
+}
+
+.trust {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--dim);
 }
 
 /* Hero showcase: tabs over panels. Each panel takes its own height; the
@@ -363,34 +533,103 @@ a {
    fades in. */
 
 .showcase {
-  margin: 48px 0 56px;
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 104px;
 }
 
 .tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .tabs button {
-  font: 700 13px var(--sans);
-  padding: 7px 14px;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 44px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   background: none;
-  color: var(--muted);
+  text-align: left;
+  font-family: inherit;
   cursor: pointer;
 }
 
-.tabs button:hover {
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
   color: var(--ink);
 }
 
+.tab-label::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.tab-desc {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.tabs button:hover {
+  border-color: var(--border-strong);
+}
+
+.tabs {
+  position: relative;
+}
+
+.tab-label::before {
+  transition: background-color 0.25s ease;
+}
+
+.tabs button {
+  position: relative;
+  z-index: 1;
+  transition: border-color 0.25s ease;
+}
+
 .tabs button[aria-selected='true'] {
-  background: var(--tint);
-  border-color: var(--line);
-  color: var(--tint-ink);
+  border-color: transparent;
+}
+
+.tabs button[aria-selected='true'] .tab-label::before {
+  background: var(--accent);
+}
+
+/* The selected tab's highlight: one pill behind the tabs that the script
+   sizes and moves over the selected tab. */
+.tab-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.tab-pill.sliding {
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-pill.sliding {
+    transition: none;
+  }
 }
 
 .tabs button:focus-visible {
@@ -399,7 +638,7 @@ a {
 }
 
 .panels {
-  transition: height 0.35s cubic-bezier(0.2, 0, 0, 1);
+  transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* While the height animates, clip a taller panel, but leave room for the
@@ -416,7 +655,6 @@ a {
 @keyframes panel-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
 }
 
@@ -430,167 +668,125 @@ a {
   }
 }
 
-.panel .terminal {
-  margin: 0;
-}
-
-.placeholder {
-  aspect-ratio: 16 / 9;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 40px 24px;
-  text-align: center;
+.panel .terminal pre {
+  padding: 32px 36px 40px;
   font-size: 14px;
-  line-height: 1.6;
-  color: var(--cli-faint);
+  line-height: 1.75;
 }
 
-.placeholder strong {
-  font-size: 16px;
-  color: var(--term-ink);
+/* Claude Code's screen: tighter lines so box borders join up. */
+.panel .terminal .claude {
+  line-height: 1.35;
 }
 
-.placeholder span {
-  max-width: 440px;
+/* Captured screens (Claude Code and the TUI) draw boxes with line-drawing
+   characters. The web font has no glyphs for them, so a fallback font would
+   draw them at a different width and the borders would drift. The system
+   monospace font has them all at one width. */
+.panel .terminal .claude,
+.panel .terminal .tui {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.placeholder .play {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  padding-left: 3px;
-  border-radius: 50%;
-  background: var(--cli-command);
-  color: var(--term-bg);
-  font-size: 20px;
+/* A real 140-column TUI screen (139 visible), with tight lines so its
+   borders join up. The font shrinks with the terminal so the screen fits,
+   down to 6px; narrower than that, it scrolls. A monospace cell is about
+   0.6em wide, so 139 cells need about 84em; 86 leaves room for slightly
+   wider fonts. */
+.panel .terminal {
+  container-type: inline-size;
 }
 
+.panel .terminal .tui {
+  padding: 20px 16px 22px;
+  font-size: clamp(6px, (100cqw - 32px) / 86, 13px);
+  line-height: 1.25;
+}
+
+/* Bands: full-width tinted sections */
+
+.band {
+  background: var(--bg-alt);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.band-inner {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 96px var(--gutter);
+}
 
 .sectionhead {
-  margin: 60px 0 24px;
+  margin-bottom: 48px;
 }
 
-.sectionhead h2 {
-  font-size: 29px;
-  letter-spacing: -1px;
-  line-height: 1.2;
-  margin: 0 0 8px;
-}
-
-.sectionhead p {
-  color: var(--muted);
+.sectionhead h2,
+.features h2 {
   margin: 0;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
 }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  padding: 24px;
-}
-
-.card .ico {
-  display: inline-grid;
-  place-items: center;
-  background: var(--tint);
-  border-radius: 10px;
-  width: 37px;
-  height: 37px;
-  font-size: 19px;
-  color: var(--tint-ink);
-}
-
-.card h3 {
-  font-size: 16px;
-  letter-spacing: -0.35px;
-  margin: 16px 0 7px;
-}
-
-.card p {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.7;
-  margin: 0;
-}
-
-.landing code {
-  font: 0.88em var(--mono);
-  background: var(--tint);
-  color: var(--tint-ink);
-  padding: 1px 5px;
-  border-radius: 5px;
-}
-
-.terminal .agent {
-  color: var(--cli-command);
-  font-weight: 700;
-}
-
-.sectionhead .eyebrow + h2 {
-  margin-top: 10px;
-}
+/* How it works */
 
 .steps {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .steps li {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  padding: 24px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.steps .num {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--primary-bg);
-  color: var(--primary-ink);
-  font-weight: 800;
-  font-size: 14px;
+.step-num {
+  font: 14px var(--mono);
+  color: var(--accent);
 }
 
-.steps h3 {
-  font-size: 16px;
-  letter-spacing: -0.35px;
-  margin: 16px 0 7px;
+.steps .cmdchip {
+  align-self: flex-start;
+  font-size: 15px;
+  background: var(--chip);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 15px;
+  white-space: normal;
 }
 
 .steps p {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.7;
   margin: 0;
+  color: var(--muted);
 }
 
+/* Feature rows */
+
 .feature {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 112px var(--gutter) 56px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 48px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 64px;
   align-items: center;
-  margin: 104px 0;
 }
 
 .feature.flip {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  padding: 56px var(--gutter) 112px;
 }
 
 .feature.flip .copy {
@@ -598,97 +794,184 @@ a {
 }
 
 .feature h2 {
-  font-size: 30px;
-  letter-spacing: -1px;
-  line-height: 1.2;
-  margin: 10px 0 14px;
+  margin: 0 0 20px;
+  font-size: clamp(30px, 3.6vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
 }
 
-.feature p {
+.feature-lede {
+  margin: 0 0 28px;
+  font-size: 18px;
   color: var(--muted);
-  margin: 0 0 16px;
 }
 
-.feature ul {
+.checks {
+  list-style: none;
   margin: 0;
   padding: 0;
-  list-style: none;
-  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.feature li {
-  position: relative;
-  padding-left: 22px;
-  margin-top: 10px;
+.checks li {
+  display: flex;
+  gap: 14px;
 }
 
-.feature li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: var(--accent);
-  font-weight: 800;
+.checks .check {
+  flex: none;
+  margin-top: 3px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.feature .terminal {
+/* Two cards side by side. The rows line up across both cards (subgrid), so
+   the terminals start at the same height and share it. */
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+  grid-template-rows: auto auto auto 1fr;
+  column-gap: 24px;
+}
+
+.paircard {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  row-gap: 18px;
+  padding: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+/* Stacked on narrow screens: space the cards apart. A margin here would
+   also stretch the shared rows, so it only applies once they stack. */
+@media (max-width: 1000px) {
+  .paircard:not(:last-child) {
+    margin-bottom: 24px;
+  }
+}
+
+.paircard .eyebrow,
+.paircard h2,
+.paircard p {
   margin: 0;
 }
 
-.feature .terminal pre {
-  font-size: 12.5px;
-  line-height: 1.75;
-  white-space: pre;
-  overflow-x: auto;
+.paircard h2 {
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.card {
-  position: relative;
+.paircard > p:not(.eyebrow) {
+  color: var(--muted);
 }
 
-.card > .pill {
-  position: absolute;
-  top: 24px;
-  right: 24px;
+.paircard .terminal {
+  min-width: 0;
+  box-shadow: none;
 }
 
-.status {
-  margin: 56px 0 0;
-  padding: 16px 20px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: var(--tint);
-  color: var(--tint-ink);
-  font-size: 14px;
+/* Feature grid */
+
+.features {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 112px var(--gutter) 96px;
 }
 
-.status a {
-  font-weight: 700;
-  white-space: nowrap;
+.features h2 {
+  margin-bottom: 40px;
+  font-size: clamp(30px, 3.6vw, 44px);
 }
 
-.status a:hover {
-  text-decoration: underline;
+.features .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
 }
+
+.features article {
+  background: var(--cell);
+  padding: 30px 28px;
+}
+
+.features h3 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.features p {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+
+.cardhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.features .pill {
+  font: 12px var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--warn);
+  background: none;
+  border: 1px solid var(--warn-line);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+/* Closing call to action */
 
 .cta {
-  margin-top: 96px;
+  border-top: 1px solid var(--line);
+  padding: 112px var(--gutter);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
   text-align: center;
 }
 
 .cta h2 {
-  font-size: clamp(30px, 4vw, 42px);
-  letter-spacing: -1.5px;
-  line-height: 1.15;
-  margin: 0 0 10px;
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(40px, 5.6vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.cta h2 span {
+  color: var(--accent);
 }
 
 .cta p {
+  margin: 0;
+  font-size: 18px;
   color: var(--muted);
-  margin: 0 0 24px;
 }
 
-.cta .actions {
+.actions {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 12px;
 }
 
 /* Docs */
@@ -885,24 +1168,10 @@ a {
   color: var(--muted);
 }
 
+
 /* Narrow screens */
 
 @media (max-width: 860px) {
-  .cards,
-  .steps,
-  .feature {
-    grid-template-columns: 1fr;
-  }
-
-  .feature {
-    gap: 24px;
-    margin: 72px 0;
-  }
-
-  .feature.flip {
-    grid-template-columns: 1fr;
-  }
-
   .feature.flip .copy {
     order: 0;
   }
@@ -941,5 +1210,42 @@ a {
 
   .prose h1 {
     font-size: 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hide-sm {
+    display: none;
+  }
+
+  .toplinks .btn {
+    margin-left: 4px;
+  }
+
+  .hero {
+    padding: 56px var(--gutter) 64px;
+    gap: 32px;
+  }
+
+  .feature,
+  .feature.flip {
+    padding: 64px var(--gutter);
+    gap: 32px;
+  }
+
+  .band-inner,
+  .features,
+  .cta {
+    padding-top: 72px;
+    padding-bottom: 72px;
+  }
+
+  .paircard {
+    padding: 24px;
+  }
+
+  .panel .terminal pre {
+    padding: 20px;
+    font-size: 13px;
   }
 }

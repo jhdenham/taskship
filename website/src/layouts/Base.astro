@@ -4,11 +4,14 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description?: string;
+  /** Show the early-development bar above the header. */
+  status?: boolean;
 }
 
 const {
   title,
   description = 'Taskship is a local-first task manager and agent dispatcher for developers.',
+  status = false,
 } = Astro.props;
 const path = Astro.url.pathname;
 ---
@@ -21,6 +24,12 @@ const path = Astro.url.pathname;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+    />
     <script is:inline>
       // Apply a saved theme before the page paints. Without one, the system
       // setting decides.
@@ -31,25 +40,59 @@ const path = Astro.url.pathname;
     </script>
   </head>
   <body>
+    {
+      status && (
+        <div class="statusbar">
+          <p>
+            <span class="badge">Early</span>
+            <span>
+              Taskship is in early development. Setup, tasks with labels and comments, the TUI,
+              and launching Claude Code work today.
+            </span>
+            <a href="/docs/roadmap/">See the roadmap →</a>
+          </p>
+        </div>
+      )
+    }
     <header class="topbar">
-      <a class="brand" href="/">
-        <span class="mark">↗</span> taskship
-      </a>
-      <nav class="toplinks">
-        <a href="/docs/" aria-current={path.startsWith('/docs/') ? 'page' : undefined}>Docs</a>
-        <a href="https://github.com/jhdenham/taskship">GitHub</a>
-        <button class="theme" type="button" aria-label="Switch between light and dark">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5" />
-            <path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" />
+      <div class="topbar-inner">
+        <a class="brand" href="/">
+          <svg class="brand-mark" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2.5 14.5h19l-3 5h-13z"></path>
+            <rect x="5" y="10" width="4.5" height="4.5" rx="0.6"></rect>
+            <rect x="9.5" y="5.5" width="4.5" height="4.5" rx="0.6"></rect>
+            <rect x="9.5" y="10" width="4.5" height="4.5" rx="0.6"></rect>
+            <path d="M16.5 14.5V8h2.5v6.5"></path>
           </svg>
-        </button>
-      </nav>
+          taskship
+        </a>
+        <nav class="toplinks" aria-label="Main">
+          <a class="hide-sm" href="/#how">How it works</a>
+          <a href="/docs/" aria-current={path.startsWith('/docs/') ? 'page' : undefined}>Docs</a>
+          <a class="iconlink" href="https://github.com/jhdenham/taskship" aria-label="Taskship on GitHub" title="GitHub">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg>
+          </a>
+          <button class="theme iconlink" type="button" aria-label="Switch between light and dark" title="Switch between light and dark">
+            <svg class="sun" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+            </svg>
+            <svg class="moon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <a class="btn primary small" href="/docs/quickstart/">Get started</a>
+        </nav>
+      </div>
     </header>
     <slot />
     <footer class="footer">
-      <span>Taskship · Apache License 2.0</span>
-      <a href="https://github.com/jhdenham/taskship">github.com/jhdenham/taskship</a>
+      <div class="footer-inner">
+        <span>Taskship · Apache License 2.0</span>
+        <a href="https://github.com/jhdenham/taskship">github.com/jhdenham/taskship</a>
+      </div>
     </footer>
     <script>
       const root = document.documentElement;
