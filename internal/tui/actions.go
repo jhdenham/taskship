@@ -62,7 +62,7 @@ func (m *model) priorityMenu(t core.Task) {
 }
 
 func (m *model) openMenu(field, title string, options []string, current int, pick func(int) tea.Cmd) {
-	m.menu = menu{field: field, title: title, options: options, cursor: current, current: current, pick: pick}
+	m.menu = menu{field: field, title: title, options: options, verb: "set", cursor: current, current: current, pick: pick}
 	m.mode = modeMenu
 }
 
@@ -127,6 +127,11 @@ func (m *model) drawLabels(screen []string, r rect) {
 // drawMenu draws the open menu.
 func (m *model) drawMenu(screen []string, r rect) {
 	w := max(28, len(m.menu.title)+6)
+	for i, o := range m.menu.options {
+		if i < len(m.menu.hints) {
+			w = max(w, len(o)+len(m.menu.hints[i])+6)
+		}
+	}
 	var lines []string
 	for i, o := range m.menu.options {
 		th, marker := m.th, " "
@@ -135,12 +140,15 @@ func (m *model) drawMenu(screen []string, r rect) {
 			marker = m.th.keyBold.Render("▌")
 		}
 		cur := ""
-		if i == m.menu.current {
+		switch {
+		case i == m.menu.current:
 			cur = th.faint.Render("current")
+		case i < len(m.menu.hints):
+			cur = th.faint.Render(m.menu.hints[i])
 		}
 		lines = append(lines, marker+spreadIn(th.plain.Render(" "+o), cur, w-3, th.plain))
 	}
-	bottom, keys := boxKeys(w, m.th.keys("enter", "set", "esc", "cancel"))
+	bottom, keys := boxKeys(w, m.th.keys("enter", m.menu.verb, "esc", "cancel"))
 	lines = append(lines, keys...)
 	h := len(lines) + 2
 	x, y := m.popupAt(r, w, h)
@@ -717,9 +725,33 @@ func (m *model) saveComment(text string) tea.Cmd {
 // Launch.
 
 // launch checks that an agent can run on t, showing what's wrong in place,
-// and leaves the TUI to launch it.
+// then asks whether to run or refine it. A backlog task starts on refine.
 func (m *model) launch(t core.Task) tea.Cmd {
-	plan, err := dispatch.Prepare(m.ctx, m.s, t, core.RunModeRun, ".", false)
+	if _, ok := m.prepare(t, core.RunModeRun); !ok {
+		return nil
+	}
+	modes := []core.RunMode{core.RunModeRun, core.RunModeRefine}
+	cursor := 0
+	if t.Status == core.StatusBacklog {
+		cursor = 1
+	}
+	m.menu = menu{title: "Launch an agent on " + t.Ref, options: []string{"run", "refine"},
+		hints: []string{"work on it", "make it ready"}, verb: "launch", cursor: cursor, current: -1,
+		pick: func(i int) tea.Cmd {
+			plan, ok := m.prepare(t, modes[i])
+			if !ok {
+				return nil
+			}
+			m.outcome.Launch = &plan
+			return tea.Quit
+		}}
+	m.mode = modeMenu
+	return nil
+}
+
+// prepare plans an agent run on t for mode, or shows what's wrong.
+func (m *model) prepare(t core.Task, mode core.RunMode) (dispatch.Plan, bool) {
+	plan, err := dispatch.Prepare(m.ctx, m.s, t, mode, ".", false)
 	if err == nil {
 		err = plan.Ready()
 	}
@@ -737,10 +769,9 @@ func (m *model) launch(t core.Task) tea.Cmd {
 	case err != nil:
 		m.fail(err)
 	default:
-		m.outcome.Launch = &plan
-		return tea.Quit
+		return plan, true
 	}
-	return nil
+	return dispatch.Plan{}, false
 }
 
 // Mouse wheel.

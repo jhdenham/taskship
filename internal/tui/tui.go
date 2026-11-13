@@ -61,7 +61,7 @@ const (
 	modeNormal    mode = iota
 	modeHelp           // the help overlay
 	modeProjects       // the project picker
-	modeMenu           // a status or priority menu
+	modeMenu           // a status, priority or launch menu
 	modeInput          // the filter, labels or quick-add input
 	modeComment        // writing a comment
 	modeConfirm        // a y/n question
@@ -84,11 +84,13 @@ type message struct {
 }
 
 type menu struct {
-	field   string // "status" or "priority": where the menu opens
+	field   string // "status" or "priority": the field it changes, if any
 	title   string
 	options []string // shown
+	hints   []string // shown faint beside the options, if set
+	verb    string   // what enter does: "set", "launch"
 	cursor  int
-	current int
+	current int // -1 for none
 	pick    func(i int) tea.Cmd
 }
 

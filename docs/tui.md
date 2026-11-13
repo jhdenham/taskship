@@ -37,7 +37,9 @@ Status, priority, labels, the title and description, and comments change in a bo
 
 Press `r` in the detail view to launch an agent on the task.
 
-Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise the TUI closes, leaves lines such as `✓ Launching Claude for PROJ-42 in ~/code/myproject` in your terminal (after `✓ Moved PROJ-42 from todo to in_progress` when the task hadn't started yet), and starts the agent exactly as `taskship PROJ-42` would. The agent has the whole terminal, and Ctrl-C goes to it. When the agent exits, you're back at your shell; run `taskship` to return to the TUI.
+Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise it asks what the agent is for: `run` to work on the task, as `taskship PROJ-42` does, or `refine` to make it ready to work on, as `taskship refine PROJ-42` does (see [Refining a task](agents.md#refining-a-task)). The menu starts on `refine` for a task in backlog and on `run` otherwise. Pick one with `j`/`k` and `enter`, or `esc` to cancel.
+
+The TUI then closes, leaves lines such as `✓ Launching Claude for PROJ-42 in ~/code/myproject` in your terminal (after `✓ Moved PROJ-42 from todo to in_progress` when you run a task that hadn't started yet), and starts the agent exactly as the command would. The agent has the whole terminal, and Ctrl-C goes to it. When the agent exits, you're back at your shell; run `taskship` to return to the TUI.
 
 ## Keys
 

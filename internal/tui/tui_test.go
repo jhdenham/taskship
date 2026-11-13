@@ -378,6 +378,42 @@ func TestLaunchWithoutFolder(t *testing.T) {
 	}
 }
 
+func TestLaunchMenu(t *testing.T) {
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "claude"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+	// PROJ-3, selected first, is in backlog, so the menu starts on refine;
+	// PROJ-5 is in todo, so it starts on run.
+	for _, tc := range []struct {
+		ref  string
+		keys []string
+		want core.RunMode
+	}{
+		{"PROJ-3", nil, core.RunModeRefine},
+		{"PROJ-3", []string{"k"}, core.RunModeRun},
+		{"PROJ-5", nil, core.RunModeRun},
+		{"PROJ-5", []string{"j"}, core.RunModeRefine},
+	} {
+		m, s := myproject(t, 80, 24)
+		if _, err := s.AddWorkspace(context.Background(), "myproject", core.Workspace{Path: t.TempDir()}); err != nil {
+			t.Fatal(err)
+		}
+		m.openDetail(tc.ref)
+		press(m, "r")
+		if got := screen(m); m.mode != modeMenu || !strings.Contains(got, "Launch an agent on "+tc.ref) ||
+			!strings.Contains(got, "refine") || !strings.Contains(got, "make it ready") || !strings.Contains(got, "enter launch") {
+			t.Fatalf("launch menu:\n%s", got)
+		}
+		press(m, tc.keys...)
+		press(m, "enter")
+		if m.outcome.Launch == nil || m.outcome.Launch.Mode != tc.want {
+			t.Errorf("%s after %v: launch %+v, want mode %s", tc.ref, tc.keys, m.outcome.Launch, tc.want)
+		}
+	}
+}
+
 func TestMouse(t *testing.T) {
 	m, _ := myproject(t, 80, 24)
 	screen(m)
