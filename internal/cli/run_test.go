@@ -150,6 +150,44 @@ func runsOf(t *testing.T, ref string) []core.Run {
 	return runs
 }
 
+// Refining uses the refine prompt, keeps the task's status, and is recorded
+// as a refine run.
+func TestRefineLaunchesClaude(t *testing.T) {
+	seedCLIProjects(t)
+	repo, _ := gitRepo(t)
+	mustRun(t, "add", "Weekly habits", "-p", "myproject")
+	mustRun(t, "workspace", "add", "myproject", "--path", repo)
+	dry := mustRun(t, "refine", "PROJ-1", "--dry-run")
+	if !strings.Contains(dry, "\n\nYou are beginning a Taskship refinement session") || !strings.Contains(dry, "\n# Writing Taskship tasks\n") {
+		t.Errorf("refine --dry-run:\n%s", dry)
+	}
+	prompt := strings.SplitN(dry, "\n\n", 2)[1]
+	asTerminal(t)
+	out := fakeClaude(t)
+	t.Chdir(repo)
+
+	r := run(t, "", "refine", "PROJ-1")
+	if r.code != 0 || r.stdout != "✓ Launching Claude to refine PROJ-1 in "+display.Path(repo)+"\n" || r.stderr != "" {
+		t.Fatalf("exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if args := strings.Split(strings.TrimSuffix(string(data), "\x00"), "\x00"); args[len(args)-1] != prompt {
+		t.Errorf("claude didn't get the refine prompt: %q", args)
+	}
+	if st := taskJSON(t, "PROJ-1")["status"]; st != "todo" {
+		t.Errorf("status after refine = %v", st)
+	}
+	if runs := runsOf(t, "PROJ-1"); len(runs) != 1 || runs[0].Mode != core.RunModeRefine || runs[0].Number != 1 {
+		t.Errorf("runs = %+v", runs)
+	}
+	if list := mustRun(t, "runs", "PROJ-1"); !strings.Contains(list, " claude  refine  ended  0 ") {
+		t.Errorf("runs output:\n%s", list)
+	}
+}
+
 func TestRunLaunchesClaude(t *testing.T) {
 	seedCLIProjects(t)
 	repo, _ := gitRepo(t)
@@ -204,7 +242,7 @@ func TestRunLaunchesClaude(t *testing.T) {
 	// runs lists them newest first; --json has every field.
 	list := mustRun(t, "runs", "proj-1")
 	lines := strings.Split(strings.TrimSpace(list), "\n")
-	if len(lines) != 5 || !strings.HasPrefix(lines[0], "RUN  STARTED ") || !strings.HasPrefix(lines[1], "#2 ") || !strings.Contains(lines[1], " claude  ended  3 ") ||
+	if len(lines) != 5 || !strings.HasPrefix(lines[0], "RUN  STARTED ") || !strings.HasPrefix(lines[1], "#2 ") || !strings.Contains(lines[1], " claude  run   ended  3 ") ||
 		!strings.HasSuffix(lines[2], args[3]) || lines[4] != "To resume a session, run \"claude --resume SESSION\" in its folder." {
 		t.Errorf("runs output:\n%s", list)
 	}
@@ -319,7 +357,7 @@ func TestRunIDFromEnvironment(t *testing.T) {
 	if md := mustRun(t, "show", "PROJ-1", "--md"); !strings.Contains(md, " · Claude (run #1)\n\nDone: fixed the CSV path.\n") {
 		t.Errorf("show --md =\n%s", md)
 	}
-	if runs := mustRun(t, "runs", "PROJ-1"); !regexp.MustCompile(`(?m)^#1   \S+ \S+  claude  running  -     ✓          /w `).MatchString(runs) {
+	if runs := mustRun(t, "runs", "PROJ-1"); !regexp.MustCompile(`(?m)^#1   \S+ \S+  claude  run   running  -     ✓          /w `).MatchString(runs) {
 		t.Errorf("runs =\n%s", runs)
 	}
 

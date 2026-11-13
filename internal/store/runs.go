@@ -12,7 +12,7 @@ import (
 	"github.com/jhdenham/taskship/internal/core"
 )
 
-const runSelect = `SELECT id, number, task_id, task_ref, agent, machine, workspace_path, session_id,
+const runSelect = `SELECT id, number, task_id, task_ref, agent, mode, machine, workspace_path, session_id,
 state, exit_code, started_at, ended_at FROM runs`
 
 // CreateRun records r as starting now and returns it with its ID, number and
@@ -24,6 +24,9 @@ func (s *Store) CreateRun(ctx context.Context, r core.Run) (core.Run, error) {
 		return core.Run{}, err
 	}
 	r.ID, r.State, r.StartedAt = id.String(), core.RunStarting, now()
+	if r.Mode == "" {
+		r.Mode = core.RunModeRun
+	}
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return core.Run{}, err
@@ -35,9 +38,9 @@ func (s *Store) CreateRun(ctx context.Context, r core.Run) (core.Run, error) {
 		return core.Run{}, err
 	}
 	_, err = tx.ExecContext(ctx,
-		`INSERT INTO runs (id, number, task_id, task_ref, agent, machine, workspace_path, session_id, state, started_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		r.ID, r.Number, r.TaskID, r.TaskRef, r.Agent, r.Machine, r.WorkspacePath, r.SessionID, r.State, r.StartedAt.Format(timeLayout))
+		`INSERT INTO runs (id, number, task_id, task_ref, agent, mode, machine, workspace_path, session_id, state, started_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		r.ID, r.Number, r.TaskID, r.TaskRef, r.Agent, r.Mode, r.Machine, r.WorkspacePath, r.SessionID, r.State, r.StartedAt.Format(timeLayout))
 	if err != nil {
 		return core.Run{}, err
 	}
@@ -105,7 +108,7 @@ func (s *Store) ListRuns(ctx context.Context, taskID string) ([]core.Run, error)
 		var exit sql.NullInt64
 		var started string
 		var ended sql.NullString
-		if err := rows.Scan(&r.ID, &r.Number, &r.TaskID, &r.TaskRef, &r.Agent, &r.Machine, &r.WorkspacePath,
+		if err := rows.Scan(&r.ID, &r.Number, &r.TaskID, &r.TaskRef, &r.Agent, &r.Mode, &r.Machine, &r.WorkspacePath,
 			&r.SessionID, &r.State, &exit, &started, &ended); err != nil {
 			return nil, err
 		}

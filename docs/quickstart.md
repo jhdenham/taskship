@@ -26,6 +26,9 @@ taskship add --project myproject "Build a weekly habit tracker"
 # Review the task
 taskship show PROJ-1
 
+# Have Claude Code turn the rough idea into a task that's ready to work on
+taskship refine PROJ-1
+
 # Preview what an agent would be given
 taskship PROJ-1 --dry-run
 

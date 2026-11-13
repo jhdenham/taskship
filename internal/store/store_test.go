@@ -33,8 +33,8 @@ func userVersion(t *testing.T, s *Store) int {
 func TestOpenCreatesHomeAndMigrates(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "home")
 	s := openTest(t, dir)
-	if v := userVersion(t, s); v != 8 {
-		t.Errorf("user_version = %d, want 8", v)
+	if v := userVersion(t, s); v != 9 {
+		t.Errorf("user_version = %d, want 9", v)
 	}
 	var n int
 	if err := s.db.QueryRow("SELECT count(*) FROM projects").Scan(&n); err != nil {
@@ -52,8 +52,8 @@ func TestReopenPreservesDataAndSchema(t *testing.T) {
 	s.Close()
 
 	s = openTest(t, dir)
-	if v := userVersion(t, s); v != 8 {
-		t.Errorf("user_version after reopen = %d, want 8", v)
+	if v := userVersion(t, s); v != 9 {
+		t.Errorf("user_version after reopen = %d, want 9", v)
 	}
 	var n int
 	if err := s.db.QueryRow("SELECT count(*) FROM projects").Scan(&n); err != nil || n != 1 {
@@ -86,8 +86,8 @@ func TestMigrateDropsProjectDisplayName(t *testing.T) {
 	db.Close()
 
 	s := openTest(t, dir)
-	if v := userVersion(t, s); v != 8 {
-		t.Errorf("user_version = %d, want 8", v)
+	if v := userVersion(t, s); v != 9 {
+		t.Errorf("user_version = %d, want 9", v)
 	}
 	var slug string
 	if err := s.db.QueryRow("SELECT slug FROM projects WHERE id = 'p1'").Scan(&slug); err != nil || slug != "myproject" {

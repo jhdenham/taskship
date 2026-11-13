@@ -29,7 +29,7 @@ func TestRuns(t *testing.T) {
 	if ended.Number != 1 || failed.Number != 2 || running.Number != 3 {
 		t.Errorf("numbers = %d, %d, %d", ended.Number, failed.Number, running.Number)
 	}
-	if ended.ID == "" || ended.State != core.RunStarting || ended.StartedAt.IsZero() {
+	if ended.ID == "" || ended.State != core.RunStarting || ended.StartedAt.IsZero() || ended.Mode != core.RunModeRun {
 		t.Errorf("created = %+v", ended)
 	}
 
@@ -47,6 +47,17 @@ func TestRuns(t *testing.T) {
 	}
 	if err := s.StartRun(ctx, "nope"); !errors.Is(err, core.ErrNotFound) {
 		t.Errorf("StartRun unknown: err = %v, want ErrNotFound", err)
+	}
+
+	// Refining shares the task's numbering and keeps its mode.
+	refined := mustCreateTask(t, s, "myproject", newTask("Refined"))
+	refine, err := s.CreateRun(ctx, core.Run{TaskID: refined.ID, TaskRef: refined.Ref, Agent: "claude", Mode: core.RunModeRefine,
+		Machine: "laptop", WorkspacePath: "/code/myproject"})
+	if err != nil || refine.Number != 1 {
+		t.Fatalf("CreateRun refine = %+v, %v", refine, err)
+	}
+	if runs, err := s.ListRuns(ctx, refined.ID); err != nil || len(runs) != 1 || runs[0].Mode != core.RunModeRefine {
+		t.Errorf("ListRuns refine = %+v, %v", runs, err)
 	}
 
 	runs, err := s.ListRuns(ctx, task.ID)

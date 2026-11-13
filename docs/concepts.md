@@ -85,13 +85,14 @@ Taskship's internal SQLite/PostgreSQL store is one source. Future sources includ
 
 A run records one launch of an agent for a task: the agent, the machine, the folder, the agent's session, when it started and ended, and its exit code. A run is `running` while the agent is open, `ended` once it exits, and `failed` if the agent couldn't be started. Runs are separate from task workflow status: a run ending doesn't change the task.
 
-Runs are numbered per task: the first run of `PROJ-1` is run #1, and Taskship calls it, for example, "Claude (run #1)". `taskship runs PROJ-1` lists a task's runs, newest first (`--json` for scripts):
+Runs are numbered per task: the first run of `PROJ-1` is run #1, and Taskship calls it, for example, "Claude (run #1)". A run's mode says what it was for: `run` to work on the task (`taskship run`), or `refine` to make it ready to work on ([`taskship refine`](agents.md#refining-a-task)). Both kinds share the task's numbering. `taskship runs PROJ-1` lists a task's runs, newest first (`--json` for scripts):
 
 ```text
 $ taskship runs PROJ-1
-RUN  STARTED           AGENT   STATE  EXIT  COMPLETED  FOLDER            SESSION
-#2   2026-11-12 14:03  claude  ended  0     ✓          ~/code/myproject  6320422c-f7e9-4ccc-9db9-b2ff8d38d95e
-#1   2026-11-12 13:40  claude  ended  130              ~/code/myproject  a3036f1a-1c58-4c6d-a349-a29c3f35f74d
+RUN  STARTED           AGENT   MODE    STATE  EXIT  COMPLETED  FOLDER            SESSION
+#3   2026-11-12 14:03  claude  run     ended  0     ✓          ~/code/myproject  6320422c-f7e9-4ccc-9db9-b2ff8d38d95e
+#2   2026-11-12 13:40  claude  run     ended  130              ~/code/myproject  a3036f1a-1c58-4c6d-a349-a29c3f35f74d
+#1   2026-11-12 11:15  claude  refine  ended  0                ~/code/myproject  0b9e33d1-58aa-4f7e-8c51-6a1f0d2c7e44
 ```
 
 COMPLETED marks the run whose agent marked the task done. To pick up a Claude session where it stopped, run `claude --resume SESSION` from the run's folder.

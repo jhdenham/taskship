@@ -59,6 +59,26 @@ func TestBuildPromptGolden(t *testing.T) {
 	}
 }
 
+func TestBuildRefinePromptGolden(t *testing.T) {
+	at := time.Date(2026, 11, 12, 14, 3, 0, 0, time.UTC)
+	task := core.Task{Ref: "PROJ-42", Project: "myproject", Title: "Weekly habits", Description: "Track habits per week, maybe with streaks?"}
+	comments := []core.Comment{{Number: 1, Body: "PROJ-17 adds the habits table.", CreatedAt: at, UpdatedAt: at}}
+	got := BuildRefinePrompt(task, comments, "taskship", "- Size every task S, M, or L.")
+	path := filepath.Join("testdata", "refine.golden")
+	if *update {
+		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != string(want) {
+		t.Errorf("BuildRefinePrompt mismatch (run go test ./internal/dispatch -update to accept):\n%s", got)
+	}
+}
+
 // Task text can't close the fence around it: the fence is always longer than
 // any backtick run in the title or description.
 func TestBuildPromptFenceOutlastsTaskText(t *testing.T) {

@@ -15,6 +15,14 @@ const (
 	RunFailed   RunState = "failed"   // agent could not be started
 )
 
+// RunMode is what an agent run is for.
+type RunMode string
+
+const (
+	RunModeRun    RunMode = "run"    // work on the task, plan first
+	RunModeRefine RunMode = "refine" // make the task ready to work on
+)
+
 // Run records one launch of an agent for a task on this machine.
 type Run struct {
 	ID            string     `json:"id"`
@@ -22,6 +30,7 @@ type Run struct {
 	TaskID        string     `json:"task_id"`
 	TaskRef       string     `json:"task_ref"`
 	Agent         string     `json:"agent"`
+	Mode          RunMode    `json:"mode"`
 	Machine       string     `json:"machine"`
 	WorkspacePath string     `json:"workspace_path"`
 	SessionID     string     `json:"session_id,omitempty"`

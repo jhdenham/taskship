@@ -32,7 +32,7 @@ func newTask(t *testing.T) (*store.Store, core.Task) {
 
 func TestPrepareWithoutFolder(t *testing.T) {
 	s, task := newTask(t)
-	_, err := Prepare(context.Background(), s, task, t.TempDir(), false)
+	_, err := Prepare(context.Background(), s, task, core.RunModeRun, t.TempDir(), false)
 	var nf *workspace.NoFolderError
 	if !errors.As(err, &nf) || nf.Project != "myproject" {
 		t.Fatalf("Prepare error = %v, want a NoFolderError", err)

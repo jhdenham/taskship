@@ -17,7 +17,8 @@ func newRunsCmd() *cobra.Command {
 		Short: "List a task's agent runs",
 		Long: `List the agent runs launched for a task on this machine, newest first.
 
-Runs are numbered per task (#1, #2, ...). A run is "running" while its agent
+Runs are numbered per task (#1, #2, ...). MODE is "run" for "taskship run"
+and "refine" for "taskship refine". A run is "running" while its agent
 is open, "ended" with the agent's exit code once it exits, and "failed" if the
 agent couldn't be started. COMPLETED marks the run whose agent marked the task
 done. Resume a
@@ -47,7 +48,7 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 				lipgloss.Fprintf(out, "No runs for %s yet. Run %s to launch Claude.\n", t.Ref, cmdRef("taskship "+t.Ref))
 				return nil
 			}
-			rows := [][]cell{header("RUN", "STARTED", "AGENT", "STATE", "EXIT", "COMPLETED", "FOLDER", "SESSION")}
+			rows := [][]cell{header("RUN", "STARTED", "AGENT", "MODE", "STATE", "EXIT", "COMPLETED", "FOLDER", "SESSION")}
 			for _, r := range runs {
 				exit := "-"
 				if r.ExitCode != nil {
@@ -58,7 +59,7 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 					completed = "✓"
 				}
 				rows = append(rows, []cell{{text: fmt.Sprintf("#%d", r.Number)}, {text: r.StartedAt.Local().Format("2006-01-02 15:04")},
-					{text: r.Agent}, {string(r.State), stateStyle(r)}, {text: exit}, {text: completed},
+					{text: r.Agent}, {text: string(r.Mode)}, {string(r.State), stateStyle(r)}, {text: exit}, {text: completed},
 					{display.Path(r.WorkspacePath), &faint}, {r.SessionID, &faint}})
 			}
 			if err := table(out, rows); err != nil {

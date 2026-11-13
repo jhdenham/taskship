@@ -719,7 +719,7 @@ func (m *model) saveComment(text string) tea.Cmd {
 // launch checks that an agent can run on t, showing what's wrong in place,
 // and leaves the TUI to launch it.
 func (m *model) launch(t core.Task) tea.Cmd {
-	plan, err := dispatch.Prepare(m.ctx, m.s, t, ".", false)
+	plan, err := dispatch.Prepare(m.ctx, m.s, t, core.RunModeRun, ".", false)
 	if err == nil {
 		err = plan.Ready()
 	}

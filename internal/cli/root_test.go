@@ -72,7 +72,7 @@ func TestMetadataCommandsHaveNoSideEffects(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("TASKSHIP_HOME", "")
-	for _, args := range [][]string{{"--version"}, {"--help"}, {"project", "--help"}, {"project", "add", "--help"}, {"task", "--help"}, {"add", "--help"}, {"tasks", "--help"}, {"run", "--help"}, {"init", "--help"}, {"tui", "--help"}, {"skill", "guide"}, {}} {
+	for _, args := range [][]string{{"--version"}, {"--help"}, {"project", "--help"}, {"project", "add", "--help"}, {"task", "--help"}, {"add", "--help"}, {"tasks", "--help"}, {"run", "--help"}, {"refine", "--help"}, {"init", "--help"}, {"tui", "--help"}, {"skill", "guide"}, {}} {
 		if r := run(t, "", args...); r.code != 0 {
 			t.Fatalf("%v: exit %d", args, r.code)
 		}

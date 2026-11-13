@@ -29,10 +29,12 @@ type StartError struct{ Err error }
 func (e *StartError) Error() string { return e.Err.Error() }
 func (e *StartError) Unwrap() error { return e.Err }
 
-// Plan is a prepared agent run: the task, the folder the agent runs in, and
-// its prompt. Ready fills in the executable and its arguments.
+// Plan is a prepared agent run: the task, what the run is for, the folder
+// the agent runs in, and its prompt. Ready fills in the executable and its
+// arguments.
 type Plan struct {
 	Task   core.Task
+	Mode   core.RunMode
 	Agent  string
 	Dir    string
 	Prompt string
@@ -43,8 +45,8 @@ type Plan struct {
 
 // Prepare chooses the folder to run task t in (see workspace.ForTask; dir is
 // the folder to start from, explicit if the user gave it) and builds the
-// prompt from the task, its comments, and the user's conventions.
-func Prepare(ctx context.Context, s *store.Store, t core.Task, dir string, explicit bool) (Plan, error) {
+// prompt for mode from the task, its comments, and the user's conventions.
+func Prepare(ctx context.Context, s *store.Store, t core.Task, mode core.RunMode, dir string, explicit bool) (Plan, error) {
 	loc, err := workspace.Inspect(ctx, dir)
 	if err != nil {
 		return Plan{}, err
@@ -64,7 +66,11 @@ func Prepare(ctx context.Context, s *store.Store, t core.Task, dir string, expli
 	if err != nil {
 		return Plan{}, err
 	}
-	return Plan{Task: t, Agent: "claude", Dir: dir, Prompt: BuildPrompt(t, comments, TaskshipCommand(), conventions)}, nil
+	build := BuildPrompt
+	if mode == core.RunModeRefine {
+		build = BuildRefinePrompt
+	}
+	return Plan{Task: t, Mode: mode, Agent: "claude", Dir: dir, Prompt: build(t, comments, TaskshipCommand(), conventions)}, nil
 }
 
 // Ready checks that the agent can be launched: its executable is on PATH
@@ -84,14 +90,15 @@ func (p *Plan) Ready() error {
 }
 
 // Execute runs a Ready plan in this terminal and returns the agent's exit
-// code. A task in backlog or todo moves to in_progress first, and back if
-// the agent can't be started (a *StartError). The run is recorded from
+// code. To work on a task (not to refine it), a task in backlog or todo
+// moves to in_progress first, and back if the agent can't be started (a
+// *StartError). The run is recorded from
 // before the start to the end. starting is called just before the launch,
 // with whether the task moved; warn receives problems that don't stop the
 // run, such as a run that couldn't be recorded.
 func Execute(ctx context.Context, s *store.Store, p Plan, starting func(moved bool), warn func(error)) (int, error) {
 	t := p.Task
-	moved := t.Status == core.StatusBacklog || t.Status == core.StatusTodo
+	moved := p.Mode == core.RunModeRun && (t.Status == core.StatusBacklog || t.Status == core.StatusTodo)
 	setStatus := func(st core.Status) error {
 		_, err := s.UpdateTask(ctx, t.Ref, store.TaskPatch{Status: &st})
 		return err
@@ -109,7 +116,7 @@ func Execute(ctx context.Context, s *store.Store, p Plan, starting func(moved bo
 		}
 	}
 	machine, _ := os.Hostname()
-	r, err := s.CreateRun(ctx, core.Run{TaskID: t.ID, TaskRef: t.Ref, Agent: p.Agent,
+	r, err := s.CreateRun(ctx, core.Run{TaskID: t.ID, TaskRef: t.Ref, Agent: p.Agent, Mode: p.Mode,
 		Machine: machine, WorkspacePath: p.Dir, SessionID: p.sessionID})
 	if err != nil {
 		restoreStatus()
