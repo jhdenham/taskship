@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Terminal from '../components/Terminal.astro';
+import tuiBoard from '../assets/tui-board.html?raw';
 ---
 
 <Base title="Taskship · From task to agent, in one command">
@@ -53,11 +54,11 @@ import Terminal from '../components/Terminal.astro';
 <span class="good">✓</span> Added comment #1 to PROJ-1
 
 <span class="cmd">$ taskship tasks</span>
-<span class="dim">Showing 2 tasks in myproject (this folder). Use --all-projects to see every project.</span>
+Showing 2 tasks in myproject (this folder). Use --all-projects to see every project.
 
 REF     STATUS  PRIORITY  LABELS   TITLE
-PROJ-1  todo    high      reports  Add CSV export to the reports page
-PROJ-2  todo    urgent    bug      Fix flaky login test</pre>
+PROJ-1  todo    high      <span class="dim">reports</span>  Add CSV export to the reports page
+PROJ-2  todo    urgent    <span class="dim">bug</span>      Fix flaky login test</pre>
           </Terminal>
         </div>
         <div class="panel" role="tabpanel" id="panel-launch" aria-labelledby="tab-launch" hidden>
@@ -96,15 +97,8 @@ PROJ-2  todo    urgent    bug      Fix flaky login test</pre>
           </Terminal>
         </div>
         <div class="panel" role="tabpanel" id="panel-tui" aria-labelledby="tab-tui" hidden>
-          <Terminal title="taskship">
-            <div class="placeholder">
-              <strong>The terminal UI is coming in v0.1</strong>
-              <span>
-                Type <code>taskship</code> to browse, triage, and edit your tasks on a board, then
-                launch an agent from any of them.
-              </span>
-              <a href="/docs/tui/">Read the plan →</a>
-            </div>
+          <Terminal title="~/code/myproject — taskship">
+            <pre class="wide tui" set:html={tuiBoard} />
           </Terminal>
         </div>
       </div>
@@ -203,13 +197,13 @@ Instructions:
       </div>
       <Terminal title="~/code/myproject">
         <pre><span class="cmd">$ taskship show PROJ-1</span>
-PROJ-1  Add CSV export to the reports page
+<span class="val">PROJ-1:</span> <b>Add CSV export to the reports page</b>
 
-Status:     <span class="good">done</span>
-Completed:  2026-11-12 14:31:40 by Claude (run #1)
+<span class="dim">Status:</span>     <span class="good">done</span>
+<span class="dim">Completed:</span>  2026-11-12 14:31:40 by Claude (run #1)
 <span class="dim">…</span>
 
-Comments (2)
+<span class="dim">── Comments (2) ───────────────────────────</span>
 
 <span class="dim">#1 · 2026-11-12 13:12</span>
 Customers asked for this twice this week.
@@ -272,6 +266,7 @@ status: todo
 priority: high
 labels: [reports]
 ---</span>
+
 <span class="cmd"># Add CSV export to the reports page</span>
 
 Users want to open report data in a spreadsheet.
@@ -342,13 +337,36 @@ Users want to open report data in a spreadsheet.
   <script>
     // Showcase tabs: click, or arrow keys / Home / End when a tab has focus.
     const tabs = [...document.querySelectorAll<HTMLButtonElement>('.showcase [role=tab]')];
+    const panels = document.querySelector<HTMLElement>('.showcase .panels')!;
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+    function settle() {
+      panels.style.height = '';
+      panels.classList.remove('resizing');
+    }
+    for (const type of ['transitionend', 'transitioncancel'] as const) {
+      panels.addEventListener(type, (e) => {
+        if (e.target === panels && e.propertyName === 'height') settle();
+      });
+    }
+
     function select(tab: HTMLButtonElement) {
+      // Mid-animation, this is the height the showcase has reached so far.
+      const from = panels.offsetHeight;
       for (const t of tabs) {
         const on = t === tab;
         t.setAttribute('aria-selected', String(on));
         t.tabIndex = on ? 0 : -1;
         document.getElementById(t.getAttribute('aria-controls')!)!.hidden = !on;
       }
+      settle();
+      const to = panels.offsetHeight;
+      if (reduceMotion.matches || from === to) return;
+      // Start from the old height, then let the transition run to the new one.
+      panels.style.height = `${from}px`;
+      panels.classList.add('resizing');
+      panels.getBoundingClientRect();
+      panels.style.height = `${to}px`;
     }
     for (const [i, tab] of tabs.entries()) {
       tab.addEventListener('click', () => select(tab));

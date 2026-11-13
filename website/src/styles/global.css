@@ -285,6 +285,21 @@ a {
   line-height: 1.3;
 }
 
+/* A real 140-column TUI screen (139 visible), with tight lines so its
+   borders join up. The font shrinks with the terminal so the screen fits,
+   down to 6px; narrower than that, it scrolls. A monospace cell is about
+   0.6em wide, so 139 cells need about 84em; 86 leaves room for slightly
+   wider fonts. */
+.panel .terminal {
+  container-type: inline-size;
+}
+
+.terminal .tui {
+  padding: 18px 16px 20px;
+  font-size: clamp(6px, (100cqw - 32px) / 86, 10px);
+  line-height: 1.25;
+}
+
 .terminal .ch {
   display: inline-block;
   width: 1ch;
@@ -343,9 +358,9 @@ a {
   background: #ffffff14;
 }
 
-/* Hero showcase: tabs over stacked panels. Hidden panels keep their place in
-   the grid, so the showcase is as tall as its tallest panel and switching
-   tabs doesn't move the page. */
+/* Hero showcase: tabs over panels. Each panel takes its own height; the
+   script animates .panels between the old and new heights, and the new panel
+   fades in. */
 
 .showcase {
   margin: 48px 0 56px;
@@ -384,29 +399,43 @@ a {
 }
 
 .panels {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  transition: height 0.35s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.panel {
-  grid-area: 1 / 1;
-  min-width: 0;
+/* While the height animates, clip a taller panel, but leave room for the
+   terminal's shadow. */
+.panels.resizing {
+  overflow: clip;
+  overflow-clip-margin: 48px;
 }
 
-.panel[hidden] {
-  display: block;
-  visibility: hidden;
+.panel:not([hidden]) {
+  animation: panel-in 0.25s ease-out;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panels {
+    transition: none;
+  }
+
+  .panel:not([hidden]) {
+    animation: none;
+  }
 }
 
 .panel .terminal {
   margin: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 
 .placeholder {
-  flex: 1;
+  aspect-ratio: 16 / 9;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -440,15 +469,6 @@ a {
   font-size: 20px;
 }
 
-.placeholder a {
-  color: var(--cli-command);
-  font-weight: 700;
-}
-
-.landing .placeholder code {
-  background: #ffffff14;
-  color: var(--cli-command);
-}
 
 .sectionhead {
   margin: 60px 0 24px;
