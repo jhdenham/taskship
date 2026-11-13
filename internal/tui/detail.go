@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -39,8 +40,13 @@ func (m *model) loadComments() {
 		m.fail(err)
 		return
 	}
+	// The picked comment stays picked by its number, or none if it's gone.
+	picked := 0
+	if m.pick >= 0 && m.pick < len(m.comments) {
+		picked = m.comments[m.pick].Number
+	}
 	m.comments = cs
-	m.pick = min(m.pick, len(cs)-1)
+	m.pick = slices.IndexFunc(cs, func(c core.Comment) bool { return c.Number == picked })
 }
 
 // detailKey handles keys while the detail view has the focus.

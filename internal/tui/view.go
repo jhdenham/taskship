@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -108,23 +109,39 @@ func (m *model) header() string {
 		if m.showCanceled {
 			right = append(right, m.th.faint.Render("showing ")+m.th.value.Bold(true).Render("canceled"))
 		}
-		switch {
-		case m.stale:
-			right = append(right, m.th.keyBold.Render("↻ Changes detected"))
-		case m.updated:
-			right = append(right, m.th.ok.Render("↻ Updated   ")) // as wide as "Up to date"
-		default:
-			right = append(right, m.th.faint.Render("✓ Up to date"))
-		}
+	}
+	var sync string
+	switch {
+	case m.project.ID == "":
+	case m.stale:
+		sync = m.th.keyBold.Render("↻ Changes detected")
+	case m.updated:
+		sync = m.th.ok.Render("↻ Updated   ") // as wide as "Up to date"
+	default:
+		sync = m.th.faint.Render("✓ Up to date")
 	}
 	// "? help" goes while a box is open, like the footer: ? doesn't open
 	// the help then (the project picker lists it with its own keys).
+	var help string
 	if !m.modalOpen() {
-		help := m.th.keyBold.Render("?") + " " + m.th.faint.Render("help")
-		right = append(right, help)
+		help = m.th.keyBold.Render("?") + " " + m.th.faint.Render("help")
 		m.onKey(rect{m.w - 1 - lipgloss.Width(help), 0, lipgloss.Width(help), 1}, "?")
 	}
-	return " " + spread(left, strings.Join(right, "  "), m.w-2)
+	// The sync state goes first when there isn't room for everything.
+	join := func(extra ...string) string {
+		items := slices.Clone(right)
+		for _, e := range extra {
+			if e != "" {
+				items = append(items, e)
+			}
+		}
+		return strings.Join(items, "  ")
+	}
+	r := join(sync, help)
+	if lipgloss.Width(left)+lipgloss.Width(r) >= m.w-2 {
+		r = join(help)
+	}
+	return " " + spread(left, r, m.w-2)
 }
 
 // tabs is the view switcher line.

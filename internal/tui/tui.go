@@ -558,7 +558,13 @@ func (m *model) reload() {
 			m.detailOpen = false
 		}
 	}
+	// The detail view stays on its task even if the selection has to move
+	// (the selected task was archived elsewhere, say).
+	ref, scroll, pick := m.detailRef, m.detailScroll, m.pick
 	m.selectRef(m.selRef)
+	if m.detailOpen && m.detailRef != ref {
+		m.detailRef, m.detailScroll, m.pick = ref, scroll, pick
+	}
 	if m.detailOpen {
 		m.loadComments()
 	}

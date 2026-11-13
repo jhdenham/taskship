@@ -124,7 +124,12 @@ func (m *model) saveTaskEdit() tea.Cmd {
 		m.msg = message{[]string{"No changes to " + m.editRef}}
 		return nil
 	}
-	if cur, err := m.s.GetTask(m.ctx, m.editRef); err == nil && conflicts(m.editBase, cur, patch) {
+	cur, err := m.s.GetTask(m.ctx, m.editRef)
+	if err != nil {
+		m.msg = errMsg(m.th, m.editRef+" wasn't saved: "+errText(err))
+		return nil
+	}
+	if conflicts(m.editBase, cur, patch) {
 		m.askOverwrite(m.editRef, modeEditTask, "keep editing",
 			func() tea.Cmd { return m.saveTaskPatch(patch) },
 			func() tea.Cmd { return m.focusEditField(m.editTitle) })
@@ -148,14 +153,16 @@ func (m *model) saveTaskPatch(patch store.TaskPatch) tea.Cmd {
 }
 
 // conflicts reports whether a field that patch changes was changed
-// elsewhere: it differs between base, the task when the edit started, and
-// cur, the task now.
+// elsewhere to something else: it differs between base, the task when the
+// edit started, and cur, the task now, and cur doesn't already have the
+// patch's value.
 func conflicts(base, cur core.Task, patch store.TaskPatch) bool {
-	return patch.Title != nil && cur.Title != base.Title ||
-		patch.Description != nil && cur.Description != base.Description ||
-		patch.Status != nil && cur.Status != base.Status ||
-		patch.Priority != nil && cur.Priority != base.Priority ||
-		patch.Labels != nil && !slices.Equal(cur.Labels, base.Labels)
+	trim := func(s string) string { return strings.Trim(s, "\n") }
+	return patch.Title != nil && cur.Title != base.Title && cur.Title != *patch.Title ||
+		patch.Description != nil && trim(cur.Description) != trim(base.Description) && trim(cur.Description) != trim(*patch.Description) ||
+		patch.Status != nil && cur.Status != base.Status && cur.Status != *patch.Status ||
+		patch.Priority != nil && cur.Priority != base.Priority && cur.Priority != *patch.Priority ||
+		patch.Labels != nil && !slices.Equal(cur.Labels, base.Labels) && !slices.Equal(cur.Labels, *patch.Labels)
 }
 
 // askOverwrite asks whether to save an edit over changes made elsewhere. n

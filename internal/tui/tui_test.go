@@ -893,3 +893,70 @@ func TestEditorConflict(t *testing.T) {
 		t.Errorf("draft kept after saving: %v", err)
 	}
 }
+
+// A refresh keeps the picked comment by its number.
+func TestRefreshKeepsPickedComment(t *testing.T) {
+	m, s := myproject(t, 80, 24)
+	ctx := context.Background()
+	if _, err := s.AddComment(ctx, "PROJ-9", "Third.", ""); err != nil {
+		t.Fatal(err)
+	}
+	m.selectRef("PROJ-9")
+	press(m, "enter")
+	m.pick = 2 // #3
+	if _, err := s.DeleteComment(ctx, "PROJ-9", 2); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(checkMsg{})
+	if m.pick < 0 || m.comments[m.pick].Number != 3 {
+		t.Fatalf("pick %d after #2 was deleted", m.pick)
+	}
+	if _, err := s.DeleteComment(ctx, "PROJ-9", 3); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(checkMsg{})
+	if m.pick != -1 {
+		t.Errorf("pick %d after the picked comment was deleted", m.pick)
+	}
+}
+
+// The detail view beside the board stays on its task when a refresh moves
+// the selection.
+func TestRefreshKeepsDetail(t *testing.T) {
+	m, s := myproject(t, 140, 40)
+	m.selectRef("PROJ-9")
+	press(m, "enter", "tab") // the focus back on the board
+	if m.focusDetail || m.detailRef != "PROJ-9" {
+		t.Fatalf("setup: focus %v, detail %q", m.focusDetail, m.detailRef)
+	}
+	if _, err := s.SetTaskArchived(context.Background(), "PROJ-9", true); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(checkMsg{})
+	if !m.detailOpen || m.detailRef != "PROJ-9" || m.selRef == "PROJ-9" {
+		t.Errorf("detail %v %q, selected %q", m.detailOpen, m.detailRef, m.selRef)
+	}
+}
+
+// When the header is full, the sync state goes first.
+func TestHeaderMakesRoom(t *testing.T) {
+	m, _ := myproject(t, 80, 24)
+	press(m, "C", "A", "/", "text:x", "enter")
+	h := header(m)
+	if !strings.Contains(h, "filter x") || !strings.Contains(h, "showing canceled") || !strings.Contains(h, "showing archived") || !strings.Contains(h, "? help") || strings.Contains(h, "Up to date") {
+		t.Errorf("header: %q", h)
+	}
+}
+
+// The same change made elsewhere isn't a conflict.
+func TestEditSameChangeElsewhere(t *testing.T) {
+	m, s := myproject(t, 80, 24)
+	press(m, "l", "e", "tab", "text: now")
+	if _, err := s.UpdateTask(context.Background(), "PROJ-5", store.TaskPatch{Title: ptr("Rate-limit webhook retries now")}); err != nil {
+		t.Fatal(err)
+	}
+	press(m, "ctrl+s")
+	if m.mode != modeNormal {
+		t.Errorf("asked about the same change: mode %d\n%s", m.mode, screen(m))
+	}
+}
