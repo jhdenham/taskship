@@ -1,5 +1,14 @@
 ---
+// Self-hosted variable fonts: one file per family covers every weight, and
+// browsers fetch only the character sets a page uses.
+import '@fontsource-variable/manrope';
+import '@fontsource-variable/space-grotesk';
+import '@fontsource-variable/jetbrains-mono';
+import manropeLatin from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
+import spaceGroteskLatin from '@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url';
+import jetbrainsMonoLatin from '@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?url';
 import '../styles/global.css';
+import GitHubIcon from '../components/GitHubIcon.astro';
 
 interface Props {
   title: string;
@@ -24,12 +33,11 @@ const path = Astro.url.pathname;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-    />
+    {
+      [manropeLatin, spaceGroteskLatin, jetbrainsMonoLatin].map((href) => (
+        <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />
+      ))
+    }
     <script is:inline>
       // Apply a saved theme before the page paints. Without one, the system
       // setting decides.
@@ -68,11 +76,9 @@ const path = Astro.url.pathname;
         </a>
         <nav class="toplinks" aria-label="Main">
           <a class="hide-sm" href="/#how">How it works</a>
-          <a href="/docs/" aria-current={path.startsWith('/docs/') ? 'page' : undefined}>Docs</a>
-          <a class="iconlink" href="https://github.com/jhdenham/taskship" aria-label="Taskship on GitHub" title="GitHub">
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-            </svg>
+          <a class="docslink" href="/docs/" aria-current={path.startsWith('/docs/') ? 'page' : undefined}>Docs</a>
+          <a class="iconlink github" href="https://github.com/jhdenham/taskship" aria-label="Taskship on GitHub" title="GitHub">
+            <GitHubIcon />
           </a>
           <button class="theme iconlink" type="button" aria-label="Switch between light and dark" title="Switch between light and dark">
             <svg class="sun" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">

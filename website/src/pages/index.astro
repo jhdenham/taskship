@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Terminal from '../components/Terminal.astro';
+import GitHubIcon from '../components/GitHubIcon.astro';
 import tuiBoard from '../assets/tui-board.html?raw';
 
 const check = '<svg class="check" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>';
@@ -46,7 +47,7 @@ const check = '<svg class="check" width="20" height="20" viewBox="0 0 24 24" ari
       <div class="panels">
         <div class="panel" role="tabpanel" id="panel-capture" aria-labelledby="tab-capture">
           <Terminal title="~/code/myproject/web">
-            <pre class="wide"><span class="cmd">$ taskship add "Add CSV export to the reports page" --label reports --priority high</span>
+            <pre><span class="cmd">$ taskship add "Add CSV export to the reports page" --label reports --priority high</span>
 <span class="good">✓</span> Created PROJ-1: Add CSV export to the reports page
 
 <span class="cmd">$ taskship add "Fix flaky login test" --label bug --priority urgent</span>
@@ -65,7 +66,7 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
         </div>
         <div class="panel" role="tabpanel" id="panel-launch" aria-labelledby="tab-launch" hidden>
           <Terminal title="~/code/myproject">
-            <pre class="wide claude"><span class="cmd">$ taskship PROJ-1</span>
+            <pre class="claude"><span class="cmd">$ taskship PROJ-1</span>
 <span class="ch good">✓</span> Moved PROJ-1 from todo to in_progress
 <span class="ch good">✓</span> Launching Claude for PROJ-1 in <span class="val">~/code/myproject</span>
 
@@ -100,7 +101,7 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
         </div>
         <div class="panel" role="tabpanel" id="panel-manage" aria-labelledby="tab-manage" hidden>
           <Terminal title="~/code/myproject — taskship">
-            <pre class="wide tui" set:html={tuiBoard} />
+            <pre class="tui" set:html={tuiBoard} />
           </Terminal>
         </div>
       </div>
@@ -211,7 +212,7 @@ Instructions:
 
 <span class="dim">── Comments (2) ───────────────────────────</span>
 
-<span class="dim">#1 · 2026-11-12 13:12</span>
+<span class="dim">#1 · 2026-11-12 14:03</span>
 Customers asked for this twice this week.
 
 <span class="dim">#2 · 2026-11-12 14:31 · Claude (run #1)</span>
@@ -276,7 +277,7 @@ Users want to open report data in a spreadsheet.
       </div>
     </section>
 
-    <section id="roadmap" class="features">
+    <section class="features">
       <h2>Built for the way you already work.</h2>
       <div class="grid">
         <article>
@@ -312,7 +313,7 @@ Users want to open report data in a spreadsheet.
       <div class="actions">
         <a class="btn primary" href="/docs/quickstart/">Read the quickstart →</a>
         <a class="btn" href="https://github.com/jhdenham/taskship">
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+          <GitHubIcon size={18} />
           View on GitHub
         </a>
       </div>
@@ -323,16 +324,9 @@ Users want to open report data in a spreadsheet.
     const tabs = [...document.querySelectorAll<HTMLButtonElement>('.showcase [role=tab]')];
     const panels = document.querySelector<HTMLElement>('.showcase .panels')!;
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-
-    function settle() {
-      panels.style.height = '';
-      panels.classList.remove('resizing');
-    }
-    for (const type of ['transitionend', 'transitioncancel'] as const) {
-      panels.addEventListener(type, (e) => {
-        if (e.target === panels && e.propertyName === 'height') settle();
-      });
-    }
+    // The running height animation. A new switch cancels it, and only the
+    // latest animation's own finish ends the resize.
+    let resize: Animation | undefined;
 
     // The selected tab's highlight is one pill behind the tabs. It slides to
     // the selected tab with a transform; the CSS sets the timing.
@@ -358,14 +352,24 @@ Users want to open report data in a spreadsheet.
         document.getElementById(t.getAttribute('aria-controls')!)!.hidden = !on;
       }
       placePill(true);
-      settle();
+      resize?.cancel();
+      resize = undefined;
       const to = panels.offsetHeight;
-      if (reduceMotion.matches || from === to) return;
-      // Start from the old height, then let the transition run to the new one.
-      panels.style.height = `${from}px`;
+      if (reduceMotion.matches || from === to) {
+        panels.classList.remove('resizing');
+        return;
+      }
       panels.classList.add('resizing');
-      panels.getBoundingClientRect();
-      panels.style.height = `${to}px`;
+      const anim = panels.animate(
+        { height: [`${from}px`, `${to}px`] },
+        { duration: 400, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      );
+      resize = anim;
+      anim.onfinish = () => {
+        if (resize !== anim) return;
+        resize = undefined;
+        panels.classList.remove('resizing');
+      };
     }
     for (const [i, tab] of tabs.entries()) {
       tab.addEventListener('click', () => select(tab));

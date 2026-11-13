@@ -37,7 +37,7 @@ func newTheme(dark bool) theme {
 	success := ld(lipgloss.Color("#237a45"), lipgloss.Color("#5fd38a"))
 	value := ld(lipgloss.Color("#8f5b00"), lipgloss.Color("#f0c674"))
 	errc := ld(lipgloss.Color("#c2412d"), lipgloss.Color("#ff8a7a"))
-	faint := ld(lipgloss.Color("#5f7068"), lipgloss.Color("#7e9b8a"))
+	faint := ld(lipgloss.Color("#5f7068"), lipgloss.Color("#8fa197"))
 	line := ld(lipgloss.Color("#c5d0c8"), lipgloss.Color("#2c473b"))
 	tint := ld(lipgloss.Color("#e1efe4"), lipgloss.Color("#173026"))
 	s := lipgloss.NewStyle

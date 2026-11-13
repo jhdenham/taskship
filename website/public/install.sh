@@ -63,9 +63,15 @@ tar -xzf "$tmp/$archive" -C "$tmp" taskship
 mkdir -p "$dir"
 cp "$tmp/taskship" "$dir/taskship.new"
 chmod 755 "$dir/taskship.new"
+# Run it where it will live (a folder can forbid running programs) before it
+# replaces anything.
+if ! version=$("$dir/taskship.new" --version 2>&1); then
+  rm -f "$dir/taskship.new"
+  fail "the downloaded taskship doesn't run here ($version); nothing was installed"
+fi
 mv "$dir/taskship.new" "$dir/taskship"
 
-echo "✓ Installed $("$dir/taskship" --version) in $dir"
+echo "✓ Installed $version in $dir"
 case :$PATH: in
   *":$dir:"*) ;;
   *)

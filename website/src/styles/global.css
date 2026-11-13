@@ -7,7 +7,7 @@
    value (paths,    #f0c674         #8f5b00
      names)
    error            #ff8a7a         #c2412d
-   faint            #7e9b8a         #5f7068
+   faint            #8fa197         #5f7068
 
    The site's terminals and code blocks are always dark, so they use the dark
    terminal column. In the light theme they keep the deep green of the brand;
@@ -47,9 +47,9 @@
   --cli-error: #ff8a7a;
   --cli-faint: #8fa197;
 
-  --sans: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --display: 'Space Grotesk', var(--sans);
-  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: 'Manrope Variable', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --display: 'Space Grotesk Variable', var(--sans);
+  --mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --page: 1200px;
   --gutter: 24px;
 }
@@ -229,10 +229,12 @@ code {
 }
 
 .toplinks .btn {
+  flex: none;
   margin-left: 8px;
 }
 
 .toplinks .iconlink {
+  flex: none;
   display: grid;
   place-items: center;
   width: 44px;
@@ -539,6 +541,7 @@ code {
 }
 
 .tabs {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
@@ -546,6 +549,8 @@ code {
 }
 
 .tabs button {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -558,6 +563,7 @@ code {
   text-align: left;
   font-family: inherit;
   cursor: pointer;
+  transition: border-color 0.25s ease;
 }
 
 .tab-label {
@@ -576,6 +582,7 @@ code {
   height: 8px;
   border-radius: 50%;
   background: var(--border-strong);
+  transition: background-color 0.25s ease;
 }
 
 .tab-desc {
@@ -586,20 +593,6 @@ code {
 
 .tabs button:hover {
   border-color: var(--border-strong);
-}
-
-.tabs {
-  position: relative;
-}
-
-.tab-label::before {
-  transition: background-color 0.25s ease;
-}
-
-.tabs button {
-  position: relative;
-  z-index: 1;
-  transition: border-color 0.25s ease;
 }
 
 .tabs button[aria-selected='true'] {
@@ -637,18 +630,17 @@ code {
   outline-offset: 2px;
 }
 
-.panels {
-  transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 /* While the height animates, clip a taller panel, but leave room for the
-   terminal's shadow. */
+   terminal's shadow, which reaches about 100px below it. The showcase's
+   104px bottom padding keeps that room clear of the next section. */
 .panels.resizing {
   overflow: clip;
-  overflow-clip-margin: 48px;
+  overflow-clip-margin: 100px;
 }
 
-.panel:not([hidden]) {
+/* Fade in the new panel's text, not the whole terminal: on a light page a
+   fading terminal would flash the background through it. */
+.panel:not([hidden]) .terminal > pre {
   animation: panel-in 0.25s ease-out;
 }
 
@@ -659,11 +651,7 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .panels {
-    transition: none;
-  }
-
-  .panel:not([hidden]) {
+  .panel:not([hidden]) .terminal > pre {
     animation: none;
   }
 }
@@ -759,7 +747,6 @@ code {
 
 .steps .cmdchip {
   align-self: flex-start;
-  font-size: 15px;
   background: var(--chip);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1117,6 +1104,12 @@ code {
   font: 13px/1.7 var(--mono);
 }
 
+/* Long commands and paths in inline code would otherwise widen the page on
+   phones. */
+.prose :not(pre) > code {
+  overflow-wrap: anywhere;
+}
+
 .prose pre code {
   background: none;
   color: inherit;
@@ -1247,5 +1240,31 @@ code {
   .panel .terminal pre {
     padding: 20px;
     font-size: 13px;
+  }
+}
+
+/* Phones: the header row must fit. GitHub is also linked in the footer, and
+   "Get started" leads into the docs. */
+@media (max-width: 460px) {
+  :root {
+    --gutter: 16px;
+  }
+
+  .topbar-inner {
+    gap: 8px;
+  }
+
+  .toplinks .github {
+    display: none;
+  }
+
+  .toplinks > a.docslink {
+    padding: 12px 8px;
+  }
+}
+
+@media (max-width: 370px) {
+  .toplinks > a.docslink {
+    display: none;
   }
 }
