@@ -4,7 +4,7 @@
 
 Taskship is a local-first task manager and coding-agent dispatcher for developers. Organize projects and tasks from a CLI or TUI, then launch a coding agent such as Claude with the task's context. The agent reviews the task and proposes a plan before changing any code.
 
-> **Status:** early development. Implemented so far: `taskship --version`, `taskship init`, `taskship project add|list|show|edit|archive|restore`, `taskship task add|list|show|edit|copy|archive|restore` (with the shortcuts `add`, `tasks`, and `show`; tasks have labels), `taskship comment add|list|edit|delete`, `taskship workspace add|list|remove`, `taskship export`, `taskship TASK_REF` (short for `taskship run TASK_REF`; launches Claude Code in plan mode, or previews the prompt with `--dry-run`), `taskship refine TASK_REF` (launches Claude Code to make a task ready to work on), `taskship runs TASK_REF`, `taskship skill install|list|uninstall|guide` (`install all` covers every supported agent on your `PATH`) (an optional skill for Claude and Codex, and the task-writing guide agents follow plus your own conventions; see [docs/agents.md](docs/agents.md)), and the terminal UI (`taskship` with no arguments, or `taskship tui`; see [docs/tui.md](docs/tui.md)). Tasks can be shown and edited as Markdown (`show --md`, `task edit` in `$EDITOR` or `--from`); see [docs/concepts.md](docs/concepts.md#tasks-as-markdown). Without `--project`, `add` and `tasks` use the project set up for the current folder or any Git worktree of the same repository (`tasks --all-projects` lists everything), and with no projects yet, `add` offers to set one up. Every other command described in `docs/` is planned, not implemented.
+> **Status:** early development. Implemented so far: `taskship --version`, `taskship init`, `taskship project add|list|show|edit|archive|restore`, `taskship task add|list|show|edit|copy|archive|restore` (with the shortcuts `add`, `tasks`, and `show`; tasks have labels), `taskship comment add|list|edit|delete`, `taskship workspace add|list|remove`, `taskship export`, `taskship TASK_REF` (short for `taskship run TASK_REF`; launches Claude Code in plan mode, or previews the prompt with `--dry-run`), `taskship refine TASK_REF` (launches Claude Code to make a task ready to work on), `taskship runs TASK_REF`, `taskship skill install|list|uninstall|guide` (`install all` covers every supported agent on your `PATH`) (an optional skill for Claude and Codex, and the task-writing guide agents follow plus your own conventions; see [docs/skill.md](docs/skill.md)), and the terminal UI (`taskship` with no arguments, or `taskship tui`; see [docs/tui.md](docs/tui.md)). Tasks can be shown and edited as Markdown (`show --md`, `task edit` in `$EDITOR` or `--from`); see [docs/tasks.md](docs/tasks.md#tasks-as-markdown). Without `--project`, `add` and `tasks` use the project set up for the current folder or any Git worktree of the same repository (`tasks --all-projects` lists everything), and with no projects yet, `add` offers to set one up. Every other command described in `docs/` is planned, not implemented.
 >
 > Data is stored in `~/.taskship/` (override with `TASKSHIP_HOME`), which is created by the first command that needs it.
 
@@ -21,9 +21,9 @@ Taskship is a local-first task manager and coding-agent dispatcher for developer
 | Version | Focus |
 |---|---|
 | v0.1 | Standalone: SQLite, CLI/TUI, projects and tasks, plan-first Claude dispatch |
-| v0.2 | Self-hosted Go API server with PostgreSQL, shared across machines |
-| v0.3 | External task providers: GitHub Issues and Linear |
-| v0.4 | Deeper agent integration: launching Codex, structured plans |
+| v0.2 | Shared server: a self-hosted Go API with PostgreSQL, shared across machines |
+| v0.3 | More agents: launching Codex, a default agent, structured plans |
+| v0.4 | External task providers: GitHub Issues and Linear |
 
 ## Repository layout
 

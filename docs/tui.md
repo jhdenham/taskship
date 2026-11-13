@@ -2,6 +2,8 @@
 
 Run `taskship` with no arguments, or `taskship tui`, to open a full-screen view of your project's tasks. Everything you can do to a task from the command line, you can do here: browse, filter, add, edit, comment, archive, and launch an agent. Both the keyboard and the mouse work.
 
+![The Taskship terminal UI: a board with backlog, todo, in progress, and done columns, and a task's details open beside it](images/tui-board.png)
+
 The TUI needs a terminal. Without one (in a pipe or a script), `taskship` prints its help instead, and `taskship tui` fails with exit code 2. It needs at least 80 × 24; in a smaller window it asks you to make it bigger.
 
 ## Which project it shows
@@ -14,6 +16,9 @@ Setting up projects and their folders stays on the command line (`taskship init`
 
 - **Board** (`1`): one column per status (backlog, todo, in progress, done). Moving a card to another column with `H` and `L` changes its status. Canceled tasks are hidden unless you press `C`.
 - **List** (`2`): the same tasks as a table. `o` changes the sort order: priority, status, ref, or last updated. Clicking a column header sorts by it.
+
+  ![The list view: one row per task, with status, priority, labels, and when it was last updated](images/tui-list.png)
+
 - **Detail** (`enter`): the task's fields, its description rendered as Markdown (including the acceptance criteria checklist), its comments, and the actions you can take. In a terminal at least 140 columns wide, it opens beside the board or list and follows the selection; `tab` moves between them. In a narrower one, it replaces them. `esc` closes it.
 
 `/` filters as you type. Words match titles and refs, and `#label`, `status:todo`, and `prio:high` narrow by label, status, and priority; all parts must match. The header shows the active filter, and `esc` clears it. Archived tasks are hidden unless you press `A`, which shows only the archived ones.
@@ -30,6 +35,8 @@ Status, priority, labels, the title and description, and comments change in a bo
 - `y` copies the task's ref to the clipboard.
 
 ## Comments
+
+![A box for a new comment open over the board, with the task's details behind it](images/tui-comment.png)
 
 `c` opens a box for a new comment on the selected task, from any view. `ctrl-r` shows the task's most recent comments above the text, as many as fit, and hides them again. They start hidden each time the box opens. In the box, `enter` starts a new line, `ctrl-s` saves, `ctrl-e` moves the text to your editor instead (the comment is saved when you close it), and `esc` cancels, asking first if you wrote something. In the detail view, `[` and `]` pick a comment; `e` then edits it in the same box and `d` deletes it after a `y`/`n` question.
 
@@ -49,9 +56,11 @@ If you save an edit to a task (in the box or in your editor) and a field you cha
 
 Press `r` in the detail view to launch an agent on the task.
 
-Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise it asks what the agent is for: `run` to work on the task, as `taskship PROJ-42` does, or `refine` to make it ready to work on, as `taskship refine PROJ-42` does (see [Refining a task](agents.md#refining-a-task)). The menu starts on `refine` for a task in backlog and on `run` otherwise. Pick one with `j`/`k` and `enter`, or `esc` to cancel.
+Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise it asks what the agent is for: `run` to work on the task, as `taskship PROJ-42` does, or `refine` to make it ready to work on, as `taskship refine PROJ-42` does (see [Refine](launching.md#refine)). The menu starts on `refine` for a task in backlog and on `run` otherwise. Pick one with `j`/`k` and `enter`, or `esc` to cancel.
 
-The TUI then closes, leaves lines such as `✓ Launching Claude for PROJ-42 in ~/code/myproject` in your terminal (after `✓ Moved PROJ-42 from todo to in_progress` when you run a task that hadn't started yet), and starts the agent exactly as the command would. The agent has the whole terminal, and Ctrl-C goes to it. When the agent exits, you're back at your shell; run `taskship` to return to the TUI.
+![The launch menu over a task's details, offering run to work on it or refine to make it ready](images/tui-launch.png)
+
+The TUI then closes, leaves lines such as `✓ Launching Claude for PROJ-42 in ~/code/myproject` in your terminal (after `✓ Moved PROJ-42 from todo to in_progress` when you run a task that hadn't started yet), and starts the agent exactly as the command would. The agent has the whole terminal. When it exits, you're back at your shell; run `taskship` to return to the TUI.
 
 ## Keys
 

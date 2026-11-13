@@ -965,13 +965,14 @@ code {
 
 .docs {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr) 200px;
   max-width: 1200px;
   margin: auto;
 }
 
+/* The nav text lines up with the logo; the highlight hangs to its left. */
 .sidebar {
-  padding: 28px 16px;
+  padding: 28px 12px;
   border-right: 1px solid var(--line);
 }
 
@@ -1110,11 +1111,28 @@ code {
   overflow-wrap: anywhere;
 }
 
+.prose h2 code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: 0.9em;
+  font-weight: inherit;
+}
+
 .prose pre code {
   background: none;
   color: inherit;
   padding: 0;
   font: inherit;
+}
+
+.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 24px 0;
+  border: 1px solid var(--term-line);
+  border-radius: 10px;
 }
 
 .prose blockquote {
@@ -1124,6 +1142,32 @@ code {
   border-radius: 10px;
   padding: 2px 18px;
   color: var(--tint-ink);
+}
+
+.toc {
+  padding: 28px var(--gutter) 0 0;
+}
+
+.toc nav {
+  position: sticky;
+  top: 92px;
+  display: grid;
+  gap: 2px;
+}
+
+.toc .navgroup {
+  margin: 0 0 8px;
+}
+
+.toc a {
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.toc a:hover {
+  color: var(--accent);
 }
 
 .pager {
@@ -1163,6 +1207,16 @@ code {
 
 
 /* Narrow screens */
+
+@media (max-width: 1100px) {
+  .docs {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .toc {
+    display: none;
+  }
+}
 
 @media (max-width: 860px) {
   .feature.flip .copy {

@@ -19,7 +19,9 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
+// "On this page" lists the sections, on pages that have more than one.
+const sections = headings.filter((h) => h.depth === 2);
 const index = navItems.findIndex((i) => i.id === entry.id);
 const item = navItems[index];
 const prev = navItems[index - 1];
@@ -44,7 +46,6 @@ const next = navItems[index + 1];
                   aria-current={i.id === entry.id ? 'page' : undefined}
                 >
                   {i.label}
-                  {i.planned && <span class="pill">Planned</span>}
                 </a>
               ))}
             </>
@@ -61,6 +62,16 @@ const next = navItems[index + 1];
         {next && <a class="next" href={docHref(next.id)}><small>Next</small>{next.label}</a>}
       </nav>
     </main>
+    <aside class="toc">
+      {
+        sections.length > 1 && (
+          <nav aria-label="On this page">
+            <div class="navgroup">On this page</div>
+            {sections.map((h) => <a href={`#${h.slug}`}>{h.text}</a>)}
+          </nav>
+        )
+      }
+    </aside>
   </div>
   <script>
     const button = document.querySelector<HTMLButtonElement>('.menu')!;

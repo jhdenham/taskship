@@ -2,15 +2,15 @@
 
 ## Coding agents
 
-Claude is the initial dispatch target. Codex and other agent adapters follow. Taskship does not replace agent process managers or terminals.
+Claude Code is the first agent Taskship launches. Launching Codex is planned for v0.3, and the [Taskship skill](skill.md) already works in both. Taskship does not replace agent process managers or terminals.
 
 ## Task providers
 
-GitHub Issues and Linear are planned for v0.3. Tasks remain in their source systems, while Taskship can store execution metadata locally or on its server.
+GitHub Issues and Linear are planned for v0.4. Tasks remain in their source systems, while Taskship can store execution metadata locally or on its server.
 
 ## Herdr
 
-Taskship can run inside a Herdr terminal pane. Native session registration and remote dispatch require additional integration and are not assumed to be available.
+Taskship can already run inside a Herdr terminal pane. Native session registration and remote dispatch require additional integration and are not assumed to be available.
 
 ## MCP
 

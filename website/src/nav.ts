@@ -1,6 +1,6 @@
 // Sidebar order and labels for docs/*.md. Every file in docs/ must be listed
 // here exactly once; the build fails otherwise.
-export type NavItem = { id: string; label: string; planned?: boolean };
+export type NavItem = { id: string; label: string };
 
 export const nav: { group: string; items: NavItem[] }[] = [
   {
@@ -12,20 +12,29 @@ export const nav: { group: string; items: NavItem[] }[] = [
     ],
   },
   {
-    group: 'Guides',
+    group: 'Tasks',
     items: [
+      { id: 'tasks', label: 'Tasks' },
+      { id: 'projects', label: 'Projects' },
       { id: 'tui', label: 'Terminal UI' },
-      { id: 'agents', label: 'Working with agents' },
-      { id: 'self-hosting', label: 'Self-hosting', planned: true },
     ],
   },
   {
-    group: 'Extend',
-    items: [{ id: 'integrations', label: 'Integrations', planned: true }],
+    group: 'Agents',
+    items: [
+      { id: 'launching', label: 'Launching agents' },
+      { id: 'history', label: 'Run history' },
+      { id: 'skill', label: 'Skill' },
+      { id: 'conventions', label: 'Conventions' },
+    ],
   },
   {
-    group: 'Project',
-    items: [{ id: 'roadmap', label: 'Roadmap' }],
+    group: 'Planned',
+    items: [
+      { id: 'shared-server', label: 'Shared server' },
+      { id: 'integrations', label: 'Integrations' },
+      { id: 'roadmap', label: 'Roadmap' },
+    ],
   },
 ];
 
