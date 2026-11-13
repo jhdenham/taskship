@@ -6,4 +6,4 @@ Taskship is a local-first task manager and agent dispatcher for developers. Orga
 
 Taskship is useful without AI agents. Start with SQLite and no server; add a self-hosted backend for shared tasks across machines. Future integrations will connect GitHub Issues and Linear.
 
-> Documentation describes a planned product, not a released implementation.
+> Taskship is in early development. Pages and sections marked as planned describe features that aren't built yet. The roadmap lists what's coming.

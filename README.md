@@ -43,6 +43,14 @@ website/            Astro site for taskship.dev; renders docs/ as its docs pages
 
 Planned additions: `internal/` packages for the domain, storage, dispatch and server code.
 
+## Install
+
+```sh
+curl -fsSL https://taskship.dev/install.sh | sh
+```
+
+This installs the `taskship` binary for macOS or Linux in `~/.local/bin`; see the [quickstart](docs/quickstart.md) for options. The first release isn't out yet, so for now build from source with `go install github.com/jhdenham/taskship/cmd/taskship@latest`. The script lives in `website/public/install.sh`.
+
 ## Development
 
 Requires Go (see `go.mod` for the version).

@@ -1,9 +1,18 @@
 # Quickstart
 
-```sh
-# Install the Taskship binary (release packages are planned).
-# No database setup is needed: Taskship creates ~/.taskship on first use.
+## Install
 
+```sh
+curl -fsSL https://taskship.dev/install.sh | sh
+```
+
+The script downloads the `taskship` binary for macOS or Linux from the latest GitHub release, checks its checksum, and installs it in `~/.local/bin`. Set `TASKSHIP_INSTALL_DIR` to install it in another folder, or `TASKSHIP_VERSION` (such as `v0.1.0`) to install a specific release. Nothing else is installed, and there is no database to set up: Taskship creates `~/.taskship` on first use.
+
+> The first release isn't out yet. Until then, build Taskship from source with Go: `go install github.com/jhdenham/taskship/cmd/taskship@latest`.
+
+## First steps
+
+```sh
 # Set up Taskship for a repository: asks for a project name and task prefix
 cd ~/code/myproject
 taskship init
