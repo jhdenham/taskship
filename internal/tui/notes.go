@@ -130,7 +130,7 @@ func (m *model) openNote(n core.Note) {
 
 // noteCols is how many cards fit across the grid.
 func (m *model) noteCols() int {
-	w := m.w - 2
+	w := m.w - 4 // inside the grid's frame
 	if m.noteOpen && m.wide() {
 		w -= m.detailWidth() + 1
 	}
@@ -283,7 +283,13 @@ func (m *model) notesBody(screen []string, r rect) {
 	m.noteGrid(screen, main, notes)
 }
 
+// noteGrid draws the cards in a frame titled with the count, like the
+// list's. The frame shows whether the grid or the pane has the focus; the
+// selected card stays marked either way.
 func (m *model) noteGrid(screen []string, r rect, notes []core.Note) {
+	title := m.th.bold.Render(plural(len(notes), "1 note", fmt.Sprintf("%d notes", len(notes))))
+	place(screen, r.x, r.y, m.box(r.w, r.h, boxOpts{title: title, focused: !(m.noteOpen && m.focusNote)}, nil))
+	r = rect{r.x + 1, r.y + 1, r.w - 2, r.h - 2}
 	cols := m.noteCols()
 	cardH := notePreview + 2
 	rows := (len(notes) + cols - 1) / cols
@@ -305,8 +311,7 @@ func (m *model) noteGrid(screen []string, r rect, notes []core.Note) {
 			w++
 		}
 		y := r.y + (i/cols-m.noteTop)*cardH
-		focused := i == m.noteRow && !(m.noteOpen && m.focusNote)
-		place(screen, x, y, m.noteCard(notes[i], w, focused))
+		place(screen, x, y, m.noteCard(notes[i], w, i == m.noteRow))
 		m.onClick(rect{x, y, w, cardH}, func() tea.Cmd {
 			m.noteRow = i
 			m.noteSelChanged()
@@ -319,8 +324,9 @@ func (m *model) noteGrid(screen []string, r rect, notes []core.Note) {
 	}
 }
 
-// noteCard draws a note's card width cells wide: the start of the note, and
-// on the bottom border who wrote it, when, and how many lines don't show.
+// noteCard draws a note's card width cells wide: the start of the note,
+// ending in "…" if it doesn't all show, and on the bottom border who wrote
+// it and when. (A count of hidden lines would change with the card's width.)
 func (m *model) noteCard(n core.Note, width int, selected bool) []string {
 	th := m.th
 	if selected && !m.dimmed {
@@ -328,7 +334,14 @@ func (m *model) noteCard(n core.Note, width int, selected bool) []string {
 	}
 	tw := width - 4
 	all := noteLines(n.Body, tw, th)
-	shown := all[:min(len(all), notePreview)]
+	shown := slices.Clone(all[:min(len(all), notePreview)])
+	if len(all) > len(shown) {
+		last := shown[len(shown)-1]
+		if lipgloss.Width(last) >= tw {
+			last = ansi.Truncate(last, tw-1, "")
+		}
+		shown[len(shown)-1] = last + th.plain.Render("…")
+	}
 	var lines []string
 	for _, l := range shown {
 		lines = append(lines, th.plain.Render(" ")+fitIn(l, tw, th.plain)+th.plain.Render(" "))
@@ -337,9 +350,6 @@ func (m *model) noteCard(n core.Note, width int, selected bool) []string {
 		lines = append(lines, th.plain.Render(strings.Repeat(" ", width-2)))
 	}
 	o := boxOpts{keys: m.noteByline(n, timeAgo(n.CreatedAt)), focused: selected}
-	if hidden := len(all) - len(shown); hidden > 0 {
-		o.bottom = m.th.faint.Render(fmt.Sprintf("+%d %s", hidden, plural(hidden, "line", "lines")))
-	}
 	if m.mode == modeConfirm && m.confirm.note == n.Number && !m.noteOpen {
 		o = boxOpts{keys: m.confirm.question, alert: true}
 	}
@@ -763,8 +773,9 @@ func (m *model) drawLane(screen []string, r rect) {
 		}
 		first, _, _ := strings.Cut(strings.TrimLeft(n.Body, "\n"), "\n")
 		when := timeAgo(n.CreatedAt)
-		if extra := strings.Count(n.Body, "\n"); extra > 0 { // the lines after the first
-
+		// The lane shows one line, so the written lines after it are the
+		// ones you don't see, whatever the width.
+		if extra := strings.Count(n.Body, "\n"); extra > 0 {
 			when += fmt.Sprintf(" · +%d %s", extra, plural(extra, "line", "lines"))
 		}
 		byline := th.faint.Render(when)

@@ -177,9 +177,6 @@ func (m *model) tabs() string {
 	m.onKey(rect{1 + lipgloss.Width(board) + 1, 2, lipgloss.Width(list), 1}, "2")
 	m.onKey(rect{1 + lipgloss.Width(board) + 1 + lipgloss.Width(list) + 1, 2, lipgloss.Width(notes), 1}, "3")
 	left := board + " " + list + " " + notes
-	if m.view == viewNotes && len(m.notes) > 0 {
-		return " " + spread(left, m.th.faint.Render(plural(len(m.notes), "1 note", fmt.Sprintf("%d notes", len(m.notes)))), m.w-2)
-	}
 	return " " + left
 }
 

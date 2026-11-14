@@ -1,44 +1,44 @@
  ◆ taskship  myproject                                                                                                filter PROJ · 2 of 6 notes · esc clears  ✓ Up to date  ? help
 
-  1 Board   2 List   3 Notes                                                                                                                                                6 notes
- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┌──────────────────────────────────────────┐
- ┃ The retry loop in sync/client.go never   ┃ │ From the PROJ-23 session:                │
- ┃ resets its backoff after a success.      ┃ │                                          │
- ┃ Probably why PROJ-18 keeps coming back.  ┃ │ > The login test is flaky because it     │
- ┃                                          ┃ │   depends on the system clock.           │
- ┃                                          ┃ │ > I'd inject a clock into the session    │
- ┃                                          ┃ │   store rather than sleeping             │
- ┗ Claude · Nov 11 ━━━━━━━━━━━━━━━━━━━━━━━━━┛ └ Nov 11 ──────────────────────── +2 lines ┘
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  1 Board   2 List   3 Notes
+ ┏ 2 notes ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ ┃┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┌─────────────────────────────────────────┐                                                                                        ┃
+ ┃┃ The retry loop in sync/client.go never   ┃ │ From the PROJ-23 session:               │                                                                                        ┃
+ ┃┃ resets its backoff after a success.      ┃ │                                         │                                                                                        ┃
+ ┃┃ Probably why PROJ-18 keeps coming back.  ┃ │ > The login test is flaky because it    │                                                                                        ┃
+ ┃┃                                          ┃ │   depends on the system clock.          │                                                                                        ┃
+ ┃┃                                          ┃ │ > I'd inject a clock into the session   │                                                                                        ┃
+ ┃┃                                          ┃ │   store rather than sleeping…           │                                                                                        ┃
+ ┃┗ Claude · Nov 11 ━━━━━━━━━━━━━━━━━━━━━━━━━┛ └ Nov 11 ─────────────────────────────────┘                                                                                        ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┃                                                                                                                                                                                ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  esc clear filter  / edit filter  h j k l move  enter open  n new note  e edit  t make task  d delete  y copy  / filter  1 2 3 views  P projects  ? help  q quit

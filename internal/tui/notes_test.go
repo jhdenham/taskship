@@ -307,3 +307,23 @@ func TestLaneEdges(t *testing.T) {
 		t.Errorf("unchanged text from the editor:\n%s", out)
 	}
 }
+
+// A cut-off card's last line ends in "…", with no count that would change
+// with its width; the lane, one line per note, counts the written lines after it.
+// The selected card stays marked while the pane has the focus.
+func TestNoteCutOff(t *testing.T) {
+	m, _ := notesProject(t, 180, 44)
+	press(m, "3")
+	if out := screen(m); strings.Contains(out, "lines ┘") || strings.Contains(out, "─ … ┘") ||
+		!strings.Contains(out, "WHERE last_seen < now() - interval '30…") || !strings.Contains(out, "store rather than sleeping…") {
+		t.Errorf("cut-off cards:\n%s", out)
+	}
+	press(m, "enter")
+	if !m.focusNote || !strings.Contains(screen(m), "┗ Nov 11 ━") {
+		t.Errorf("selected card unmarked with the pane open:\n%s", screen(m))
+	}
+	press(m, "1", "N")
+	if !strings.Contains(screen(m), "Nov 11 · +9 lines") {
+		t.Errorf("lane count:\n%s", screen(m))
+	}
+}

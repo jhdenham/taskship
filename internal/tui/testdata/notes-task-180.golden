@@ -1,44 +1,44 @@
  ◆ taskship  myproject                                                                                                                                                 ✓ Up to date
 
-  1 Board   2 List   3 Notes                                                                                                                                                6 notes
- ┌──────────────────────────────────────────┐ ┌──────────────────────────────────────────┐ ┌──────────────────────────────────────────┐ ┌─────────────────────────────────────────┐
- │ Try a compact board layout               │ │ The retry loop in sync/client.go never   │ │ Ask about rate limits before we publish  │ │ Handy query for finding stale sessions: │
- │                                          │ │ resets its backoff after a success.      │ │ the webhook docs                         │ │                                         │
- │                                          │ │ Probably why PROJ-18 keeps coming back.  │ │                                          │ │ ```sql                                  │
- │                                 ┏ New task from note ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓id, user_id, last_seen           │
- │                                 ┃ Title                                                                                                      ┃ssions                           │
- │                                 ┃ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃ast_seen < now() - interval '30… │
- └ Nov 11 ─────────────────────────┃ ┃                                                                                                        ┃ ┃─────────────────────── +4 lines ┘
- ┌─────────────────────────────────┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃
- │ From the PROJ-23 session:       ┃ Description                                                                                                ┃
- │                                 ┃ ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐ ┃
- │ > The login test is flaky becaus┃ │ The retry loop in sync/client.go never resets its backoff after a success. Probably why PROJ-18 keeps  │ ┃
- │   depends on the system clock.  ┃ │ coming back.                                                                                           │ ┃
- │ > I'd inject a clock into the se┃ │                                                                                                        │ ┃
- │   store rather than sleeping    ┃ │                                                                                                        │ ┃
- └ Nov 11 ──────────────────────── ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ │                                                                                                        │ ┃
-                                   ┃ └────────────────────────────────────────────────────────────────────────────────────────────────────────┘ ┃
-                                   ┃ Saving adds the task to backlog and removes the note.                                                      ┃
-                                   ┗ tab title/description  ctrl-s save  esc cancel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-
-
-
-
+  1 Board   2 List   3 Notes
+ ┌ 6 notes ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+ │┌──────────────────────────────────────────┐ ┌─────────────────────────────────────────┐ ┌─────────────────────────────────────────┐ ┌─────────────────────────────────────────┐│
+ ││ Try a compact board layout               │ │ The retry loop in sync/client.go never  │ │ Ask about rate limits before we publish │ │ Handy query for finding stale sessions: ││
+ ││                                          │ │ resets its backoff after a success.     │ │ the webhook docs                        │ │                                         ││
+ ││                                ┏ New task from note ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                ││
+ ││                                ┃ Title                                                                                                      ┃d, user_id, last_seen           ││
+ ││                                ┃ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃sions                           ││
+ ││                                ┃ ┃                                                                                                        ┃ ┃st_seen < now() - interval '30… ││
+ │└ Nov 11 ────────────────────────┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃────────────────────────────────┘│
+ │┌────────────────────────────────┃ Description                                                                                                ┃                                 │
+ ││ From the PROJ-23 session:      ┃ ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐ ┃                                 │
+ ││                                ┃ │ The retry loop in sync/client.go never resets its backoff after a success. Probably why PROJ-18 keeps  │ ┃                                 │
+ ││ > The login test is flaky becau┃ │ coming back.                                                                                           │ ┃                                 │
+ ││   depends on the system clock. ┃ │                                                                                                        │ ┃                                 │
+ ││ > I'd inject a clock into the s┃ │                                                                                                        │ ┃                                 │
+ ││   store rather than sleeping…  ┃ │                                                                                                        │ ┃                                 │
+ │└ Nov 11 ────────────────────────┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ │                                                                                                        │ ┃                                 │
+ │                                 ┃ └────────────────────────────────────────────────────────────────────────────────────────────────────────┘ ┃                                 │
+ │                                 ┃ Saving adds the task to backlog and removes the note.                                                      ┃                                 │
+ │                                 ┗ tab title/description  ctrl-s save  esc cancel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                 │
+ │                                                                                                                                                                                │
+ │                                                                                                                                                                                │
+ │                                                                                                                                                                                │
+ │                                                                                                                                                                                │
+ └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 

@@ -1,44 +1,44 @@
  ◆ taskship  myproject                                                                                                                                         ✓ Up to date  ? help
 
-  1 Board   2 List   3 Notes                                                                                                                                                6 notes
- ┌─────────────────────────────────────────────────┐ ┌─────────────────────────────────────────────────┐ ┏ Note · Nov 11 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ esc close ┓
- │ Try a compact board layout                      │ │ The retry loop in sync/client.go never resets   │ ┃ created  Nov 11, 09:20                                                 ┃
- │                                                 │ │ its backoff after a success. Probably why       │ ┃                                                                        ┃
- │                                                 │ │ PROJ-18 keeps coming back.                      │ ┃ From the PROJ-23 session:                                              ┃
- │                                                 │ │                                                 │ ┃                                                                        ┃
- │                                                 │ │                                                 │ ┃ > The login test is flaky because it depends on the system clock.      ┃
- │                                                 │ │                                                 │ ┃ > I'd inject a clock into the session store rather than sleeping       ┃
- └ Nov 11 ─────────────────────────────────────────┘ └ Claude · Nov 11 ────────────────────────────────┘ ┃ > in the test. That touches auth/session.go and three tests.           ┃
- ┌─────────────────────────────────────────────────┐ ┌─────────────────────────────────────────────────┐ ┃                                                                        ┃
- │ Ask about rate limits before we publish the     │ │ Handy query for finding stale sessions:         │ ┃                                                                        ┃
- │ webhook docs                                    │ │                                                 │ ┃                                                                        ┃
- │                                                 │ │ ```sql                                          │ ┃                                                                        ┃
- │                                                 │ │ SELECT id, user_id, last_seen                   │ ┃                                                                        ┃
- │                                                 │ │ FROM sessions                                   │ ┃                                                                        ┃
- │                                                 │ │ WHERE last_seen < now() - interval '30 days'    │ ┃                                                                        ┃
- └ Nov 11 ─────────────────────────────────────────┘ └ Nov 11 ─────────────────────────────── +4 lines ┘ ┃                                                                        ┃
- ┌─────────────────────────────────────────────────┐ ┌─────────────────────────────────────────────────┐ ┃                                                                        ┃
- │ From the PROJ-23 session:                       │ │ Rename "sync settings" to "connections"?        │ ┃                                                                        ┃
- │                                                 │ │                                                 │ ┃                                                                        ┃
- │ > The login test is flaky because it depends on │ │                                                 │ ┃                                                                        ┃
- │   the system clock.                             │ │                                                 │ ┃                                                                        ┃
- │ > I'd inject a clock into the session store     │ │                                                 │ ┃                                                                        ┃
- │   rather than sleeping                          │ │                                                 │ ┃                                                                        ┃
- └ Nov 11 ─────────────────────────────── +2 lines ┘ └ Nov 11 ─────────────────────────────────────────┘ ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃                                                                        ┃
-                                                                                                         ┃ ────────────────────────────────────────────────────────────────────── ┃
-                                                                                                         ┃ t make task · e edit · d delete · y copy text                          ┃
-                                                                                                         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  1 Board   2 List   3 Notes
+ ┌ 6 notes ────────────────────────────────────────────────────────────────────────────────────────────┐ ┏ Note · Nov 11 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ esc close ┓
+ │┌────────────────────────────────────────────────┐ ┌────────────────────────────────────────────────┐│ ┃ created  Nov 11, 09:20                                                 ┃
+ ││ Try a compact board layout                     │ │ The retry loop in sync/client.go never resets  ││ ┃                                                                        ┃
+ ││                                                │ │ its backoff after a success. Probably why      ││ ┃ From the PROJ-23 session:                                              ┃
+ ││                                                │ │ PROJ-18 keeps coming back.                     ││ ┃                                                                        ┃
+ ││                                                │ │                                                ││ ┃ > The login test is flaky because it depends on the system clock.      ┃
+ ││                                                │ │                                                ││ ┃ > I'd inject a clock into the session store rather than sleeping       ┃
+ ││                                                │ │                                                ││ ┃ > in the test. That touches auth/session.go and three tests.           ┃
+ │└ Nov 11 ────────────────────────────────────────┘ └ Claude · Nov 11 ───────────────────────────────┘│ ┃                                                                        ┃
+ │┌────────────────────────────────────────────────┐ ┌────────────────────────────────────────────────┐│ ┃                                                                        ┃
+ ││ Ask about rate limits before we publish the    │ │ Handy query for finding stale sessions:        ││ ┃                                                                        ┃
+ ││ webhook docs                                   │ │                                                ││ ┃                                                                        ┃
+ ││                                                │ │ ```sql                                         ││ ┃                                                                        ┃
+ ││                                                │ │ SELECT id, user_id, last_seen                  ││ ┃                                                                        ┃
+ ││                                                │ │ FROM sessions                                  ││ ┃                                                                        ┃
+ ││                                                │ │ WHERE last_seen < now() - interval '30 days'…  ││ ┃                                                                        ┃
+ │└ Nov 11 ────────────────────────────────────────┘ └ Nov 11 ────────────────────────────────────────┘│ ┃                                                                        ┃
+ │┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┌────────────────────────────────────────────────┐│ ┃                                                                        ┃
+ │┃ From the PROJ-23 session:                      ┃ │ Rename "sync settings" to "connections"?       ││ ┃                                                                        ┃
+ │┃                                                ┃ │                                                ││ ┃                                                                        ┃
+ │┃ > The login test is flaky because it depends   ┃ │                                                ││ ┃                                                                        ┃
+ │┃   on the system clock.                         ┃ │                                                ││ ┃                                                                        ┃
+ │┃ > I'd inject a clock into the session store    ┃ │                                                ││ ┃                                                                        ┃
+ │┃   rather than sleeping…                        ┃ │                                                ││ ┃                                                                        ┃
+ │┗ Nov 11 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ └ Nov 11 ────────────────────────────────────────┘│ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃                                                                        ┃
+ │                                                                                                     │ ┃ ────────────────────────────────────────────────────────────────────── ┃
+ │                                                                                                     │ ┃ t make task · e edit · d delete · y copy text                          ┃
+ └─────────────────────────────────────────────────────────────────────────────────────────────────────┘ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
  esc close  j k scroll  tab notes  / filter  ? help  q quit
