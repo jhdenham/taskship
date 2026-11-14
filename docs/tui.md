@@ -56,7 +56,7 @@ If you save an edit to a task (in the box or in your editor) and a field you cha
 
 Press `r` in the detail view to launch an agent on the task.
 
-Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise it asks what the agent is for: `run` to work on the task, as `taskship PROJ-42` does, or `refine` to make it ready to work on, as `taskship refine PROJ-42` does (see [Refine](launching.md#refine)). The menu starts on `refine` for a task in backlog and on `run` otherwise. Pick one with `j`/`k` and `enter`, or `esc` to cancel.
+Before anything else happens, the TUI checks that the task's project has a folder on this machine and that the agent is installed. If not, it tells you in place. Otherwise it asks what the agent is for: `run` to work on the task, as `taskship PROJ-42` does, or `refine` to make it ready to work on, as `taskship refine PROJ-42` does (see [Refine](launching.md#refine)). The menu starts on `refine` for a task in backlog and on `run` otherwise. Pick one with `j`/`k` and `enter`, or `esc` to cancel. To steer the agent, press `n` instead of `enter`: write a note, such as "I don't think this task is needed any more. Can you check?", and press `ctrl-s` to launch with it at the end of the prompt. `enter` starts a new line, and `esc` goes back to the menu, keeping what you wrote if you press `n` again. The note works like `--prompt` (see [Adding your own instructions](launching.md#adding-your-own-instructions)).
 
 ![The launch menu over a task's details, offering run to work on it or refine to make it ready](images/tui-launch.png)
 

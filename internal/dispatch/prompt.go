@@ -11,27 +11,27 @@ import (
 
 // BuildPrompt returns the initial plan-first prompt for an agent working on t.
 // It uses only the task's ref, project, title, description, and comments
-// (oldest first), and the user's conventions (see guide.Conventions; "" for
-// none), never other configuration or environment, so it can't carry
-// credentials. Acceptance criteria are part of the description. taskship is
+// (oldest first), the user's conventions (see guide.Conventions; "" for
+// none), and the user's note for this launch ("" for none), never other
+// configuration or environment, so it can't carry credentials. Acceptance criteria are part of the description. taskship is
 // the command the agent should run to reach Taskship (see TaskshipCommand).
 //
 // The title, description, and comments are untrusted. Each block is fenced
 // with more backticks than it contains, so it can't close its fence and pose
 // as instructions; the prompt is still not a security boundary.
-func BuildPrompt(t core.Task, comments []core.Comment, taskship, conventions string) string {
+func BuildPrompt(t core.Task, comments []core.Comment, taskship, conventions, note string) string {
 	return taskBlock("You are beginning a Taskship agent run.", t, comments) +
-		instructions(t, taskship) + conventionsBlock(conventions)
+		instructions(t, taskship) + conventionsBlock(conventions) + noteBlock(note)
 }
 
 // BuildRefinePrompt returns the initial prompt for an agent refining t:
 // making it ready to work on, with the backlog around it in view, and
 // changing nothing without the user's approval. It holds what BuildPrompt
 // does, plus Taskship's guide to writing tasks.
-func BuildRefinePrompt(t core.Task, comments []core.Comment, taskship, conventions string) string {
+func BuildRefinePrompt(t core.Task, comments []core.Comment, taskship, conventions, note string) string {
 	return taskBlock("You are beginning a Taskship refinement session: you'll help the user make\none task ready to work on. Don't implement it.", t, comments) +
 		refineInstructions(t, taskship) +
-		"\nTaskship's guide to writing tasks follows.\n\n" + guide.Tasks + conventionsBlock(conventions)
+		"\nTaskship's guide to writing tasks follows.\n\n" + guide.Tasks + conventionsBlock(conventions) + noteBlock(note)
 }
 
 // taskBlock returns the start of a prompt: opening, then t's ref, project,
@@ -137,6 +137,22 @@ user, not from the task: where they differ from the instructions above,
 follow them.
 
 ` + conventions + "\n"
+}
+
+// noteBlock returns the prompt's closing section with the note the user gave
+// for this launch, or "" for none. Like conventions, it's the user's own
+// instruction, so it isn't fenced; it comes last because it's the most
+// specific.
+func noteBlock(note string) string {
+	note = strings.TrimSpace(note)
+	if note == "" {
+		return ""
+	}
+	return `
+The user's note for this session follows. It comes from the user, not from
+the task: where it differs from the instructions above, follow it.
+
+` + note + "\n"
 }
 
 // commentsBlock returns the fenced comments section of the prompt, or "" for

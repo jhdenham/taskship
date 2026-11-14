@@ -32,14 +32,14 @@ func TestAllowedCommands(t *testing.T) {
 func TestPromptCommandsAreAllowed(t *testing.T) {
 	task := core.Task{Ref: "PROJ-42", Project: "myproject", Title: "Fix the export"}
 	cmd := regexp.MustCompile("T ([^\n`]+)")
-	for mode, build := range map[core.RunMode]func(core.Task, []core.Comment, string, string) string{
+	for mode, build := range map[core.RunMode]func(core.Task, []core.Comment, string, string, string) string{
 		core.RunModeRun: BuildPrompt, core.RunModeRefine: BuildRefinePrompt,
 	} {
 		var prefixes []string
 		for _, rule := range AllowedCommands(mode, task.Ref, "T") {
 			prefixes = append(prefixes, strings.TrimSuffix(strings.TrimPrefix(rule, "Bash("), "*)"))
 		}
-		matches := cmd.FindAllStringSubmatch(build(task, nil, "T", ""), -1)
+		matches := cmd.FindAllStringSubmatch(build(task, nil, "T", "", ""), -1)
 		if len(matches) < 4 {
 			t.Fatalf("%s: found only %d commands in the prompt", mode, len(matches))
 		}

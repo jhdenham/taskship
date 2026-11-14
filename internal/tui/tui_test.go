@@ -414,6 +414,40 @@ func TestLaunchMenu(t *testing.T) {
 	}
 }
 
+// n in the launch menu opens a note box: enter starts a new line, esc goes
+// back to the menu and keeps the note, and ctrl-s launches the picked mode
+// with the note at the end of the prompt.
+func TestLaunchWithNote(t *testing.T) {
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "claude"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+	m, s := myproject(t, 80, 24)
+	if _, err := s.AddWorkspace(context.Background(), "myproject", core.Workspace{Path: t.TempDir()}); err != nil {
+		t.Fatal(err)
+	}
+	m.openDetail("PROJ-3")
+	press(m, "r")
+	if got := screen(m); !strings.Contains(got, "n add a note") {
+		t.Fatalf("launch menu:\n%s", got)
+	}
+	press(m, "n", "text:Is this still needed?", "enter", "text:Check the export code.")
+	if got := screen(m); m.mode != modeNote || !strings.Contains(got, "Note for refine on PROJ-3") ||
+		!strings.Contains(got, "Is this still needed?") || !strings.Contains(got, "ctrl-s launch") {
+		t.Fatalf("note box:\n%s", got)
+	}
+	press(m, "esc")
+	if m.mode != modeMenu || m.outcome.Launch != nil {
+		t.Fatalf("esc in the note box: mode %v, launch %+v", m.mode, m.outcome.Launch)
+	}
+	press(m, "n", "ctrl+s")
+	if l := m.outcome.Launch; l == nil || l.Mode != core.RunModeRefine ||
+		!strings.HasSuffix(l.Prompt, "follow it.\n\nIs this still needed?\nCheck the export code.\n") {
+		t.Errorf("launch with a note: %+v", l)
+	}
+}
+
 func TestMouse(t *testing.T) {
 	m, _ := myproject(t, 80, 24)
 	screen(m)

@@ -48,8 +48,9 @@ type Plan struct {
 
 // Prepare chooses the folder to run task t in (see workspace.ForTask; dir is
 // the folder to start from, explicit if the user gave it) and builds the
-// prompt for mode from the task, its comments, and the user's conventions.
-func Prepare(ctx context.Context, s *store.Store, t core.Task, mode core.RunMode, dir string, explicit bool) (Plan, error) {
+// prompt for mode from the task, its comments, the user's conventions, and
+// note, the user's instructions for this launch ("" for none).
+func Prepare(ctx context.Context, s *store.Store, t core.Task, mode core.RunMode, dir string, explicit bool, note string) (Plan, error) {
 	loc, err := workspace.Inspect(ctx, dir)
 	if err != nil {
 		return Plan{}, err
@@ -74,7 +75,7 @@ func Prepare(ctx context.Context, s *store.Store, t core.Task, mode core.RunMode
 		build = BuildRefinePrompt
 	}
 	taskship := TaskshipCommand()
-	return Plan{Task: t, Mode: mode, Agent: "claude", Dir: dir, Prompt: build(t, comments, taskship, conventions),
+	return Plan{Task: t, Mode: mode, Agent: "claude", Dir: dir, Prompt: build(t, comments, taskship, conventions, note),
 		Allowed: AllowedCommands(mode, t.Ref, taskship)}, nil
 }
 

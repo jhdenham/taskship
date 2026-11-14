@@ -78,6 +78,9 @@ func (m *model) menuKey(k string) tea.Cmd {
 		m.mode = modeNormal
 		return m.menu.pick(m.menu.cursor)
 	default:
+		if k == "n" && m.menu.note != nil {
+			return m.menu.note(m.menu.cursor)
+		}
 		for i, o := range m.menu.options {
 			if strings.HasPrefix(o, k) {
 				m.menu.cursor = i
@@ -148,7 +151,12 @@ func (m *model) drawMenu(screen []string, r rect) {
 		}
 		lines = append(lines, marker+spreadIn(th.plain.Render(" "+o), cur, w-3, th.plain))
 	}
-	bottom, keys := boxKeys(w, m.th.keys("enter", m.menu.verb, "esc", "cancel"))
+	keyLine := m.th.keys("enter", m.menu.verb, "esc", "cancel")
+	if m.menu.note != nil {
+		keyLine = m.th.keys("n", "add a note", "enter", m.menu.verb, "esc", "cancel")
+		w = max(w, lipgloss.Width(keyLine)+5)
+	}
+	bottom, keys := boxKeys(w, keyLine)
 	lines = append(lines, keys...)
 	h := len(lines) + 2
 	x, y := m.popupAt(r, w, h)
@@ -751,33 +759,88 @@ func (m *model) saveComment(text string) tea.Cmd {
 // Launch.
 
 // launch checks that an agent can run on t, showing what's wrong in place,
-// then asks whether to run or refine it. A backlog task starts on refine.
+// then asks whether to run or refine it, optionally with a note for the
+// agent. A backlog task starts on refine.
 func (m *model) launch(t core.Task) tea.Cmd {
-	if _, ok := m.prepare(t, core.RunModeRun); !ok {
+	if _, ok := m.prepare(t, core.RunModeRun, ""); !ok {
 		return nil
 	}
 	modes := []core.RunMode{core.RunModeRun, core.RunModeRefine}
+	options := []string{"run", "refine"}
 	cursor := 0
 	if t.Status == core.StatusBacklog {
 		cursor = 1
 	}
-	m.menu = menu{title: "Launch an agent on " + t.Ref, options: []string{"run", "refine"},
+	start := func(mode core.RunMode, note string) tea.Cmd {
+		plan, ok := m.prepare(t, mode, note)
+		if !ok {
+			return nil
+		}
+		m.outcome.Launch = &plan
+		return tea.Quit
+	}
+	m.menu = menu{title: "Launch an agent on " + t.Ref, options: options,
 		hints: []string{"work on it", "make it ready"}, verb: "launch", cursor: cursor, current: -1,
-		pick: func(i int) tea.Cmd {
-			plan, ok := m.prepare(t, modes[i])
-			if !ok {
-				return nil
-			}
-			m.outcome.Launch = &plan
-			return tea.Quit
+		pick: func(i int) tea.Cmd { return start(modes[i], "") },
+		note: func(i int) tea.Cmd {
+			m.noteFor = "Note for " + options[i] + " on " + t.Ref
+			m.withNote = func(note string) tea.Cmd { return start(modes[i], note) }
+			m.mode = modeNote
+			m.area.SetWidth(m.modalWidth(90) - 8)
+			return m.area.Focus()
 		}}
 	m.mode = modeMenu
+	m.area.SetValue("") // a new menu starts a new note; esc in the box keeps it
 	return nil
 }
 
-// prepare plans an agent run on t for mode, or shows what's wrong.
-func (m *model) prepare(t core.Task, mode core.RunMode) (dispatch.Plan, bool) {
-	plan, err := dispatch.Prepare(m.ctx, m.s, t, mode, ".", false)
+// noteKey handles keys in the note box: ctrl-s launches with the note, and
+// esc goes back to the launch menu, keeping the text for n.
+func (m *model) noteKey(msg tea.KeyPressMsg) tea.Cmd {
+	switch msg.String() {
+	case "esc":
+		m.mode = modeMenu
+		m.area.Blur()
+		return nil
+	case "ctrl+s":
+		m.mode = modeNormal
+		m.area.Blur()
+		return m.withNote(m.area.Value())
+	}
+	var cmd tea.Cmd
+	m.area, cmd = m.area.Update(msg)
+	return cmd
+}
+
+// drawNote draws the box for the note to launch an agent with.
+func (m *model) drawNote(screen []string, r rect) {
+	w := m.modalWidth(90)
+	textW := w - 4
+	bottom, keys := boxKeys(w, m.th.keys("enter", "new line", "ctrl-s", "launch", "esc", "back"))
+	areaH := max(3, min(8, min(r.h, 30)-2-2-2-len(keys)))
+	m.area.SetWidth(textW - 4)
+	m.area.SetHeight(areaH)
+	var area []string
+	for _, l := range strings.Split(m.area.View(), "\n") {
+		area = append(area, " "+l)
+	}
+	var body []string
+	for _, l := range m.box(textW, areaH+2, boxOpts{focused: true}, area) {
+		body = append(body, " "+l)
+	}
+	body = append(body, " "+m.th.faint.Render("Added to the end of the agent's prompt for this launch. Not saved."))
+	for _, l := range keys {
+		body = append(body, " "+l)
+	}
+	h := len(body) + 2
+	x, y := m.popupAt(r, w, h)
+	place(screen, x, y, m.box(w, h, boxOpts{title: m.th.keyBold.Render(m.noteFor), keys: bottom, focused: true}, body))
+}
+
+// prepare plans an agent run on t for mode with the user's note ("" for
+// none), or shows what's wrong.
+func (m *model) prepare(t core.Task, mode core.RunMode, note string) (dispatch.Plan, bool) {
+	plan, err := dispatch.Prepare(m.ctx, m.s, t, mode, ".", false, note)
 	if err == nil {
 		err = plan.Ready()
 	}

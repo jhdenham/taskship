@@ -51,6 +51,13 @@ func TestRunDryRun(t *testing.T) {
 	}
 	os.Remove(filepath.Join(home, "conventions.md"))
 
+	// --prompt's note ends the prompt, for refine too.
+	for _, cmd := range []string{"run", "refine"} {
+		if out := mustRun(t, cmd, "PROJ-1", "--dry-run", "-p", "Is this still needed?"); !strings.HasSuffix(out, "follow it.\n\nIs this still needed?\n") {
+			t.Errorf("%s dry run with --prompt:\n%s", cmd, out)
+		}
+	}
+
 	// From a subfolder, the agent still runs at the checkout root.
 	t.Chdir(filepath.Join(repo, "internal"))
 	if out := mustRun(t, "run", "PROJ-1", "--dry-run"); !strings.Contains(out, "Workspace: "+repo+"\n") {

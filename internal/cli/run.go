@@ -18,10 +18,10 @@ import (
 const runIDEnv = dispatch.RunIDEnv
 
 func newRunCmd() *cobra.Command {
-	var agent, workspacePath string
+	var agent, workspacePath, note string
 	var dryRun bool
 	cmd := &cobra.Command{
-		Use:   "run TASK_REF [--agent claude] [--workspace PATH] [--dry-run]",
+		Use:   "run TASK_REF [--prompt TEXT] [--agent claude] [--workspace PATH] [--dry-run]",
 		Short: "Launch an agent on a task, plan-first",
 		Long: `Launch Claude Code on a task in this terminal. "taskship PROJ-42" is short
 for "taskship run PROJ-42".
@@ -32,6 +32,10 @@ task, and proposes a plan, and it asks you to approve the plan before it edits
 files. Each launch is recorded as a run
 ("taskship runs PROJ-42"). When Claude exits, taskship exits with its exit
 code.
+
+--prompt adds your own instructions for this launch to the end of the
+prompt, such as "only look at the export code". The agent follows them
+where they differ from Taskship's. They aren't saved.
 
 Claude may run the taskship commands the prompt mentions without asking
 you again: reads, adding tasks, and commenting on or changing the status of
@@ -46,12 +50,13 @@ project), otherwise the one containing the current folder if that belongs
 to the task's project, otherwise the project's only registered workspace. In a
 Git worktree of a registered checkout, the agent runs at the worktree's
 corresponding folder, usually its top level.`,
-		Example: "  taskship PROJ-42\n  taskship PROJ-42 --dry-run\n  taskship PROJ-42 --workspace ~/worktrees/myproject/feature",
+		Example: "  taskship PROJ-42\n  taskship PROJ-42 --prompt \"Only look at the export code\"\n  taskship PROJ-42 --dry-run\n  taskship PROJ-42 --workspace ~/worktrees/myproject/feature",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAgent(cmd, core.RunModeRun, args[0], agent, workspacePath, dryRun)
+			return runAgent(cmd, core.RunModeRun, args[0], agent, workspacePath, note, dryRun)
 		},
 	}
+	cmd.Flags().StringVarP(&note, "prompt", "p", "", "your own instructions for the agent, added to the end of its prompt")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the workspace and prompt without launching the agent")
 	cmd.Flags().StringVarP(&agent, "agent", "a", "claude", "agent to run")
 	cmd.Flags().StringVar(&workspacePath, "workspace", "", "checkout or worktree to run in (default: chosen as described above)")
@@ -59,10 +64,10 @@ corresponding folder, usually its top level.`,
 }
 
 func newRefineCmd() *cobra.Command {
-	var agent, workspacePath string
+	var agent, workspacePath, note string
 	var dryRun bool
 	cmd := &cobra.Command{
-		Use:   "refine TASK_REF [--agent claude] [--workspace PATH] [--dry-run]",
+		Use:   "refine TASK_REF [--prompt TEXT] [--agent claude] [--workspace PATH] [--dry-run]",
 		Short: "Launch an agent to make a task ready to work on",
 		Long: `Launch Claude Code to refine a task: to make it ready to work on, without
 implementing it.
@@ -73,7 +78,9 @@ and proposes a rewritten task. It also points out duplicates, tasks that fit
 with this one, and tasks that should come first. It changes tasks only after
 you approve, and asks before it edits any file. Its prompt includes
 Taskship's guide to writing tasks and your conventions ("taskship skill
-guide" prints both).
+guide" prints both). --prompt adds your own instructions for this launch
+to the end, such as "I think this task isn't needed any more; check". They
+aren't saved.
 
 Once you approve, Claude may run the taskship commands that apply the
 changes without asking you again: reading tasks, editing, adding,
@@ -83,12 +90,13 @@ permission checks.
 Refining doesn't change the task's status. It is recorded as a run
 ("taskship runs PROJ-42"). --dry-run prints the chosen folder, those
 commands, and the exact prompt, and launches nothing.`,
-		Example: "  taskship refine PROJ-42\n  taskship refine PROJ-42 --dry-run",
+		Example: "  taskship refine PROJ-42\n  taskship refine PROJ-42 --prompt \"I think this isn't needed any more; check\"\n  taskship refine PROJ-42 --dry-run",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAgent(cmd, core.RunModeRefine, args[0], agent, workspacePath, dryRun)
+			return runAgent(cmd, core.RunModeRefine, args[0], agent, workspacePath, note, dryRun)
 		},
 	}
+	cmd.Flags().StringVarP(&note, "prompt", "p", "", "your own instructions for the agent, added to the end of its prompt")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print the workspace and prompt without launching the agent")
 	cmd.Flags().StringVarP(&agent, "agent", "a", "claude", "agent to run")
 	cmd.Flags().StringVar(&workspacePath, "workspace", "", "checkout or worktree to run in (default: chosen as for run)")
@@ -96,8 +104,9 @@ commands, and the exact prompt, and launches nothing.`,
 }
 
 // runAgent launches agent on the task ref for mode, as "taskship run" and
-// "taskship refine" do, or with dryRun prints what it would launch.
-func runAgent(cmd *cobra.Command, mode core.RunMode, ref, agent, workspacePath string, dryRun bool) error {
+// "taskship refine" do, with the user's note ("" for none) at the end of the
+// prompt, or with dryRun prints what it would launch.
+func runAgent(cmd *cobra.Command, mode core.RunMode, ref, agent, workspacePath, note string, dryRun bool) error {
 	if agent != "claude" {
 		return fmt.Errorf("%w: unknown agent %q (valid: claude)", core.ErrInvalid, agent)
 	}
@@ -118,7 +127,7 @@ func runAgent(cmd *cobra.Command, mode core.RunMode, ref, agent, workspacePath s
 	if dir == "" {
 		dir = "."
 	}
-	plan, err := dispatch.Prepare(ctx, s, t, mode, dir, workspacePath != "")
+	plan, err := dispatch.Prepare(ctx, s, t, mode, dir, workspacePath != "", note)
 	if err != nil {
 		var nf *workspace.NoFolderError
 		if !errors.As(err, &nf) {

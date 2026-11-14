@@ -48,6 +48,16 @@ The agent starts with the task as its first message. It inspects the repository,
 
 When the work is done, the agent summarizes what changed and how it checked it, and suggests manual checks or a smoke test for bigger changes. Then it offers to add its summary as a comment on the task and to mark the task done. It does either only if you agree, and Taskship records which run did it (see [Run history](history.md)).
 
+## Adding your own instructions
+
+`--prompt` (`-p`) adds your own instructions for this launch to the end of the prompt, on both `taskship PROJ-1` and `taskship refine PROJ-1`:
+
+```text
+$ taskship refine PROJ-1 --prompt "I don't think this task is needed any more. Can you check?"
+```
+
+They're yours, not the task's, so they aren't marked as untrusted, and the agent follows them where they differ from Taskship's instructions or your conventions. They apply to this launch only: they aren't saved on the task or the run. In the TUI, press `n` in the launch menu to add the same note (see [Terminal UI](tui.md#launching-an-agent)).
+
 ## Previewing a launch
 
 `--dry-run` shows what a launch would do without starting anything: the agent, the folder it would start in, the Taskship commands it may run without asking, and the exact prompt it would receive. It works on both `taskship PROJ-1` and `taskship refine PROJ-1`.
@@ -66,7 +76,7 @@ In a Git worktree, the agent starts at the same position in the worktree as the 
 
 Every launch starts from a prompt Taskship writes, not from whatever you'd type that day. That keeps runs consistent: the agent always gets the whole task, always checks it against the code, and always asks before changing anything, however you phrase things and whichever agent you use.
 
-The prompt contains only the task's ref, project, title, description (acceptance criteria are part of the description), and comments, oldest first, followed by [your conventions](conventions.md#your-conventions) if you have any. It never contains other configuration or environment variables, so it can't carry credentials. It tells the agent how to run Taskship: `taskship`, or the full path of the `taskship` you launched when the one on your `PATH` is missing or a different file, such as a build in `./bin`.
+The prompt contains only the task's ref, project, title, description (acceptance criteria are part of the description), and comments, oldest first, followed by [your conventions](conventions.md#your-conventions) if you have any, and [your instructions](#adding-your-own-instructions) for this launch if you gave any. It never contains other configuration or environment variables, so it can't carry credentials. It tells the agent how to run Taskship: `taskship`, or the full path of the `taskship` you launched when the one on your `PATH` is missing or a different file, such as a build in `./bin`.
 
 The title and description, and the comments, are fenced and marked as untrusted, so text in a task can't pose as instructions. The rest of the prompt is the instructions for the job, refine or run, as described above.
 

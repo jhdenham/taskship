@@ -70,6 +70,7 @@ const (
 	modeMenu           // a status, priority or launch menu
 	modeInput          // the filter, labels or quick-add input
 	modeComment        // writing a comment
+	modeNote           // writing a note for an agent launch
 	modeConfirm        // a y/n question
 	modeEditError      // an invalid edit, waiting for e or esc
 	modeEditTask       // editing the title and description in the detail pane
@@ -98,6 +99,7 @@ type menu struct {
 	cursor  int
 	current int // -1 for none
 	pick    func(i int) tea.Cmd
+	note    func(i int) tea.Cmd // n: write a note, then pick option i (if set)
 }
 
 type confirm struct {
@@ -180,6 +182,8 @@ type model struct {
 	titleIn   textinput.Model // the title while editing a task
 	editTitle bool            // the title field has the focus, not the description
 	menu      menu
+	noteFor   string                    // the note box's title
+	withNote  func(note string) tea.Cmd // launches with the note box's text
 	confirm   confirm
 	msg       message
 
@@ -326,7 +330,7 @@ func (m *model) forwardToInput(msg tea.Msg) tea.Cmd {
 		if _, ok := msg.(tea.PasteMsg); ok {
 			m.inputChanged() // only input changes the filter, not cursor blinks
 		}
-	case modeComment:
+	case modeComment, modeNote:
 		m.area, cmd = m.area.Update(msg)
 	case modeEditTask:
 		if m.editTitle {
@@ -350,6 +354,8 @@ func (m *model) keyPress(msg tea.KeyPressMsg) tea.Cmd {
 		return m.inputKey(msg)
 	case modeComment:
 		return m.commentKey(msg)
+	case modeNote:
+		return m.noteKey(msg)
 	case modeEditTask:
 		return m.editTaskKey(msg)
 	}
@@ -379,7 +385,7 @@ func (m *model) key(k string) tea.Cmd {
 		return m.confirmKey(k)
 	case modeEditError:
 		return m.editErrorKey(k)
-	case modeInput, modeComment, modeEditTask:
+	case modeInput, modeComment, modeNote, modeEditTask:
 		return nil
 	}
 	if m.project.ID == "" {

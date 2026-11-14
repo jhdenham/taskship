@@ -71,6 +71,9 @@ func (m *model) render() string {
 	if m.mode == modeInput && m.inputKind == inputLabels {
 		m.drawLabels(screen, body)
 	}
+	if m.mode == modeNote {
+		m.drawNote(screen, body)
+	}
 	if m.mode == modeHelp {
 		// The help covers the tabs and the (empty) footer too, for room at
 		// 80×24.
@@ -196,7 +199,7 @@ func (m *model) body(screen []string, r rect) {
 // modalOpen reports whether a box is open over the views.
 func (m *model) modalOpen() bool {
 	switch m.mode {
-	case modeHelp, modeProjects, modeMenu, modeEditTask, modeComment:
+	case modeHelp, modeProjects, modeMenu, modeEditTask, modeComment, modeNote:
 		return true
 	case modeInput:
 		return m.inputKind == inputLabels
