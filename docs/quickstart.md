@@ -46,8 +46,9 @@ taskship skill install all
 
 Taskship launches Claude Code today, which must be installed separately; launching Codex is planned, and the skill already works in both.
 
-## Next
+## See also
 
-- [Terminal UI](tui.md): the board, the list, and every key.
+- [Projects](projects.md): set up a repository with `taskship init`, and how Taskship knows which project a folder belongs to.
+- [Tasks](tasks.md): add, list, and edit tasks, with labels, priorities, and comments.
 - [Launching agents](launching.md): refine tasks and run them, and what each launch gives the agent.
-- [Skill](skill.md): manage tasks from any agent session.
+- [Terminal UI](tui.md): the board, the list, and every key.
