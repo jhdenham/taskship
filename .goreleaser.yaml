@@ -1,0 +1,26 @@
+version: 2
+project_name: taskship
+
+builds:
+  - main: ./cmd/taskship
+    binary: taskship
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Tag }}
+
+# install.sh expects these names: no version, so releases/latest/download works.
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  # Tags like v0.1.0-rc.1 become pre-releases, which latest/download skips.
+  prerelease: auto

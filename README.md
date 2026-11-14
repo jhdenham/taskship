@@ -66,6 +66,18 @@ gofmt -l .
 
 Release builds set the version with `-ldflags "-X main.version=v0.1.0"`. `go install` builds report the module version.
 
+### Releasing
+
+Push a `v*` tag and `.github/workflows/release.yml` runs GoReleaser, which publishes a GitHub release with the archives and `checksums.txt` that `install.sh` downloads. Tags with a suffix, such as `v0.1.0-rc.1`, are published as pre-releases and don't become the latest release.
+
+To check a release build locally without publishing anything:
+
+```sh
+go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean
+```
+
+The archive names are fixed by `install.sh`. Don't change them in `.goreleaser.yaml` without updating the script.
+
 ### Website
 
 The site in `website/` is built with [Astro](https://astro.build) and requires Node 22 or later (`website/.nvmrc` pins the version for `nvm use`).
