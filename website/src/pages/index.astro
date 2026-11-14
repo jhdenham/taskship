@@ -107,22 +107,21 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
 
 <span class="dim">&gt;</span> Only on CI, about one run in five.
 
-<span class="dim">╭──────────────────────────────────────────────────────────────╮</span>
-<span class="dim">│</span> <span class="agent">Ready to code?</span>                                               <span class="dim">│</span>
-<span class="dim">│</span>                                                              <span class="dim">│</span>
-<span class="dim">│</span> Here is Claude's plan:                                       <span class="dim">│</span>
-<span class="dim">│</span> <span class="dim">╭──────────────────────────────────────────────────────────╮</span> <span class="dim">│</span>
-<span class="dim">│</span> <span class="dim">│</span> 1. Rewrite PROJ-2 as "Fix login test timing out on CI":  <span class="dim">│</span> <span class="dim">│</span>
-<span class="dim">│</span> <span class="dim">│</span>    the cause, the scope, and acceptance criteria         <span class="dim">│</span> <span class="dim">│</span>
-<span class="dim">│</span> <span class="dim">│</span> 2. Merge PROJ-6 into PROJ-2 and archive PROJ-6           <span class="dim">│</span> <span class="dim">│</span>
-<span class="dim">│</span> <span class="dim">╰──────────────────────────────────────────────────────────╯</span> <span class="dim">│</span>
-<span class="dim">│</span>                                                              <span class="dim">│</span>
-<span class="dim">│</span> Would you like to proceed?                                   <span class="dim">│</span>
-<span class="dim">│</span>                                                              <span class="dim">│</span>
-<span class="dim">│</span> <span class="cmd"><span class="ch">❯</span> 1. Yes, and auto-accept edits</span>                              <span class="dim">│</span>
-<span class="dim">│</span>   2. Yes, and manually approve edits                         <span class="dim">│</span>
-<span class="dim">│</span>   3. No, keep planning                                       <span class="dim">│</span>
-<span class="dim">╰──────────────────────────────────────────────────────────────╯</span></pre>
+<span class="ch">⏺</span> Here's what I'd change:
+  1. Rewrite PROJ-2 as "Fix login test timing out on CI",
+     with the cause, the scope, and acceptance criteria
+  2. Merge PROJ-6 into PROJ-2 and archive PROJ-6
+  Should I apply these?
+
+<span class="dim">&gt;</span> Yes
+
+<span class="ch good">⏺</span> <b>Bash</b>(taskship task edit PROJ-2 --from -)
+  <span class="dim">⎿  ✓ Updated PROJ-2: Fix login test timing out on CI</span>
+
+<span class="ch good">⏺</span> <b>Bash</b>(taskship task archive PROJ-6)
+  <span class="dim">⎿  ✓ Archived PROJ-6: Login test times out on CI</span>
+
+<span class="ch">⏺</span> PROJ-2 is ready to work on. Start it with: taskship PROJ-2</pre>
           </Terminal>
         </div>
         <div class="panel" role="tabpanel" id="panel-launch" aria-labelledby="tab-launch" hidden>

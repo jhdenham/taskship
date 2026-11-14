@@ -60,7 +60,7 @@ func TestPromptCommandsAreAllowed(t *testing.T) {
 
 func TestClaudeArgs(t *testing.T) {
 	prompt := "-x $(touch pwned); `id` && echo 'hi' \"there\""
-	args, err := ClaudeArgs("sess", prompt, []string{"Bash(taskship show *)", "Bash(taskship tasks *)"})
+	args, err := ClaudeArgs(core.RunModeRun, "sess", prompt, []string{"Bash(taskship show *)", "Bash(taskship tasks *)"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,13 +68,16 @@ func TestClaudeArgs(t *testing.T) {
 	if !reflect.DeepEqual(args, want) {
 		t.Errorf("args = %q, want %q", args, want)
 	}
-	if args, _ := ClaudeArgs("sess", prompt, nil); !reflect.DeepEqual(args, []string{"--permission-mode", "plan", "--session-id", "sess", "--", prompt}) {
+	if args, _ := ClaudeArgs(core.RunModeRun, "sess", prompt, nil); !reflect.DeepEqual(args, []string{"--permission-mode", "plan", "--session-id", "sess", "--", prompt}) {
 		t.Errorf("args without allowed commands = %q", args)
 	}
-	if _, err := ClaudeArgs("sess", strings.Repeat("x", maxPromptBytes), nil); err != nil {
+	if args, _ := ClaudeArgs(core.RunModeRefine, "sess", prompt, nil); !reflect.DeepEqual(args, []string{"--permission-mode", "default", "--session-id", "sess", "--", prompt}) {
+		t.Errorf("refine args = %q", args)
+	}
+	if _, err := ClaudeArgs(core.RunModeRun, "sess", strings.Repeat("x", maxPromptBytes), nil); err != nil {
 		t.Errorf("prompt at the limit: %v", err)
 	}
-	if _, err := ClaudeArgs("sess", strings.Repeat("x", maxPromptBytes+1), nil); err == nil || !strings.Contains(err.Error(), "128 KB") || !strings.Contains(err.Error(), "its comments, or your conventions") {
+	if _, err := ClaudeArgs(core.RunModeRun, "sess", strings.Repeat("x", maxPromptBytes+1), nil); err == nil || !strings.Contains(err.Error(), "128 KB") || !strings.Contains(err.Error(), "its comments, or your conventions") {
 		t.Errorf("prompt over the limit: err = %v", err)
 	}
 }

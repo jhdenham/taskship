@@ -86,7 +86,7 @@ func (p *Plan) Ready() error {
 		return ErrAgentMissing
 	}
 	sessionID := uuid.NewString()
-	args, err := ClaudeArgs(sessionID, p.Prompt, p.Allowed)
+	args, err := ClaudeArgs(p.Mode, sessionID, p.Prompt, p.Allowed)
 	if err != nil {
 		return fmt.Errorf("%w: %w", core.ErrInvalid, err)
 	}

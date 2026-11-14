@@ -67,12 +67,13 @@ func newRefineCmd() *cobra.Command {
 		Long: `Launch Claude Code to refine a task: to make it ready to work on, without
 implementing it.
 
-Claude starts in plan mode, in the same folder "taskship run" would use. It
-reads the repository and the project's other tasks, asks about gaps only you
-can fill, and proposes a rewritten task. It also points out duplicates, tasks
-that fit with this one, and tasks that should come first. It changes tasks
-only after you approve. Its prompt includes Taskship's guide to writing
-tasks and your conventions ("taskship skill guide" prints both).
+Claude starts in the same folder "taskship run" would use. It reads the
+repository and the project's other tasks, asks about gaps only you can fill,
+and proposes a rewritten task. It also points out duplicates, tasks that fit
+with this one, and tasks that should come first. It changes tasks only after
+you approve, and asks before it edits any file. Its prompt includes
+Taskship's guide to writing tasks and your conventions ("taskship skill
+guide" prints both).
 
 Once you approve, Claude may run the taskship commands that apply the
 changes without asking you again: reading tasks, editing, adding,

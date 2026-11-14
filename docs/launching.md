@@ -72,4 +72,4 @@ The title and description, and the comments, are fenced and marked as untrusted,
 
 ## With Claude Code
 
-Claude starts in plan mode, so the approval step is enforced by Claude itself, not just asked for in the prompt. Taskship also lets the session run the `taskship` commands its prompt mentions without stopping to ask (`--dry-run` lists them); everything else goes through your Claude permission settings as usual, and Taskship never writes to them. Neither is a security boundary, so keep your own permission settings in place.
+For `taskship PROJ-1`, Claude starts in plan mode, so the approval step is enforced by Claude itself, not just asked for in the prompt. `taskship refine PROJ-1` starts in Claude's default permission mode instead: refining writes no code, so the agent proposes its changes in the conversation and asks before it edits any file. Taskship also lets the session run the `taskship` commands its prompt mentions without stopping to ask (`--dry-run` lists them); everything else goes through your Claude permission settings as usual, and Taskship never writes to them. Neither is a security boundary, so keep your own permission settings in place.

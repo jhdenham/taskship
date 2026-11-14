@@ -182,6 +182,9 @@ func TestRefineLaunchesClaude(t *testing.T) {
 	if args := strings.Split(strings.TrimSuffix(string(data), "\x00"), "\x00"); args[len(args)-1] != prompt {
 		t.Errorf("claude didn't get the refine prompt: %q", args)
 	}
+	if !strings.Contains(string(data), "\n--permission-mode\x00default\x00") {
+		t.Errorf("refine didn't start in the default permission mode: %q", data)
+	}
 	if st := taskJSON(t, "PROJ-1")["status"]; st != "todo" {
 		t.Errorf("status after refine = %v", st)
 	}

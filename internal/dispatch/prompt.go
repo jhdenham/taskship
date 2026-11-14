@@ -75,7 +75,8 @@ func refineInstructions(t core.Task, taskship string) string {
   and tasks that should be done before or after it.
 - Assess the task against the guide. Ask concise questions about gaps only
   the user can fill. Don't invent requirements.
-- Then propose your changes, and make none until the user approves them:
+- Then propose your changes in your reply, and stop there: make none until
+  the user replies to approve them:
   - this task, rewritten in the Markdown format of %[1]s show %[2]s --md
     (front matter, then the description; leave out the comments)
   - new tasks, if this one should be split

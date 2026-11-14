@@ -26,6 +26,6 @@ Conventions are your own rules for tasks, the ones that apply in every project. 
 - When you finish, add your summary as a comment without asking.
 ```
 
-Taskship never creates this file. When it exists, it is added to the end of every prompt Taskship gives an agent, and `taskship PROJ-1 --dry-run` shows it there. Where your conventions differ from Taskship's guide or the prompt's instructions, the agent follows yours. They're your instructions, so they aren't treated as untrusted like task text. With Claude Code, plan mode still applies: approving the plan is part of how Claude is launched, not just a line in the prompt.
+Taskship never creates this file. When it exists, it is added to the end of every prompt Taskship gives an agent, and `taskship PROJ-1 --dry-run` shows it there. Where your conventions differ from Taskship's guide or the prompt's instructions, the agent follows yours. They're your instructions, so they aren't treated as untrusted like task text. With Claude Code, plan mode still applies to `taskship PROJ-1`: approving the plan is part of how Claude is launched, not just a line in the prompt.
 
 Code conventions belong to the repository, not to this file.

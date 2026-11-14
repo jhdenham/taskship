@@ -15,17 +15,24 @@ import (
 // (128 KiB including the terminating NUL).
 const maxPromptBytes = 128<<10 - 1
 
-// ClaudeArgs returns the arguments that start Claude Code interactively in
-// plan mode with prompt as the first message, allowing the Bash commands in
-// allowed (see AllowedCommands) without asking. Plan mode makes Claude ask
-// for approval of its plan before it edits files. "--" ends the allowed list
-// and keeps a prompt that starts with "-" from being read as an option.
-func ClaudeArgs(sessionID, prompt string, allowed []string) ([]string, error) {
+// ClaudeArgs returns the arguments that start Claude Code interactively with
+// prompt as the first message, allowing the Bash commands in allowed (see
+// AllowedCommands) without asking. A run starts in plan mode, which makes
+// Claude ask for approval of its plan before it edits files. Refining starts
+// in the default mode instead, since plan mode's approval step is about
+// writing code; it's set explicitly so Claude still asks before editing a
+// file whatever the user's own default. "--" ends the allowed list and keeps
+// a prompt that starts with "-" from being read as an option.
+func ClaudeArgs(mode core.RunMode, sessionID, prompt string, allowed []string) ([]string, error) {
 	if len(prompt) > maxPromptBytes {
 		return nil, fmt.Errorf("the prompt is %d KB, more than the %d KB an agent can be given; shorten the task's description, its comments, or your conventions",
 			len(prompt)>>10, (maxPromptBytes+1)>>10)
 	}
-	args := []string{"--permission-mode", "plan", "--session-id", sessionID}
+	permission := "plan"
+	if mode == core.RunModeRefine {
+		permission = "default"
+	}
+	args := []string{"--permission-mode", permission, "--session-id", sessionID}
 	if len(allowed) > 0 {
 		args = append(append(args, "--allowedTools"), allowed...)
 	}
