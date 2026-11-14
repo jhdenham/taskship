@@ -62,6 +62,9 @@ func (m *model) render() string {
 	if m.commenting() {
 		m.drawComment(screen, body)
 	}
+	if m.writingNote() {
+		m.drawNoteBox(screen, body)
+	}
 	if m.mode == modeProjects || (m.project.ID == "" && m.hasProjects) {
 		m.picker(screen, body)
 	}
@@ -71,8 +74,8 @@ func (m *model) render() string {
 	if m.mode == modeInput && m.inputKind == inputLabels {
 		m.drawLabels(screen, body)
 	}
-	if m.mode == modeNote {
-		m.drawNote(screen, body)
+	if m.mode == modeLaunchNote {
+		m.drawLaunchNote(screen, body)
 	}
 	if m.mode == modeHelp {
 		// The help covers the tabs and the (empty) footer too, for room at
@@ -94,7 +97,16 @@ func (m *model) header() string {
 		left += m.th.faint.Render(m.project.Name)
 	}
 	var right []string
-	if m.project.ID != "" {
+	if m.project.ID != "" && m.view == viewNotes {
+		if m.noteFilter != "" {
+			f := m.th.faint.Render("filter ") + m.th.value.Bold(true).Render(m.noteFilter) +
+				m.th.faint.Render(fmt.Sprintf(" · %d of %d notes", len(m.shownNotes()), len(m.notes)))
+			if m.w >= 100 && !m.modalOpen() {
+				f += m.th.faint.Render(" · ") + m.th.keyBold.Render("esc") + m.th.faint.Render(" clears")
+			}
+			right = append(right, f)
+		}
+	} else if m.project.ID != "" {
 		if m.filter.active() {
 			matching, total := m.counts()
 			f := m.th.faint.Render("filter ") + m.th.value.Bold(true).Render(m.filter.text) + m.th.faint.Render(fmt.Sprintf(" · %d of %d", matching, total))
@@ -111,6 +123,9 @@ func (m *model) header() string {
 		}
 		if m.showCanceled {
 			right = append(right, m.th.faint.Render("showing ")+m.th.value.Bold(true).Render("canceled"))
+		}
+		if m.laneShown() {
+			right = append(right, m.th.faint.Render("showing ")+m.th.value.Bold(true).Render("notes"))
 		}
 	}
 	var sync string
@@ -157,30 +172,49 @@ func (m *model) tabs() string {
 	}
 	board := tab("1", "Board", m.view == viewBoard)
 	list := tab("2", "List", m.view == viewList)
+	notes := tab("3", "Notes", m.view == viewNotes)
 	m.onKey(rect{1, 2, lipgloss.Width(board), 1}, "1")
 	m.onKey(rect{1 + lipgloss.Width(board) + 1, 2, lipgloss.Width(list), 1}, "2")
-	return " " + board + " " + list
+	m.onKey(rect{1 + lipgloss.Width(board) + 1 + lipgloss.Width(list) + 1, 2, lipgloss.Width(notes), 1}, "3")
+	left := board + " " + list + " " + notes
+	if m.view == viewNotes && len(m.notes) > 0 {
+		return " " + spread(left, m.th.faint.Render(plural(len(m.notes), "1 note", fmt.Sprintf("%d notes", len(m.notes)))), m.w-2)
+	}
+	return " " + left
 }
 
-// body draws the board or list, the detail pane, or an empty state.
+// body draws the board or list, the detail pane, the Notes view, or an
+// empty state.
 func (m *model) body(screen []string, r rect) {
+	if m.view == viewNotes {
+		m.notesBody(screen, r)
+		return
+	}
 	matching, total := m.counts()
 	switch {
 	case total == 0 && m.showArchived:
 		m.centered(screen, r, "No archived tasks in "+m.th.value.Bold(true).Render(m.project.Name)+".",
 			m.th.keyBold.Render("A")+m.th.faint.Render(" goes back to open tasks"))
 		return
-	case total == 0 && m.mode != modeInput:
+	case total == 0 && m.mode != modeInput && !m.laneShown():
 		m.centered(screen, r, "No tasks in "+m.th.value.Bold(true).Render(m.project.Name)+" yet.",
 			m.th.faint.Render("Press ")+m.th.keyBold.Render("n")+m.th.faint.Render(" to add one."))
 		return
-	case matching == 0 && total > 0 && m.mode != modeInput:
+	case matching == 0 && total > 0 && m.mode != modeInput && !m.laneShown():
 		m.centered(screen, r, "No tasks match "+m.th.value.Bold(true).Render(m.filter.text)+".",
 			m.th.keyBold.Render("Esc")+m.th.faint.Render(" clears the filter."))
 		return
 	}
 	main := r
-	if m.detailOpen {
+	if m.view == viewBoard && m.noteOpen {
+		if !m.wide() {
+			m.notePane(screen, r)
+			return
+		}
+		dw := m.detailWidth()
+		main.w = r.w - dw - 1
+		m.notePane(screen, rect{r.x + main.w + 1, r.y, dw, r.h})
+	} else if m.detailOpen {
 		if !m.wide() {
 			m.detail(screen, r)
 			return
@@ -199,12 +233,12 @@ func (m *model) body(screen []string, r rect) {
 // modalOpen reports whether a box is open over the views.
 func (m *model) modalOpen() bool {
 	switch m.mode {
-	case modeHelp, modeProjects, modeMenu, modeEditTask, modeComment, modeNote:
+	case modeHelp, modeProjects, modeMenu, modeEditTask, modeComment, modeLaunchNote, modeNoteBox:
 		return true
 	case modeInput:
 		return m.inputKind == inputLabels
 	}
-	return m.editingTask() || m.commenting()
+	return m.editingTask() || m.commenting() || m.writingNote()
 }
 
 // detailWidth is the width of the detail pane.
@@ -263,7 +297,7 @@ func (m *model) statusLines() []string {
 		if m.modalOpen() {
 			return nil // the question is on the box's border
 		}
-		if m.confirm.comment == 0 {
+		if m.confirm.comment == 0 && m.confirm.note == 0 {
 			return []string{m.confirm.question + " " + m.th.keys("y", m.confirm.yes, "n", m.confirm.no)}
 		}
 	}
@@ -304,6 +338,10 @@ func (m *model) footer() string {
 			return m.th.keys("enter", "apply", "esc", "cancel", "#web", "label", "status:todo", "", "prio:high", "")
 		case inputNew:
 			return m.th.keys("enter", "add", "ctrl-g", "add and open in "+editor.Name(), "esc", "cancel")
+		case inputNoteFilter:
+			return m.th.keys("enter", "apply", "esc", "cancel")
+		case inputNewNote:
+			return m.th.keys("enter", "add", "ctrl-g", "add and open in "+editor.Name(), "esc", "cancel")
 		}
 	case modeConfirm:
 		return m.th.keys("y", m.confirm.yes, "n", m.confirm.no)
@@ -316,13 +354,19 @@ func (m *model) footer() string {
 		}
 		return m.th.keys("?", "help", "q", "quit")
 	}
+	if m.view == viewNotes {
+		return m.notesFooter(narrow)
+	}
+	if m.view == viewBoard && m.inLane {
+		return m.laneFooter(narrow)
+	}
 	matching, total := m.counts()
 	switch {
 	case total == 0 && m.showArchived:
-		return m.th.keys("A", "open tasks", "1 2", "board/list", "?", "help", "q", "quit")
-	case total == 0:
+		return m.th.keys("A", "open tasks", "1 2 3", "views", "?", "help", "q", "quit")
+	case total == 0 && !m.laneShown():
 		return m.th.keys("n", "new task", "P", "projects", "?", "help", "q", "quit")
-	case matching == 0:
+	case matching == 0 && !m.laneShown():
 		return m.th.keys("esc", "clear filter", "/", "edit filter", "?", "help", "q", "quit")
 	}
 	if m.detailFocused() {
@@ -339,17 +383,79 @@ func (m *model) footer() string {
 	if m.filter.active() {
 		keys = append(keys, "esc", "clear filter", "/", "edit filter")
 	}
+	// While archived tasks show, A hides them again, and the notes lane is
+	// hidden, so N does nothing.
+	archived, archivedShort := "show archived", "archived"
+	lane := []string{"N", m.laneWord()}
+	if m.showArchived {
+		archived, archivedShort = "hide archived", "hide archived"
+		lane = []string{"A", "hide archived"}
+	}
 	switch {
 	case m.view == viewList && narrow:
-		keys = append(keys, "j k", "move", "enter", "open", "o", "sort", "n", "new", "/", "filter", "A", "archived")
+		keys = append(keys, "j k", "move", "enter", "open", "o", "sort", "n", "new", "/", "filter", "A", archivedShort)
 	case m.view == viewList:
 		keys = append(keys, "j k", "move", "enter", "open", "o", "sort", "n", "new task", "s", "status", "p", "priority",
-			"#", "labels", "a", m.archiveWord(), "/", "filter", "A", "show archived", "1 2", "board/list", "P", "projects")
+			"#", "labels", "a", m.archiveWord(), "/", "filter", "A", archived, "1 2 3", "views", "P", "projects")
+	case narrow && m.showArchived:
+		keys = append(keys, "hjkl", "move", "enter", "open", "A", "hide archived", "/", "filter")
 	case narrow:
-		keys = append(keys, "hjkl", "move", "enter", "open", "n", "new", "H L", "move card", "/", "filter")
+		keys = append(keys, "hjkl", "move", "enter", "open", "n", "new", "H L", "move card", "N", "notes", "/", "filter")
 	default:
 		keys = append(keys, "h j k l", "move", "enter", "open", "n", "new task", "H L", "move card", "s", "status",
-			"p", "priority", "#", "labels", "a", m.archiveWord(), "/", "filter", "C", "show canceled", "1 2", "board/list", "P", "projects")
+			"p", "priority", "#", "labels", "a", m.archiveWord(), "/", "filter")
+		keys = append(append(keys, lane...), "C", "show canceled", "1 2 3", "views", "P", "projects")
+	}
+	return m.th.keys(append(keys, "?", "help", "q", "quit")...)
+}
+
+// laneWord is what N does.
+func (m *model) laneWord() string {
+	if m.laneShown() {
+		return "hide notes"
+	}
+	return "show notes"
+}
+
+// laneFooter is the key line while the selection is in the notes lane.
+func (m *model) laneFooter(narrow bool) string {
+	switch {
+	case m.noteFocused():
+		keys := []string{"esc", "close", "j k", "scroll"}
+		if m.wide() {
+			keys = append(keys, "tab", "board")
+		}
+		return m.th.keys(append(keys, "?", "help", "q", "quit")...)
+	case narrow:
+		return m.th.keys("hjkl", "move", "enter", "open", "n", "new", "t", "make task", "d", "delete", "N", "hide", "?", "help", "q", "quit")
+	}
+	return m.th.keys("h j k l", "move", "enter", "open", "n", "new note", "e", "edit", "t", "make task", "d", "delete", "y", "copy",
+		"/", "filter", "N", "hide notes", "C", "show canceled", "1 2 3", "views", "P", "projects", "?", "help", "q", "quit")
+}
+
+// notesFooter is the key line of the Notes view.
+func (m *model) notesFooter(narrow bool) string {
+	switch {
+	case len(m.notes) == 0:
+		return m.th.keys("n", "new note", "1 2 3", "views", "P", "projects", "?", "help", "q", "quit")
+	case len(m.shownNotes()) == 0:
+		return m.th.keys("esc", "clear filter", "/", "edit filter", "?", "help", "q", "quit")
+	case m.noteFocused():
+		keys := []string{"esc", "close", "j k", "scroll"}
+		if m.wide() {
+			keys = append(keys, "tab", "notes", "/", "filter")
+		}
+		return m.th.keys(append(keys, "?", "help", "q", "quit")...)
+	}
+	var keys []string
+	if m.noteFilter != "" {
+		keys = append(keys, "esc", "clear filter", "/", "edit filter")
+	}
+	if narrow {
+		keys = append(keys, "hjkl", "move", "enter", "open", "n", "new", "t", "make task", "d", "delete", "/", "filter")
+	} else {
+		keys = append(keys, "h j k l", "move", "enter", "open", "n", "new note", "e", "edit", "t", "make task", "d", "delete",
+			"y", "copy", "/", "filter", "1 2 3", "views", "P", "projects")
 	}
 	return m.th.keys(append(keys, "?", "help", "q", "quit")...)
 }
@@ -369,7 +475,7 @@ func (m *model) recordFooterZones(y int, footer string) {
 	for _, part := range strings.Split(plain, "  ") {
 		k, _, _ := strings.Cut(part, " ")
 		switch k {
-		case "enter", "esc", "tab", "?", "q", "n", "o", "/", "A", "C", "P", "s", "p", "#", "a", "i", "y", "e", "d", "R":
+		case "enter", "esc", "tab", "?", "q", "n", "o", "/", "A", "C", "P", "s", "p", "#", "a", "i", "y", "e", "d", "R", "t", "N":
 			m.onKey(rect{x, y, lipgloss.Width(part), 1}, k)
 		case "ctrl-s", "ctrl-g", "ctrl-r":
 			m.onKey(rect{x, y, lipgloss.Width(part), 1}, strings.Replace(k, "-", "+", 1))

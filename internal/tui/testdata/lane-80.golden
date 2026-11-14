@@ -1,0 +1,24 @@
+ ◆ myproject                                showing notes  ✓ Up to date  ? help
+
+  1 Board   2 List   3 Notes
+ ┏ notes 6 ╍╍╍╍╍┓ ┌ backlog 2 ──┐ ┌ todo 3 ─────┐ ┌ in progres…┐ ┌ done 2 ────┐
+ ╏ Try a compac…╏ │┌───────────┐│ │┌───────────┐│ │┌──────────┐│ │┌──────────┐│
+ ╏ Nov 11       ╏ ││ PROJ-3 low││ ││ PROJ-5    ││ ││ PROJ-8   ││ ││ PROJ-1   ││
+ ╏              ╏ ││ Document… ││ ││ Rate-lim… ││ ││ Fix fla… ││ ││ Upgrade… ││
+ ╏┃The retry lo…╏ ││ #docs     ││ ││ #api #bug ││ ││ #bug     ││ ││ #infra   ││
+ ╏┃Claude · Nov…╏ │└───────────┘│ │└───────────┘│ │└──────────┘│ │└──────────┘│
+ ╏              ╏ │┌───────────┐│ │┌───────────┐│ │┌──────────┐│ │┌──────────┐│
+ ╏ Ask about ra…╏ ││ PROJ-4    ││ ││ PROJ-6    ││ ││ PROJ-9   ││ ││ PROJ-2   ││
+ ╏ Nov 11       ╏ ││ Try a co… ││ ││ Add --js… ││ ││ Weekly … ││ ││ Keyboar… ││
+ ╏              ╏ │└───────────┘│ ││ #cli      ││ ││ #web     ││ ││ #cli     ││
+ ╏ Handy query …╏ │             │ │└───────────┘│ │└──────────┘│ │└──────────┘│
+ ╏ Nov 11 · +9 …╏ │             │ │┌───────────┐│ │            │ │            │
+ ╏              ╏ │             │ ││ PROJ-7 low││ │            │ │            │
+ ╏ From the PRO…╏ │             │ ││ Rename t… ││ │            │ │            │
+ ╏ Nov 11 · +4 …╏ │             │ │└───────────┘│ │            │ │            │
+ ╏              ╏ │             │ │             │ │            │ │            │
+ ╏ Rename "sync…╏ │             │ │             │ │            │ │            │
+ ╏ Nov 11       ╏ │             │ │             │ │            │ │            │
+ ┗╍╍╍╍╍╍╍╍╍╍╍╍╍╍┛ └─────────────┘ └─────────────┘ └────────────┘ └────────────┘
+
+ hjkl move  enter open  n new  t make task  d delete  N hide  ? help  q quit

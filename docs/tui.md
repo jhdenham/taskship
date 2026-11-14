@@ -14,12 +14,14 @@ Setting up projects and their folders stays on the command line (`taskship init`
 
 ## Views
 
-- **Board** (`1`): one column per status (backlog, todo, in progress, done). Moving a card to another column with `H` and `L` changes its status. Canceled tasks are hidden unless you press `C`.
+- **Board** (`1`): one column per status (backlog, todo, in progress, done). Moving a card to another column with `H` and `L` changes its status. Canceled tasks are hidden unless you press `C`, and `N` shows your notes in a lane before backlog, so you can turn one into a task without leaving the board: move into the lane with `h`, then use the note keys below. There, `n` adds a one-line note in place, the way it adds a task to a column (`ctrl-g` adds it and opens it in your editor).
 - **List** (`2`): the same tasks as a table. `o` changes the sort order: priority, status, ref, or last updated. Clicking a column header sorts by it.
 
   ![The list view: one row per task, with status, priority, labels, and when it was last updated](images/tui-list.png)
 
 - **Detail** (`enter`): the task's fields, its description rendered as Markdown (including the acceptance criteria checklist), its comments, and the actions you can take. In a terminal at least 140 columns wide, it opens beside the board or list and follows the selection; `tab` moves between them. In a narrower one, it replaces them. `esc` closes it.
+
+- **Notes** (`3`): the project's [notes](notes.md), newest first, as cards that show the start of each note, who wrote it if an agent did, and when. See [Notes](#notes).
 
 `/` filters as you type. Words match titles and refs, and `#label`, `status:todo`, and `prio:high` narrow by label, status, and priority; all parts must match. The header shows the active filter, and `esc` clears it. Archived tasks are hidden unless you press `A`, which shows only the archived ones.
 
@@ -40,9 +42,17 @@ Status, priority, labels, the title and description, and comments change in a bo
 
 `c` opens a box for a new comment on the selected task, from any view. `ctrl-r` shows the task's most recent comments above the text, as many as fit, and hides them again. They start hidden each time the box opens. In the box, `enter` starts a new line, `ctrl-s` saves, `ctrl-g` moves the text to your editor instead (the comment is saved when you close it), and `esc` cancels, asking first if you wrote something. In the detail view, `[` and `]` pick a comment; `e` then edits it in the same box and `d` deletes it after a `y`/`n` question.
 
+## Notes
+
+![The Notes view: notes as cards in a grid, newest first, one written by Claude](images/tui-notes.png)
+
+In the Notes view, `n` opens a box for a new note: `enter` starts a new line, `ctrl-s` saves, `ctrl-g` moves the text to your editor instead (the note is saved when you close it), and `esc` cancels, asking first if you wrote something. `enter` opens a note in full, beside the cards in a terminal at least 140 columns wide and in their place in a narrower one. `e` edits the note in the same box, `d` deletes it after a `y`/`n` question, and `y` copies its text. `/` filters the notes by their text.
+
+`t` makes a task from the note, in a box like the one `e` opens for a task: the note is the description, and you write the title. `ctrl-s` adds the task to backlog and removes the note.
+
 ## Changes from other terminals
 
-Every 5 seconds, the TUI checks for changes made outside it: tasks added, edited, archived, or commented on with `taskship` in another terminal, or by an agent. It shows them without a key press, keeping the selected task and the open detail view, with its new comments. `R` reloads at once.
+Every 5 seconds, the TUI checks for changes made outside it: tasks added, edited, archived, or commented on, and notes added, edited, or deleted, with `taskship` in another terminal or by an agent. It shows them without a key press, keeping the selected task and the open detail view, with its new comments. `R` reloads at once.
 
 The header shows where things stand:
 
@@ -70,22 +80,25 @@ The TUI then closes, leaves lines such as `✓ Launching Claude for PROJ-42 in ~
 | `g` `G` | First / last |
 | `enter` | Open the task |
 | `esc` | Close the detail view or a box, or clear the filter |
-| `1` `2` | Board / list |
+| `1` `2` `3` | Board / list / notes |
 | `tab` | Board ↔ detail, when side by side |
 | `/` | Filter |
 | `o` | Sort the list |
 | `C` / `A` | Show canceled / archived tasks |
+| `N` | Show the notes lane on the board |
 | `P` | Projects |
 | `R` | Reload |
-| `n` | New task |
+| `n` | New task, or a new note in the Notes view |
+| `t` | Make a task from a note |
 | `H` `L` | Move the card left / right |
 | `s` `p` `#` | Status, priority, labels |
 | `e` | Edit the title and description (`ctrl-g`: in `$EDITOR`) |
 | `a` | Archive / restore |
 | `c` | Add a comment |
 | `[` `]`, then `e` or `d` | Pick a comment, then edit or delete it |
+| `d` | Delete a note |
 | `r` | Launch an agent |
-| `y` | Copy the ref |
+| `y` | Copy the ref, or a note's text |
 | `?` | All keys |
 | `q` | Quit |
 

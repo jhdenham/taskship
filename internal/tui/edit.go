@@ -46,8 +46,14 @@ func (m *model) editTaskKey(msg tea.KeyPressMsg) tea.Cmd {
 			return m.focusEditField(false)
 		}
 	case "ctrl+s":
+		if m.fromNote > 0 {
+			return m.saveTaskFromNote()
+		}
 		return m.saveTaskEdit()
 	case "ctrl+g":
+		if m.fromNote > 0 {
+			return nil // a new task has no Markdown to edit yet
+		}
 		t := m.editBase
 		t.Title, t.Description = m.titleIn.Value(), restoreTabs(m.area.Value(), t.Description)
 		draft, err := editor.Draft(t.Ref+"-*.md", core.TaskMarkdown(t))
@@ -62,8 +68,12 @@ func (m *model) editTaskKey(msg tea.KeyPressMsg) tea.Cmd {
 			m.endEditTask()
 			return nil
 		}
+		q := "Discard your changes to " + m.editRef + "?"
+		if m.fromNote > 0 {
+			q = "Discard this task?"
+		}
 		m.confirm = confirm{
-			question: m.th.err.Bold(true).Render("Discard your changes to " + m.editRef + "?"),
+			question: m.th.err.Bold(true).Render(q),
 			yes:      "discard", no: "keep editing", back: modeEditTask,
 			onYes: func() tea.Cmd {
 				m.endEditTask()
@@ -91,7 +101,7 @@ func (m *model) focusEditField(title bool) tea.Cmd {
 }
 
 func (m *model) endEditTask() {
-	m.mode = modeNormal
+	m.mode, m.fromNote = modeNormal, 0
 	m.titleIn.Blur()
 	m.area.Blur()
 }
@@ -196,11 +206,16 @@ func (m *model) drawEditTask(screen []string, area rect) {
 	titleBox := m.box(inner, 3, boxOpts{focused: m.editTitle && !asking}, []string{" " + m.titleIn.View()})
 
 	keyText := th.keys("tab", "title/description", "ctrl-s", "save", "ctrl-g", "open in "+editor.Name(), "esc", "cancel")
+	var hint []string
+	if m.fromNote > 0 {
+		keyText = th.keys("tab", "title/description", "ctrl-s", "save", "esc", "cancel")
+		hint = []string{" " + m.fromNoteHint()}
+	}
 	if asking {
 		keyText = m.confirm.question + "  " + th.questionKeys("y", m.confirm.yes, "n", m.confirm.no)
 	}
 	bottom, keys := boxKeys(r.w, keyText)
-	descH := max(3, r.h-2-len(titleBox)-2-len(keys))
+	descH := max(3, r.h-2-len(titleBox)-2-len(hint)-len(keys))
 	m.area.SetWidth(inner - 4)
 	m.area.SetHeight(descH - 2)
 	var desc []string
@@ -217,13 +232,18 @@ func (m *model) drawEditTask(screen []string, area rect) {
 	for _, l := range descBox {
 		body = append(body, " "+l)
 	}
+	body = append(body, hint...)
 	body = append(body, keys...)
 
 	m.onClick(rect{r.x + 2, r.y + 1, inner, 1 + len(titleBox)}, func() tea.Cmd { return m.focusEditField(true) })
 	m.onClick(rect{r.x + 2, r.y + 2 + len(titleBox), inner, 1 + descH}, func() tea.Cmd { return m.focusEditField(false) })
-	title := th.keyBold.Render("Edit " + ref)
+	name := "Edit " + ref
+	if m.fromNote > 0 {
+		name = "New task from note"
+	}
+	title := th.keyBold.Render(name)
 	if asking {
-		title = th.err.Bold(true).Render("Edit " + ref) // the whole frame asks
+		title = th.err.Bold(true).Render(name) // the whole frame asks
 	}
 	place(screen, r.x, r.y, m.box(r.w, r.h, boxOpts{title: title, keys: bottom, focused: true, alert: asking}, body))
 }

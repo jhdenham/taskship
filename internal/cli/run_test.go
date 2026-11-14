@@ -34,7 +34,8 @@ func TestRunDryRun(t *testing.T) {
 	tc := dispatch.TaskshipCommand()
 	header := "Dry run: nothing was launched.\nAgent:     claude\nWorkspace: " + worktree + "\nAllowed:   Bash(" + tc + " show *)\n" +
 		"           Bash(" + tc + " tasks *)\n           Bash(" + tc + " runs *)\n           Bash(" + tc + " comment list *)\n" +
-		"           Bash(" + tc + " skill guide *)\n           Bash(" + tc + " add *)\n           Bash(" + tc + " comment add PROJ-1 *)\n" +
+		"           Bash(" + tc + " skill guide *)\n           Bash(" + tc + " add *)\n           Bash(" + tc + " note add *)\n" +
+		"           Bash(" + tc + " comment add PROJ-1 *)\n" +
 		"           Bash(" + tc + " task edit PROJ-1 --status *)\n\nYou are beginning a Taskship agent run.\n"
 	if !strings.HasPrefix(out, header) || !strings.Contains(out, "Task reference: PROJ-1\n") ||
 		!strings.Contains(out, "# Add weekly habit tracker\n\n## Acceptance criteria\n\n- [ ] Weekly view\n```\n") {
@@ -227,9 +228,9 @@ func TestRunLaunchesClaude(t *testing.T) {
 	if cwd != repo {
 		t.Errorf("claude ran in %q, want %q", cwd, repo)
 	}
-	if len(args) != 15 || args[0] != "--permission-mode" || args[1] != "plan" || args[2] != "--session-id" ||
-		args[4] != "--allowedTools" || args[12] != "Bash("+dispatch.TaskshipCommand()+" task edit PROJ-1 --status *)" ||
-		args[13] != "--" || args[14] != prompt {
+	if len(args) != 16 || args[0] != "--permission-mode" || args[1] != "plan" || args[2] != "--session-id" ||
+		args[4] != "--allowedTools" || args[13] != "Bash("+dispatch.TaskshipCommand()+" task edit PROJ-1 --status *)" ||
+		args[14] != "--" || args[15] != prompt {
 		t.Errorf("claude args = %q", args)
 	}
 	if _, err := os.Stat(filepath.Join(repo, "internal", "pwned")); err == nil {
@@ -354,6 +355,10 @@ func TestRunIDFromEnvironment(t *testing.T) {
 
 	t.Setenv(runIDEnv, r.ID)
 	mustRun(t, "comment", "add", "PROJ-1", "Done: fixed the CSV path.")
+	mustRun(t, "note", "add", "The retry loop never resets its backoff.", "-p", "myproject")
+	if notes := mustRun(t, "note", "list", "-p", "myproject"); !regexp.MustCompile(`^#1 · \d{4}-\d\d-\d\d \d\d:\d\d · Claude \(run #1\)\n`).MatchString(notes) {
+		t.Errorf("note list =\n%s", notes)
+	}
 	mustRun(t, "task", "edit", "PROJ-1", "--status", "done")
 	got := taskJSON(t, "PROJ-1")
 	if got["completed_run_id"] != r.ID || got["completed_at"] == nil {

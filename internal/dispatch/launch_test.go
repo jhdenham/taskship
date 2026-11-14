@@ -17,7 +17,7 @@ import (
 func TestAllowedCommands(t *testing.T) {
 	reads := []string{"Bash(taskship show *)", "Bash(taskship tasks *)", "Bash(taskship runs *)",
 		"Bash(taskship comment list *)", "Bash(taskship skill guide *)", "Bash(taskship add *)"}
-	run := append(append([]string{}, reads...), "Bash(taskship comment add PROJ-42 *)", "Bash(taskship task edit PROJ-42 --status *)")
+	run := append(append([]string{}, reads...), "Bash(taskship note add *)", "Bash(taskship comment add PROJ-42 *)", "Bash(taskship task edit PROJ-42 --status *)")
 	if got := AllowedCommands(core.RunModeRun, "PROJ-42", "taskship"); !reflect.DeepEqual(got, run) {
 		t.Errorf("run = %q", got)
 	}

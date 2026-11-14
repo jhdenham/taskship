@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -215,5 +216,30 @@ func TestExport(t *testing.T) {
 	}
 	if r := run(t, "", "export", dir, "-p", "nope"); r.code != exitNotFound {
 		t.Errorf("unknown project: exit %d", r.code)
+	}
+
+	// Notes go to notes/PROJECT.md, newest first; projects without notes get
+	// no file.
+	mustRun(t, "note", "add", "First thought", "-p", "myproject")
+	mustRun(t, "note", "add", "Second\n\nwith more", "-p", "myproject")
+	notesDir := filepath.Join(t.TempDir(), "export")
+	if out := mustRun(t, "export", notesDir); out != "✓ Exported 2 tasks and 2 notes to "+notesDir+"\n" {
+		t.Errorf("export with notes output = %q", out)
+	}
+	data, err := os.ReadFile(filepath.Join(notesDir, "notes", "myproject.md"))
+	heading := regexp.MustCompile(`(?m)^## #(\d) · \d{4}-\d\d-\d\d \d\d:\d\d$`)
+	if got := heading.ReplaceAllString(string(data), "## #$1"); err != nil ||
+		got != "# Notes in myproject\n\n## #2\n\nSecond\n\nwith more\n\n## #1\n\nFirst thought\n" {
+		t.Errorf("notes/myproject.md =\n%s\n%v", data, err)
+	}
+	if entries, _ := os.ReadDir(filepath.Join(notesDir, "notes")); len(entries) != 1 {
+		t.Errorf("notes files = %v", entries)
+	}
+
+	// Like their tasks, archived projects' notes are left out.
+	mustRun(t, "project", "archive", "myproject")
+	archivedDir := filepath.Join(t.TempDir(), "export")
+	if out := mustRun(t, "export", archivedDir); out != "✓ Exported 1 task to "+archivedDir+"\n" {
+		t.Errorf("export with an archived project = %q", out)
 	}
 }

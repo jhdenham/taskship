@@ -1,6 +1,6 @@
  ◆ myproject                                               ✓ Up to date  ? help
 
-  1 Board   2 List
+  1 Board   2 List   3 Notes
  ┏ 8 tasks ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ sorted by priority ↓  o change ┓
  ┃ REF     TITLE                         STATUS         PRIORITY ↓  LABELS    ┃
  ┃ PROJ-8  Fix flaky login test          ◐ in progress  urgent      #bug      ┃

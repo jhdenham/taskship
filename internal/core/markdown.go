@@ -52,12 +52,33 @@ func CommentHeadingUTC(c Comment) string {
 }
 
 func commentHeading(c Comment, when string) string {
-	h := fmt.Sprintf("#%d · %s", c.Number, when)
-	if c.Edited() {
+	return heading(c.Number, when, c.Edited(), c.Run)
+}
+
+// NotesMarkdown is a project's notes as one Markdown document, in the order
+// given, each under a heading from NoteHeading.
+func NotesMarkdown(project string, notes []Note) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "# Notes in %s\n", project)
+	for _, n := range notes {
+		fmt.Fprintf(&b, "\n## %s\n\n%s\n", NoteHeading(n), n.Body)
+	}
+	return b.String()
+}
+
+// NoteHeading describes a note in one line in local time, e.g.
+// "#3 · 2026-11-12 14:03 (edited) · Claude (run #2)".
+func NoteHeading(n Note) string {
+	return heading(n.Number, n.CreatedAt.Local().Format("2006-01-02 15:04"), n.Edited(), n.Run)
+}
+
+func heading(number int, when string, edited bool, run *RunRef) string {
+	h := fmt.Sprintf("#%d · %s", number, when)
+	if edited {
 		h += " (edited)"
 	}
-	if c.Run != nil {
-		h += " · " + c.Run.String()
+	if run != nil {
+		h += " · " + run.String()
 	}
 	return h
 }

@@ -1,0 +1,24 @@
+ ◆ myproject                                               ✓ Up to date  ? help
+
+  1 Board   2 List   3 Notes                                            6 notes
+ ┏ Note · Nov 11 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ esc close ┓
+ ┃ created  Nov 11, 09:20                                                     ┃
+ ┃                                                                            ┃
+ ┃ Handy query for finding stale sessions:                                    ┃
+ ┃                                                                            ┃
+ ┃ ```sql                                                                     ┃
+ ┃ SELECT id, user_id, last_seen                                              ┃
+ ┃ FROM sessions                                                              ┃
+ ┃ WHERE last_seen < now() - interval '30 days'                               ┃
+ ┃ ORDER BY last_seen;                                                        ┃
+ ┃ ```                                                                        ┃
+ ┃                                                                            ┃
+ ┃ Could become a cleanup job.                                                ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┃                                                                            ┃
+ ┃ ────────────────────────────────────────────────────────────────────────── ┃
+ ┃ t make task · e edit · d delete · y copy text                              ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+ esc close  j k scroll  ? help  q quit

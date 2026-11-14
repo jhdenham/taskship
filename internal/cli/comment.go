@@ -46,7 +46,7 @@ Without TEXT, it opens $VISUAL or $EDITOR; an empty comment adds nothing.`,
 			if err != nil {
 				return err
 			}
-			body, err := commentText(cmd, args[1:], t.Ref+"-comment-*.md", "")
+			body, err := bodyText(cmd, args[1:], "comment", t.Ref+"-comment-*.md", "")
 			if err != nil {
 				return err
 			}
@@ -126,7 +126,7 @@ is "-". Without TEXT, the comment opens in $VISUAL or $EDITOR.`,
 			if err != nil {
 				return err
 			}
-			body, err := commentText(cmd, args[2:], fmt.Sprintf("%s-comment-%d-*.md", t.Ref, n), old.Body+"\n")
+			body, err := bodyText(cmd, args[2:], "comment", fmt.Sprintf("%s-comment-%d-*.md", t.Ref, n), old.Body+"\n")
 			if err != nil {
 				return err
 			}
@@ -202,10 +202,11 @@ numbers of other comments don't change, and the number isn't reused.`,
 	return cmd
 }
 
-// commentText returns a comment's text: args[0] if given, stdin if it is
-// "-", or else what the user writes in their editor, starting from initial.
-// An empty comment from the editor ends the command with errDeclined.
-func commentText(cmd *cobra.Command, args []string, pattern, initial string) (string, error) {
+// bodyText returns the text of a comment or note (what): args[0] if given,
+// stdin if it is "-", or else what the user writes in their editor, starting
+// from initial. An empty text from the editor ends the command with
+// errDeclined.
+func bodyText(cmd *cobra.Command, args []string, what, pattern, initial string) (string, error) {
 	if len(args) == 1 && args[0] == "-" {
 		b, err := io.ReadAll(cmd.InOrStdin())
 		return string(b), err
@@ -214,7 +215,7 @@ func commentText(cmd *cobra.Command, args []string, pattern, initial string) (st
 		return args[0], nil
 	}
 	if !inputIsTerminal(cmd.InOrStdin()) {
-		return "", usageError{errors.New(`writing a comment in the editor needs a terminal; give the text as an argument, or "-" to read stdin`)}
+		return "", usageError{fmt.Errorf(`writing a %s in the editor needs a terminal; give the text as an argument, or "-" to read stdin`, what)}
 	}
 	draft, src, err := editText(cmd, pattern, initial)
 	if err != nil {
@@ -224,7 +225,7 @@ func commentText(cmd *cobra.Command, args []string, pattern, initial string) (st
 	if body, err := core.CleanCommentBody(string(src)); err == nil {
 		return body, nil
 	}
-	fmt.Fprintln(cmd.OutOrStdout(), "The comment is empty, so nothing changed.")
+	fmt.Fprintf(cmd.OutOrStdout(), "The %s is empty, so nothing changed.\n", what)
 	return "", errDeclined
 }
 

@@ -36,8 +36,13 @@ func TestCaptures(t *testing.T) {
 		{"tui-list", 24, []string{"2", "g", "j"}},
 		{"tui-launch", 32, []string{"l", "l", "j", "enter", "r"}},
 		{"tui-comment", 32, []string{"l", "l", "j", "enter", "c", "text:Persistence is unblocked; picking it up next."}},
+		{"tui-notes", 24, []string{"3", "l"}},
 	} {
 		m, s := myproject(t, 140, c.h)
+		if c.name == "tui-notes" {
+			withNotes(t, s)
+			m.reload()
+		}
 		if _, err := s.AddWorkspace(context.Background(), "myproject", core.Workspace{Path: t.TempDir()}); err != nil {
 			t.Fatal(err)
 		}

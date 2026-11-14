@@ -44,7 +44,7 @@ $ taskship PROJ-1
 
 A task in `backlog` or `todo` moves to `in_progress` when the agent launches; Taskship does this itself, and moves it back if the agent can't be started. Other statuses don't change.
 
-The agent starts with the task as its first message. It inspects the repository, assesses whether the task is ready, and asks questions if critical information is missing. Otherwise it proposes a plan and how it will check the work, and changes no files until you approve the plan. From there you work with the agent as usual. Work it finds outside the task, it offers to add as a new task.
+The agent starts with the task as its first message. It inspects the repository, assesses whether the task is ready, and asks questions if critical information is missing. Otherwise it proposes a plan and how it will check the work, and changes no files until you approve the plan. From there you work with the agent as usual. Work it finds outside the task, it offers to add as a new task, or as a [note](notes.md) when it isn't clearly work yet.
 
 When the work is done, the agent summarizes what changed and how it checked it, and suggests manual checks or a smoke test for bigger changes. Then it offers to add its summary as a comment on the task and to mark the task done. It does either only if you agree, and Taskship records which run did it (see [Run history](history.md)).
 

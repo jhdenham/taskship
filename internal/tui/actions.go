@@ -191,7 +191,7 @@ func (m *model) setStatus(t core.Task, st core.Status) {
 
 func (m *model) startInput(kind inputKind, value, ref string) {
 	m.mode, m.inputKind, m.inputRef = modeInput, kind, ref
-	m.prevFilter, m.filterErr = m.filter, ""
+	m.prevFilter, m.prevNoteFilter, m.filterErr = m.filter, m.noteFilter, ""
 	m.input.SetValue(value)
 	m.input.CursorEnd()
 	m.input.SetWidth(max(20, m.w-50))
@@ -205,12 +205,16 @@ func (m *model) inputKey(msg tea.KeyPressMsg) tea.Cmd {
 			m.filter = m.prevFilter
 			m.selectRef(m.selRef)
 		}
+		if m.inputKind == inputNoteFilter {
+			m.noteFilter = m.prevNoteFilter
+			m.selectNote(m.selNote)
+		}
 		m.endInput()
 		return nil
 	case "enter":
 		return m.submitInput(false)
 	case "ctrl+g":
-		if m.inputKind == inputNew {
+		if m.inputKind == inputNew || m.inputKind == inputNewNote {
 			return m.submitInput(true)
 		}
 		return nil
@@ -228,6 +232,12 @@ func (m *model) endInput() {
 
 // inputChanged applies the filter as it is typed.
 func (m *model) inputChanged() {
+	if m.mode == modeInput && m.inputKind == inputNoteFilter {
+		m.noteFilter = strings.TrimSpace(m.input.Value())
+		m.noteTop = 0
+		m.selectNote(m.selNote)
+		return
+	}
 	if m.mode != modeInput || m.inputKind != inputFilter {
 		return
 	}
@@ -248,6 +258,24 @@ func (m *model) submitInput(edit bool) tea.Cmd {
 			return nil
 		}
 		m.endInput()
+	case inputNoteFilter:
+		m.endInput()
+	case inputNewNote:
+		m.endInput()
+		if value == "" {
+			return nil
+		}
+		n, err := m.s.AddNote(m.ctx, m.project.Name, value, "")
+		if err != nil {
+			m.fail(err)
+			return nil
+		}
+		m.selNote, m.noteRow = n.Number, 0
+		m.reload()
+		m.msg = okMsg(m.th, "Added a note")
+		if edit {
+			return m.editNoteInEditor(n)
+		}
 	case inputLabels:
 		m.endInput()
 		var labels []string
@@ -301,6 +329,8 @@ func (m *model) inputLines() []string {
 			hint = m.th.err.Render(m.filterErr)
 		}
 		return []string{spread(m.th.keyBold.Render("/ ")+m.input.View(), hint, width)}
+	case inputNoteFilter:
+		return []string{spread(m.th.keyBold.Render("/ ")+m.input.View(), m.th.faint.Render("matches note text"), width)}
 	case inputLabels:
 		return nil // the labels box
 	}
@@ -552,7 +582,7 @@ func (m *model) drawComment(screen []string, r rect) {
 	}
 	w := m.modalWidth(90)
 	textW := w - 4
-	bottom, keys := boxKeys(w, th.keys("enter", "new line", "ctrl-s", "save", "ctrl-g", "open in "+editor.Name(), "esc", "cancel"))
+	bottom, keys := boxKeys(w, th.keys("ctrl-s", "save", "ctrl-g", "open in "+editor.Name(), "esc", "cancel"))
 	alert := m.mode == modeConfirm
 	if alert {
 		bottom, keys = boxKeys(w, m.confirm.question+"  "+th.questionKeys("y", m.confirm.yes, "n", m.confirm.no))
@@ -783,9 +813,9 @@ func (m *model) launch(t core.Task) tea.Cmd {
 		hints: []string{"work on it", "make it ready"}, verb: "launch", cursor: cursor, current: -1,
 		pick: func(i int) tea.Cmd { return start(modes[i], "") },
 		note: func(i int) tea.Cmd {
-			m.noteFor = "Note for " + options[i] + " on " + t.Ref
+			m.launchNoteFor = "Note for " + options[i] + " on " + t.Ref
 			m.withNote = func(note string) tea.Cmd { return start(modes[i], note) }
-			m.mode = modeNote
+			m.mode = modeLaunchNote
 			m.area.SetWidth(m.modalWidth(90) - 8)
 			return m.area.Focus()
 		}}
@@ -794,9 +824,9 @@ func (m *model) launch(t core.Task) tea.Cmd {
 	return nil
 }
 
-// noteKey handles keys in the note box: ctrl-s launches with the note, and
+// launchNoteKey handles keys in the note box: ctrl-s launches with the note, and
 // esc goes back to the launch menu, keeping the text for n.
-func (m *model) noteKey(msg tea.KeyPressMsg) tea.Cmd {
+func (m *model) launchNoteKey(msg tea.KeyPressMsg) tea.Cmd {
 	switch msg.String() {
 	case "esc":
 		m.mode = modeMenu
@@ -812,11 +842,11 @@ func (m *model) noteKey(msg tea.KeyPressMsg) tea.Cmd {
 	return cmd
 }
 
-// drawNote draws the box for the note to launch an agent with.
-func (m *model) drawNote(screen []string, r rect) {
+// drawLaunchNote draws the box for the note to launch an agent with.
+func (m *model) drawLaunchNote(screen []string, r rect) {
 	w := m.modalWidth(90)
 	textW := w - 4
-	bottom, keys := boxKeys(w, m.th.keys("enter", "new line", "ctrl-s", "launch", "esc", "back"))
+	bottom, keys := boxKeys(w, m.th.keys("ctrl-s", "launch", "esc", "back"))
 	areaH := max(3, min(8, min(r.h, 30)-2-2-2-len(keys)))
 	m.area.SetWidth(textW - 4)
 	m.area.SetHeight(areaH)
@@ -834,7 +864,7 @@ func (m *model) drawNote(screen []string, r rect) {
 	}
 	h := len(body) + 2
 	x, y := m.popupAt(r, w, h)
-	place(screen, x, y, m.box(w, h, boxOpts{title: m.th.keyBold.Render(m.noteFor), keys: bottom, focused: true}, body))
+	place(screen, x, y, m.box(w, h, boxOpts{title: m.th.keyBold.Render(m.launchNoteFor), keys: bottom, focused: true}, body))
 }
 
 // prepare plans an agent run on t for mode with the user's note ("" for
@@ -872,6 +902,17 @@ func (m *model) wheel(msg tea.MouseWheelMsg) tea.Cmd {
 	delta := 1
 	if msg.Button == tea.MouseWheelUp {
 		delta = -1
+	}
+	if m.view == viewNotes || m.view == viewBoard && m.inLane {
+		switch {
+		case m.noteOpen && (!m.wide() || m.noteRect.has(msg.X, msg.Y)):
+			m.noteScroll = max(0, m.noteScroll+delta*3)
+		case m.view == viewNotes:
+			m.moveNote(delta * m.noteCols())
+		default:
+			m.moveNote(delta)
+		}
+		return nil
 	}
 	if m.detailOpen && (!m.wide() || m.detailRect.has(msg.X, msg.Y)) {
 		m.detailScroll = max(0, m.detailScroll+delta*3)

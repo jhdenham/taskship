@@ -1,6 +1,6 @@
  ◆ taskship  myproject                                                                                                filter #bug · 2 of 9 tasks · esc clears  ✓ Up to date  ? help
 
-  1 Board   2 List
+  1 Board   2 List   3 Notes
  ┏ backlog 0 of 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┌ todo 1 of 3 ─────────────────────────────┐ ┌ in progress 1 of 2 ──────────────────────┐ ┌ done 0 of 2 ────────────────────────────┐
  ┃ no matches                               ┃ │┌────────────────────────────────────────┐│ │┌────────────────────────────────────────┐│ │ no matches                              │
  ┃                                          ┃ ││ PROJ-5                            high ││ ││ PROJ-8                          urgent ││ │                                         │
@@ -41,4 +41,4 @@
  ┃                                          ┃ │                                          │ │                                          │ │                                         │
  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ └──────────────────────────────────────────┘ └──────────────────────────────────────────┘ └─────────────────────────────────────────┘
 
- esc clear filter  / edit filter  h j k l move  enter open  n new task  H L move card  s status  p priority  # labels  a archive  / filter  C show canceled  1 2 board/list  P projects  ? help  q quit
+ esc clear filter  / edit filter  h j k l move  enter open  n new task  H L move card  s status  p priority  # labels  a archive  / filter  N show notes  C show canceled  1 2 3 views  P projects  ? help  q quit

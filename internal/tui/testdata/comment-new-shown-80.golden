@@ -1,6 +1,6 @@
  ◆ myproject                                                       ✓ Up to date
 
-  1 Board   2 List
+  1 Board   2 List   3 Notes
  ┌ PROJ-9 · details ─────────────────────────────────────────────── esc close ┐
  ┏ New comment #3 on PROJ-9 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
  ┃ #1 · Nov 11, 09:20                                                         ┃
@@ -17,7 +17,7 @@
  ┃ ┃                                                                        ┃ ┃
  ┃ ┃                                                                        ┃ ┃
  ┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃
- ┗ enter new line  ctrl-s save  ctrl-g open in vi  esc cancel ━━━━━━━━━━━━━━━━┛
+ ┗ ctrl-s save  ctrl-g open in vi  esc cancel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
  │ a archive · y copy ref                                                     │
  └────────────────────────────────────────────────────────────── ↓ j k scroll ┘
 

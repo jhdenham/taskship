@@ -1,0 +1,24 @@
+ ◆ myproject                                showing notes  ✓ Up to date  ? help
+
+  1 Board   2 List   3 Notes
+ ┏ notes 6 ╍╍╍╍╍┓ ┌ backlog 2 ──┐ ┌ todo 3 ─────┐ ┌ in progres…┐ ┌ done 2 ────┐
+ ╏┏ new note ━━┓╏ │┌───────────┐│ │┌───────────┐│ │┌──────────┐│ │┌──────────┐│
+ ╏┃ Check the  ┃╏ ││ PROJ-3 low││ ││ PROJ-5    ││ ││ PROJ-8   ││ ││ PROJ-1   ││
+ ╏┗━━━━━━━━━━━━┛╏ ││ Document… ││ ││ Rate-lim… ││ ││ Fix fla… ││ ││ Upgrade… ││
+ ╏┃Try a compac…╏ ││ #docs     ││ ││ #api #bug ││ ││ #bug     ││ ││ #infra   ││
+ ╏┃Nov 11       ╏ │└───────────┘│ │└───────────┘│ │└──────────┘│ │└──────────┘│
+ ╏              ╏ │┌───────────┐│ │┌───────────┐│ │┌──────────┐│ │┌──────────┐│
+ ╏ The retry lo…╏ ││ PROJ-4    ││ ││ PROJ-6    ││ ││ PROJ-9   ││ ││ PROJ-2   ││
+ ╏ Claude · Nov…╏ ││ Try a co… ││ ││ Add --js… ││ ││ Weekly … ││ ││ Keyboar… ││
+ ╏              ╏ │└───────────┘│ ││ #cli      ││ ││ #web     ││ ││ #cli     ││
+ ╏ Ask about ra…╏ │             │ │└───────────┘│ │└──────────┘│ │└──────────┘│
+ ╏ Nov 11       ╏ │             │ │┌───────────┐│ │            │ │            │
+ ╏              ╏ │             │ ││ PROJ-7 low││ │            │ │            │
+ ╏ Handy query …╏ │             │ ││ Rename t… ││ │            │ │            │
+ ╏ Nov 11 · +9 …╏ │             │ │└───────────┘│ │            │ │            │
+ ╏ ↓ 2 more     ╏ │             │ │             │ │            │ │            │
+ ╏              ╏ │             │ │             │ │            │ │            │
+ ╏              ╏ │             │ │             │ │            │ │            │
+ ┗╍╍╍╍╍╍╍╍╍╍╍╍╍╍┛ └─────────────┘ └─────────────┘ └────────────┘ └────────────┘
+
+ enter add  ctrl-g add and open in vi  esc cancel

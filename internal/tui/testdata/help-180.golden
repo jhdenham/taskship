@@ -1,26 +1,26 @@
  ◆ taskship  myproject                                                                                                                                                 ✓ Up to date
 
-  1 Board   2 List
+  1 Board   2 List   3 Notes
  ┌ backlog 2 ───────────────────────────────┐ ┌ todo 3 ──────────────────────────────────┐ ┌ in progress 2 ───────────────────────────┐ ┌ done 2 ─────────────────────────────────┐
  │┌────────────────────────────────────────┐│ │┌────────────────────────────────────────┐│ │┌────────────────────────────────────────┐│ │┌───────────────────────────────────────┐│
  ││ PROJ-3                             low ││ ││ PROJ-5                            high ││ ││ PROJ-8                          urgent ││ ││ PROJ-1                           high ││
- ││ Document the export format             ││ ││ Rate-limit webhook retries             ││ ││ Fix flaky login test                   ││ ││ Upgrade to Postgres 16                ││
- ││ #docs                            ┏ Keys ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ra                                ││
- │└──────────────────────────────────┃ Move                              Tasks                             Detail                             ┃──────────────────────────────────┘│
- │┌──────────────────────────────────┃ h j k l     move (or arrows)      enter       open                  r           launch agent           ┃──────────────────────────────────┐│
- ││ PROJ-4                           ┃ g G         first / last          n           new task              c           add comment            ┃-2                            low ││
- ││ Try a compact board layout       ┃ tab         board ↔ detail        H L         move left / right     [ ]         pick a comment         ┃oard help overlay                 ││
- │└──────────────────────────────────┃                                   s           status                e d         edit / delete it       ┃                                  ││
- │                                   ┃ Views                             p           priority              y           copy ref               ┃──────────────────────────────────┘│
- │                                   ┃ 1 2         board / list          #           labels                esc         close                  ┃                                   │
- │                                   ┃ P           projects              e           edit (ctrl-g: vi)                                        ┃                                   │
- │                                   ┃ /           filter                a           archive / restore     Mouse                              ┃                                   │
- │                                   ┃ o           sort (list)                                             click       select, open, press    ┃                                   │
- │                                   ┃ C           show canceled         Boxes                             wheel       scroll                 ┃                                   │
- │                                   ┃ A           show archived         tab         title ↔ description                                      ┃                                   │
- │                                   ┃ R           refresh               ctrl-s      save                  General                            ┃                                   │
- │                                   ┃                                   ctrl-g      open in vi            ?           this help              ┃                                   │
- │                                   ┃                                   ctrl-r      earlier comments      q           quit                   ┃                                   │
+ ││ Document the export format       ┏ Keys ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ade to Postgres 16                ││
+ ││ #docs                            ┃ Move                              Tasks                             Detail                             ┃ra                                ││
+ │└──────────────────────────────────┃ h j k l     move (or arrows)      enter       open                  r           launch agent           ┃──────────────────────────────────┘│
+ │┌──────────────────────────────────┃ g G         first / last          n           new task / note       c           add comment            ┃──────────────────────────────────┐│
+ ││ PROJ-4                           ┃ tab         board ↔ detail        t           make task from note   [ ]         pick a comment         ┃-2                            low ││
+ ││ Try a compact board layout       ┃                                   H L         move left / right     e d         edit / delete it       ┃oard help overlay                 ││
+ │└──────────────────────────────────┃ Views                             s           status                y           copy ref               ┃                                  ││
+ │                                   ┃ 1 2 3       board / list / notes  p           priority              esc         close                  ┃──────────────────────────────────┘│
+ │                                   ┃ P           projects              #           labels                                                   ┃                                   │
+ │                                   ┃ /           filter                e           edit (ctrl-g: vi)     Mouse                              ┃                                   │
+ │                                   ┃ o           sort (list)           a           archive / restore     click       select, open, press    ┃                                   │
+ │                                   ┃ C N         canceled / notes                                        wheel       scroll                 ┃                                   │
+ │                                   ┃ A           show archived         Boxes                                                                ┃                                   │
+ │                                   ┃ R           refresh               tab         title ↔ description   General                            ┃                                   │
+ │                                   ┃                                   ctrl-s      save                  ?           this help              ┃                                   │
+ │                                   ┃                                   ctrl-g      open in vi            q           quit                   ┃                                   │
+ │                                   ┃                                   ctrl-r      earlier comments                                         ┃                                   │
  │                                   ┃                                                                                                        ┃                                   │
  │                                   ┃ Mouse is captured: Shift-drag selects text (Option-drag in iTerm2).                                    ┃                                   │
  │                                   ┗ esc close ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                   │

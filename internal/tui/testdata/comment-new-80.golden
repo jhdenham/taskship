@@ -1,6 +1,6 @@
  ◆ myproject                                                       ✓ Up to date
 
-  1 Board   2 List
+  1 Board   2 List   3 Notes
  ┌ PROJ-9 · details ─────────────────────────────────────────────── esc close ┐
  │ Weekly habit tracker view                                                  │
  │                                                                            │
@@ -16,7 +16,7 @@
  ┃ ┃                                                                        ┃ ┃
  ┃ ┃                                                                        ┃ ┃
  ┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃
- ┗ enter new line  ctrl-s save  ctrl-g open in vi  esc cancel ━━━━━━━━━━━━━━━━┛
+ ┗ ctrl-s save  ctrl-g open in vi  esc cancel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
  │ r launch agent · e edit · s status · p priority · # labels · c comment     │
  │ a archive · y copy ref                                                     │
  └────────────────────────────────────────────────────────────── ↓ j k scroll ┘

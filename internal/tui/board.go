@@ -16,6 +16,11 @@ func (m *model) boardKey(k string) (tea.Cmd, bool) {
 	cols := m.columns()
 	switch k {
 	case "h", "left":
+		if m.col == 0 && m.laneShown() {
+			m.inLane, m.detailOpen = true, false
+			m.selectNote(m.selNote)
+			break
+		}
 		m.col = max(0, m.col-1)
 		m.selChanged()
 	case "l", "right":
@@ -48,8 +53,13 @@ func (m *model) boardKey(k string) (tea.Cmd, bool) {
 	return nil, true
 }
 
-// board draws the board's columns in r.
+// board draws the board's columns in r, after the notes lane if shown.
 func (m *model) board(screen []string, r rect) {
+	if m.laneShown() {
+		laneW := max(16, r.w/6)
+		m.drawLane(screen, rect{r.x, r.y, laneW, r.h})
+		r.x, r.w = r.x+laneW+1, r.w-laneW-1
+	}
 	cols := m.columns()
 	n := len(cols)
 	colW, extra := (r.w-(n-1))/n, (r.w-(n-1))%n
@@ -66,7 +76,7 @@ func (m *model) board(screen []string, r rect) {
 
 func (m *model) drawColumn(screen []string, r rect, i int, st core.Status) {
 	tasks, total := m.column(st)
-	focused := i == m.col && !(m.detailOpen && m.focusDetail)
+	focused := i == m.col && !(m.detailOpen && m.focusDetail) && !m.inLane
 	name := m.th.bold.Render(statusName(st))
 	if focused {
 		name = m.th.keyBold.Render(statusName(st))
@@ -79,7 +89,7 @@ func (m *model) drawColumn(screen []string, r rect, i int, st core.Status) {
 		}
 	}
 	m.onClick(r, func() tea.Cmd {
-		m.col, m.focusDetail = i, false
+		m.col, m.focusDetail, m.inLane, m.noteOpen = i, false, false, false
 		m.selChanged()
 		return nil
 	})
@@ -137,10 +147,10 @@ func (m *model) drawColumn(screen []string, r rect, i int, st core.Status) {
 			break
 		}
 		t := tasks[j]
-		selected := i == m.col && j == sel
+		selected := i == m.col && j == sel && !m.inLane
 		card := m.card(t, inner, selected)
 		m.onClick(rect{r.x + 1, y + used, inner, len(card)}, func() tea.Cmd {
-			m.col, m.rows[st] = i, j
+			m.col, m.rows[st], m.inLane = i, j, false
 			m.openDetail(tasks[j].Ref)
 			return nil
 		})

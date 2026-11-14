@@ -43,8 +43,8 @@ func ClaudeArgs(mode core.RunMode, sessionID, prompt string, allowed []string) (
 // commands the prompt for mode tells the agent to run on task ref, so
 // Claude's own permission check doesn't block them once the user approves
 // the plan. Reads are always allowed. Refining may change any task, since it
-// merges duplicates and notes related tasks; a run may add tasks, and
-// comment on and change the status of only its own task. taskship is the
+// merges duplicates and notes related tasks; a run may add tasks and notes,
+// and comment on and change the status of only its own task. taskship is the
 // command the prompt names (see TaskshipCommand).
 func AllowedCommands(mode core.RunMode, ref, taskship string) []string {
 	rule := func(args string) string { return "Bash(" + taskship + " " + args + " *)" }
@@ -52,7 +52,7 @@ func AllowedCommands(mode core.RunMode, ref, taskship string) []string {
 	if mode == core.RunModeRefine {
 		return append(rules, rule("task edit"), rule("comment add"), rule("task archive"))
 	}
-	return append(rules, rule("comment add "+ref), rule("task edit "+ref+" --status"))
+	return append(rules, rule("note add"), rule("comment add "+ref), rule("task edit "+ref+" --status"))
 }
 
 // Launch runs the agent executable at path with args and environment env in

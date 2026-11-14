@@ -1,0 +1,24 @@
+ ◆ myproject                                               ✓ Up to date  ? help
+
+  1 Board   2 List   3 Notes                                            6 notes
+ ┌─────────────────────────────────────┐ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ │ Try a compact board layout          │ ┃ The retry loop in sync/client.go   ┃
+ │                                     │ ┃ never resets its backoff after a   ┃
+ │                                     │ ┃ success. Probably why PROJ-18      ┃
+ │                                     │ ┃ keeps coming back.                 ┃
+ │                                     │ ┃                                    ┃
+ │                                     │ ┃                                    ┃
+ └ Nov 11 ─────────────────────────────┘ ┗ Claude · Nov 11 ━━━━━━━━━━━━━━━━━━━┛
+ ┌─────────────────────────────────────┐ ┌────────────────────────────────────┐
+ │ Ask about rate limits before we     │ │ Handy query for finding stale      │
+ │ publish the webhook docs            │ │ sessions:                          │
+ │                                     │ │                                    │
+ │                                     │ │ ```sql                             │
+ │                                     │ │ SELECT id, user_id, last_seen      │
+ │                                     │ │ FROM sessions                      │
+ └ Nov 11 ─────────────────────────────┘ └ Nov 11 ────────────────── +5 lines ┘
+  ↓ 2 more
+
+
+
+ hjkl move  enter open  n new  t make task  d delete  / filter  ? help  q quit

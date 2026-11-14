@@ -58,22 +58,24 @@ type viewKind int
 const (
 	viewBoard viewKind = iota
 	viewList
+	viewNotes
 )
 
 // mode is what keys currently go to.
 type mode int
 
 const (
-	modeNormal    mode = iota
-	modeHelp           // the help overlay
-	modeProjects       // the project picker
-	modeMenu           // a status, priority or launch menu
-	modeInput          // the filter, labels or quick-add input
-	modeComment        // writing a comment
-	modeNote           // writing a note for an agent launch
-	modeConfirm        // a y/n question
-	modeEditError      // an invalid edit, waiting for e or esc
-	modeEditTask       // editing the title and description in the detail pane
+	modeNormal     mode = iota
+	modeHelp            // the help overlay
+	modeProjects        // the project picker
+	modeMenu            // a status, priority or launch menu
+	modeInput           // the filter, labels or quick-add input
+	modeComment         // writing a comment
+	modeLaunchNote      // writing a note for an agent launch
+	modeConfirm         // a y/n question
+	modeEditError       // an invalid edit, waiting for e or esc
+	modeEditTask        // editing the title and description in the detail pane
+	modeNoteBox         // writing or editing a note
 )
 
 type inputKind int
@@ -82,6 +84,8 @@ const (
 	inputFilter inputKind = iota
 	inputLabels
 	inputNew
+	inputNoteFilter
+	inputNewNote // a one-line note added in the board's notes lane
 )
 
 // message is the status line above the footer: a first line and optional
@@ -107,6 +111,7 @@ type confirm struct {
 	yes, no  string // "archive", "keep"
 	onYes    func() tea.Cmd
 	comment  int            // the comment being deleted, for the detail view
+	note     int            // the note being deleted, for its card or pane
 	back     mode           // the mode to return to on no
 	onNo     func() tea.Cmd // run on no, if set
 }
@@ -141,6 +146,9 @@ type model struct {
 
 	view          viewKind
 	showCanceled  bool
+	showLane      bool // the board shows the notes lane
+	inLane        bool // the selection is in the notes lane
+	laneTop       int  // the first note the lane shows
 	showArchived  bool
 	filter        filter
 	sortBy        int
@@ -175,17 +183,33 @@ type model struct {
 	prevFilter    filter
 	filterErr     string
 
-	mode      mode
-	input     textinput.Model
-	inputKind inputKind
-	area      textarea.Model
-	titleIn   textinput.Model // the title while editing a task
-	editTitle bool            // the title field has the focus, not the description
-	menu      menu
-	noteFor   string                    // the note box's title
-	withNote  func(note string) tea.Cmd // launches with the note box's text
-	confirm   confirm
-	msg       message
+	// Notes: the project's notes, newest first, and the Notes view.
+	notes          []core.Note
+	noteRow        int    // the selected note among those shown
+	selNote        int    // its number, kept across reloads
+	noteTop        int    // the first grid row shown
+	noteFilter     string // words the notes shown must contain
+	prevNoteFilter string
+	noteOpen       bool // the note pane is open on noteNum
+	focusNote      bool
+	noteNum        int
+	noteScroll     int
+	noteRect       rect
+	editNote       int    // the note the note box edits, 0 for a new one
+	noteOrig       string // the note box's text when it opened
+	fromNote       int    // the note the edit box makes a task from, 0 when editing a task
+
+	mode          mode
+	input         textinput.Model
+	inputKind     inputKind
+	area          textarea.Model
+	titleIn       textinput.Model // the title while editing a task
+	editTitle     bool            // the title field has the focus, not the description
+	menu          menu
+	launchNoteFor string                    // the note box's title
+	withNote      func(note string) tea.Cmd // launches with the note box's text
+	confirm       confirm
+	msg           message
 
 	// Changes made elsewhere: stale while a box holds them back, updated
 	// while the header says so.
@@ -266,6 +290,8 @@ func (m *model) update(msg tea.Msg) tea.Cmd {
 		return m.edited(msg)
 	case commentEditedMsg:
 		return m.commentEdited(msg)
+	case noteEditedMsg:
+		return m.noteEdited(msg)
 	case checkMsg:
 		return tea.Batch(m.check(), tick())
 	case updatedDoneMsg:
@@ -293,7 +319,7 @@ func (m *model) check() tea.Cmd {
 	return m.flashUpdated()
 }
 
-// changed reports whether the stored tasks or the detail view's comments
+// changed reports whether the stored tasks, notes or the detail view's comments
 // differ from the ones shown. A failed read counts as no change; the next
 // check tries again, and R shows the error.
 func (m *model) changed() bool {
@@ -302,6 +328,9 @@ func (m *model) changed() bool {
 		return false
 	}
 	if !reflect.DeepEqual(tasks, m.tasks) {
+		return true
+	}
+	if notes, err := m.s.ListNotes(m.ctx, m.project.ID); err == nil && !reflect.DeepEqual(notes, m.notes) {
 		return true
 	}
 	t, ok := m.task(m.detailRef)
@@ -330,7 +359,7 @@ func (m *model) forwardToInput(msg tea.Msg) tea.Cmd {
 		if _, ok := msg.(tea.PasteMsg); ok {
 			m.inputChanged() // only input changes the filter, not cursor blinks
 		}
-	case modeComment, modeNote:
+	case modeComment, modeLaunchNote, modeNoteBox:
 		m.area, cmd = m.area.Update(msg)
 	case modeEditTask:
 		if m.editTitle {
@@ -354,8 +383,10 @@ func (m *model) keyPress(msg tea.KeyPressMsg) tea.Cmd {
 		return m.inputKey(msg)
 	case modeComment:
 		return m.commentKey(msg)
-	case modeNote:
-		return m.noteKey(msg)
+	case modeLaunchNote:
+		return m.launchNoteKey(msg)
+	case modeNoteBox:
+		return m.noteBoxKey(msg)
 	case modeEditTask:
 		return m.editTaskKey(msg)
 	}
@@ -385,7 +416,7 @@ func (m *model) key(k string) tea.Cmd {
 		return m.confirmKey(k)
 	case modeEditError:
 		return m.editErrorKey(k)
-	case modeInput, modeComment, modeNote, modeEditTask:
+	case modeInput, modeComment, modeLaunchNote, modeEditTask, modeNoteBox:
 		return nil
 	}
 	if m.project.ID == "" {
@@ -402,29 +433,62 @@ func (m *model) key(k string) tea.Cmd {
 		return nil
 	case "1":
 		m.view = viewBoard
+		m.noteOpen = m.noteOpen && m.inLane
 		m.selectRef(m.selRef)
+		m.selectNote(m.selNote)
 		return nil
 	case "2":
-		m.view = viewList
+		m.view, m.noteOpen = viewList, false
 		m.selectRef(m.selRef)
 		return nil
+	case "3":
+		m.view = viewNotes
+		m.selectNote(m.selNote)
+		return nil
 	case "/":
+		if m.view == viewNotes {
+			m.startInput(inputNoteFilter, m.noteFilter, "")
+			return nil
+		}
 		m.startInput(inputFilter, m.filter.text, "")
 		return nil
 	case "C":
 		m.showCanceled = !m.showCanceled
 		m.selectRef(m.selRef)
 		return nil
+	case "N":
+		m.showLane = !m.showLane
+		if !m.showLane && m.inLane {
+			m.inLane, m.noteOpen = false, false
+		}
+		return nil
 	case "A":
 		m.showArchived = !m.showArchived
 		m.detailOpen = false
+		if m.inLane { // notes aren't archived, so the lane hides
+			m.inLane, m.noteOpen = false, false
+		}
 		m.selectRef(m.selRef)
 		return nil
 	case "R":
 		m.reload()
 		return nil
 	case "n":
+		if m.view == viewBoard && m.inLane {
+			m.noteOpen = m.noteOpen && m.wide()
+			m.startInput(inputNewNote, "", "")
+			return nil
+		}
+		if m.view == viewNotes {
+			return m.startNoteBox(core.Note{})
+		}
 		return m.startQuickAdd()
+	}
+	if m.view == viewNotes {
+		return m.notesKey(k)
+	}
+	if m.view == viewBoard && m.inLane {
+		return m.laneKey(k)
 	}
 	if m.detailFocused() {
 		return m.detailKey(k)
@@ -545,6 +609,9 @@ func (m *model) openProject(name string) {
 	m.filter, m.showArchived, m.showCanceled = filter{}, false, false
 	m.detailOpen, m.focusDetail, m.selRef = false, false, ""
 	m.col, m.listRow, m.listTop = 0, 0, 0
+	m.noteOpen, m.focusNote, m.noteFilter = false, false, ""
+	m.noteRow, m.selNote, m.noteTop = 0, 0, 0
+	m.showLane, m.inLane, m.laneTop = false, false, 0
 	clear(m.rows)
 	clear(m.colTop)
 	m.reload()
@@ -558,7 +625,18 @@ func (m *model) reload() {
 		m.fail(err)
 		return
 	}
-	m.tasks, m.stale = tasks, false
+	notes, err := m.s.ListNotes(m.ctx, m.project.ID)
+	if err != nil {
+		m.fail(err)
+		return
+	}
+	m.tasks, m.notes, m.stale = tasks, notes, false
+	m.selectNote(m.selNote)
+	if m.noteOpen {
+		if _, ok := m.note(m.noteNum); !ok {
+			m.noteOpen, m.focusNote = false, false
+		}
+	}
 	if m.detailOpen {
 		if _, ok := m.task(m.detailRef); !ok {
 			m.detailOpen = false

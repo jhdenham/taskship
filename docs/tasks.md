@@ -78,7 +78,7 @@ Track habits per week.
 
 - `taskship show PROJ-1 --md` prints a task in this format.
 - `taskship task edit PROJ-1` with no flags opens it in `$VISUAL` or `$EDITOR` (as does `--edit` on `add` and `task copy`). `--from FILE` (or `--from -` for stdin) applies a document without an editor, which is how scripts and agents edit tasks.
-- `taskship export DIR` writes each task to `DIR/PROJ-1.md`. The files are a snapshot; editing them doesn't change the tasks.
+- `taskship export DIR` writes each task to `DIR/PROJ-1.md`, and your [notes](notes.md#exporting-notes) too. The files are a snapshot; editing them doesn't change the tasks.
 
 `show --md` and `export` add a task's comments at the end, after a `<!-- taskship:comments ... -->` line, as a `## Comments` section with one `### #1 · 2026-11-12 14:03` heading per comment. That part is read-only: when a document is applied, everything from that line on is ignored, so the comments never become part of the description. `task edit` in your editor leaves the comments out.
 

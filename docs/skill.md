@@ -34,6 +34,7 @@ In a session Taskship didn't launch, Claude's permission settings apply to `task
       "Bash(taskship skill guide *)",
       "Bash(taskship add *)",
       "Bash(taskship comment add *)",
+      "Bash(taskship note add *)",
       "Bash(taskship task edit *)"
     ]
   }

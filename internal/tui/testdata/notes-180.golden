@@ -1,0 +1,44 @@
+ ◆ taskship  myproject                                                                                                                                         ✓ Up to date  ? help
+
+  1 Board   2 List   3 Notes                                                                                                                                                6 notes
+ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┌──────────────────────────────────────────┐ ┌──────────────────────────────────────────┐ ┌─────────────────────────────────────────┐
+ ┃ Try a compact board layout               ┃ │ The retry loop in sync/client.go never   │ │ Ask about rate limits before we publish  │ │ Handy query for finding stale sessions: │
+ ┃                                          ┃ │ resets its backoff after a success.      │ │ the webhook docs                         │ │                                         │
+ ┃                                          ┃ │ Probably why PROJ-18 keeps coming back.  │ │                                          │ │ ```sql                                  │
+ ┃                                          ┃ │                                          │ │                                          │ │ SELECT id, user_id, last_seen           │
+ ┃                                          ┃ │                                          │ │                                          │ │ FROM sessions                           │
+ ┃                                          ┃ │                                          │ │                                          │ │ WHERE last_seen < now() - interval '30… │
+ ┗ Nov 11 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ └ Claude · Nov 11 ─────────────────────────┘ └ Nov 11 ──────────────────────────────────┘ └ Nov 11 ─────────────────────── +4 lines ┘
+ ┌──────────────────────────────────────────┐ ┌──────────────────────────────────────────┐
+ │ From the PROJ-23 session:                │ │ Rename "sync settings" to "connections"? │
+ │                                          │ │                                          │
+ │ > The login test is flaky because it     │ │                                          │
+ │   depends on the system clock.           │ │                                          │
+ │ > I'd inject a clock into the session    │ │                                          │
+ │   store rather than sleeping             │ │                                          │
+ └ Nov 11 ──────────────────────── +2 lines ┘ └ Nov 11 ──────────────────────────────────┘
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ h j k l move  enter open  n new note  e edit  t make task  d delete  y copy  / filter  1 2 3 views  P projects  ? help  q quit

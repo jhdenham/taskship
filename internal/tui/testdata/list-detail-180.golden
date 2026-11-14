@@ -1,6 +1,6 @@
  ◆ taskship  myproject                                                                                                                                         ✓ Up to date  ? help
 
-  1 Board   2 List
+  1 Board   2 List   3 Notes
  ┌ 9 tasks ──────────────────────────────────────────────────────────── sorted by priority ↓  o change ┐ ┏ PROJ-4 · details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ esc close ┓
  │ REF     TITLE                                   STATUS         PRIORITY ↓  LABELS     UPDATED       │ ┃ Try a compact board layout                                             ┃
  │ PROJ-8  Fix flaky login test                    ◐ in progress  urgent      #bug       Nov 11, 09:20 │ ┃                                                                        ┃

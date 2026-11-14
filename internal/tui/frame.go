@@ -83,6 +83,7 @@ type boxOpts struct {
 	title, right, keys, bottom string
 	focused                    bool
 	alert                      bool // a heavy border in the error color, for a question
+	dashed                     bool // dashed sides, for the notes lane
 }
 
 // boxKeys puts a box's keys on its bottom border when they fit a box width
@@ -105,6 +106,12 @@ func (m *model) box(width, height int, o boxOpts, body []string) []string {
 	}
 	if o.alert {
 		st = m.th.err
+	}
+	if o.dashed {
+		h, v = "╌", "╎" // double dashes: the triple ones look tight
+		if o.focused && !m.dimmed {
+			h, v = "╍", "╏"
+		}
 	}
 	inner := width - 2
 	edge := func(left, right, l, r string) string {

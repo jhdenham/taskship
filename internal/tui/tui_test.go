@@ -483,7 +483,7 @@ func TestLaunchWithNote(t *testing.T) {
 		t.Fatalf("launch menu:\n%s", got)
 	}
 	press(m, "n", "text:Is this still needed?", "enter", "text:Check the export code.")
-	if got := screen(m); m.mode != modeNote || !strings.Contains(got, "Note for refine on PROJ-3") ||
+	if got := screen(m); m.mode != modeLaunchNote || !strings.Contains(got, "Note for refine on PROJ-3") ||
 		!strings.Contains(got, "Is this still needed?") || !strings.Contains(got, "ctrl-s launch") {
 		t.Fatalf("note box:\n%s", got)
 	}

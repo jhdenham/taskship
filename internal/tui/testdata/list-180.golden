@@ -1,6 +1,6 @@
  ◆ taskship  myproject                                                                                                                                         ✓ Up to date  ? help
 
-  1 Board   2 List
+  1 Board   2 List   3 Notes
  ┏ 9 tasks ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ sorted by priority ↓  o change ┓
  ┃ REF     TITLE                                                                                                              STATUS         PRIORITY ↓  LABELS     UPDATED       ┃
  ┃ PROJ-8  Fix flaky login test                                                                                               ◐ in progress  urgent      #bug       Nov 11, 09:20 ┃
@@ -41,4 +41,4 @@
  ┃                                                                                                                                                                                ┃
  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
- j k move  enter open  o sort  n new task  s status  p priority  # labels  a archive  / filter  A show archived  1 2 board/list  P projects  ? help  q quit
+ j k move  enter open  o sort  n new task  s status  p priority  # labels  a archive  / filter  A show archived  1 2 3 views  P projects  ? help  q quit

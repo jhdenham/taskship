@@ -80,12 +80,19 @@ func (s *Store) updateRun(ctx context.Context, query string, args ...any) error 
 // task, and "" and nil if it isn't (or is empty): a stale or foreign
 // TASKSHIP_RUN_ID is ignored.
 func activeRun(ctx context.Context, q querier, runID, taskID string) (string, *core.RunRef, error) {
+	return runningRun(ctx, q, runID, "SELECT agent, number FROM runs WHERE id = ? AND task_id = ? AND state = ?",
+		runID, taskID, core.RunRunning)
+}
+
+// runningRun returns runID and its display name if query, which selects a
+// run's agent and number given args, finds it, and "" and nil if it doesn't
+// (or runID is empty).
+func runningRun(ctx context.Context, q querier, runID, query string, args ...any) (string, *core.RunRef, error) {
 	if runID == "" {
 		return "", nil, nil
 	}
 	var ref core.RunRef
-	err := q.QueryRowContext(ctx, "SELECT agent, number FROM runs WHERE id = ? AND task_id = ? AND state = ?",
-		runID, taskID, core.RunRunning).Scan(&ref.Agent, &ref.Number)
+	err := q.QueryRowContext(ctx, query, args...).Scan(&ref.Agent, &ref.Number)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil, nil
 	}

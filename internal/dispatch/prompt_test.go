@@ -129,7 +129,7 @@ func TestBuildPromptUsesNoEnvironment(t *testing.T) {
 // Every Taskship command in the prompt uses the command it was given.
 func TestBuildPromptTaskshipCommand(t *testing.T) {
 	p := BuildPrompt(core.Task{Ref: "PROJ-1", Project: "myproject", Title: "T"}, nil, "'/my code/taskship'", "", "")
-	if n := strings.Count(p, "'/my code/taskship' "); n != 4 || strings.Contains(p, " taskship ") {
-		t.Errorf("prompt uses the command %d times, want 4:\n%s", n, p)
+	if n := strings.Count(p, "'/my code/taskship' "); n != 5 || strings.Contains(p, " taskship ") {
+		t.Errorf("prompt uses the command %d times, want 5:\n%s", n, p)
 	}
 }

@@ -14,7 +14,7 @@ import (
 
 // openDetail opens the detail view on a task and gives it the focus.
 func (m *model) openDetail(ref string) {
-	m.selRef = ref
+	m.selRef, m.noteOpen = ref, false
 	m.detailOpen, m.focusDetail = true, true
 	if m.detailRef != ref {
 		m.showDetail(ref)

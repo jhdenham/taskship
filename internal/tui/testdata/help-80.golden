@@ -2,22 +2,22 @@
     ┏ Keys ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   1 ┃ Move                              Tasks                              ┃
  ┌ b┃ h j k l     move (or arrows)      enter       open                   ┃──┐
- │┌─┃ g G         first / last          n           new task               ┃─┐│
- ││ ┃                                   H L         move left / right      ┃ ││
- ││ ┃ Views                             s           status                 ┃ ││
- ││ ┃ 1 2         board / list          p           priority               ┃ ││
- │└─┃ P           projects              #           labels                 ┃─┘│
- │┌─┃ /           filter                e           edit (ctrl-g: vi)      ┃─┐│
- ││ ┃ o           sort (list)           a           archive / restore      ┃ ││
- ││ ┃ C           show canceled                                            ┃ ││
- │└─┃ A           show archived         Detail                             ┃ ││
- │  ┃ R           refresh               r           launch agent           ┃─┘│
- │  ┃                                   c           add comment            ┃  │
- │  ┃ Boxes                             [ ]         pick a comment         ┃  │
- │  ┃ tab         title ↔ description   e d         edit / delete it       ┃  │
- │  ┃ ctrl-s      save                  y           copy ref               ┃  │
- │  ┃ ctrl-g      open in vi            esc         close                  ┃  │
- │  ┃ ctrl-r      earlier comments                                         ┃  │
+ │┌─┃ g G         first / last          n           new task / note        ┃─┐│
+ ││ ┃                                   t           make task from note    ┃ ││
+ ││ ┃ Views                             H L         move left / right      ┃ ││
+ ││ ┃ 1 2 3       board / list / notes  s           status                 ┃ ││
+ │└─┃ P           projects              p           priority               ┃─┘│
+ │┌─┃ /           filter                #           labels                 ┃─┐│
+ ││ ┃ o           sort (list)           e           edit (ctrl-g: vi)      ┃ ││
+ ││ ┃ C N         canceled / notes      a           archive / restore      ┃ ││
+ │└─┃ A           show archived                                            ┃ ││
+ │  ┃ R           refresh               Detail                             ┃─┘│
+ │  ┃                                   r           launch agent           ┃  │
+ │  ┃ Boxes                             c           add comment            ┃  │
+ │  ┃ tab         title ↔ description   [ ]         pick a comment         ┃  │
+ │  ┃ ctrl-s      save                  e d         edit / delete it       ┃  │
+ │  ┃ ctrl-g      open in vi            y           copy ref               ┃  │
+ │  ┃ ctrl-r      earlier comments      esc         close                  ┃  │
  │  ┃                                                                      ┃  │
  └──┃ Click selects, opens and presses; the wheel scrolls.                 ┃──┘
     ┃ Mouse is captured: Shift-drag selects text (Option-drag in iTerm2).  ┃

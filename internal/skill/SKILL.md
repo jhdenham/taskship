@@ -24,6 +24,7 @@ A task has a ref such as `PROJ-42` (the project's prefix and a number), a title,
 - `taskship show REF --json`: one task with its comments. `--md` prints it as editable Markdown.
 - `taskship runs REF`: the agent runs launched on a task.
 - `taskship project list`: the user's projects and their prefixes.
+- `taskship note list --json`: the current folder's project's notes, newest first. Notes are thoughts that aren't tasks yet.
 
 ## Writing tasks
 
@@ -34,6 +35,7 @@ Before you write or rewrite a task, run `taskship skill guide` and follow it. It
 - Change fields: `taskship task edit REF --status STATUS`, `--priority P`, or `--title TITLE`.
 - Comment: `taskship comment add REF -` (the text is read from stdin).
 - Archive a task: `taskship task archive REF`.
+- Leave a note: `taskship note add --project NAME -` (the text is read from stdin). A note is for a thought that isn't a task yet: an idea, an observation, a snippet. Use a task for work someone should do.
 
 ## Workflows
 
@@ -45,7 +47,7 @@ Before you write or rewrite a task, run `taskship skill guide` and follow it. It
 4. If the task is in backlog or todo, offer to move it to in_progress.
 5. When done, summarize what changed and how you verified it, and suggest manual checks for anything you couldn't verify. Offer to add the summary as a comment and to mark the task done. Whether it's done is the user's call.
 
-Work you find outside the task: mention it and offer to add it as a new task. Don't do it.
+Work you find outside the task: mention it and offer to add it as a new task, or as a note if it isn't clearly work yet. Don't do it.
 
 ### Capture work ("add a task for that")
 

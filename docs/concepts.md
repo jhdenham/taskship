@@ -10,6 +10,10 @@ A project groups tasks and has a prefix such as `PROJ`, so its tasks are numbere
 
 A task has a title, a Markdown description, a status (`backlog`, `todo`, `in_progress`, `done`, or `canceled`), a priority (`none`, `low`, `medium`, `high`, or `urgent`), labels, and comments. Acceptance criteria are optional and live in the description. Tasks can be archived, and you can read and edit any task as a Markdown document. See [Tasks](tasks.md).
 
+## Notes
+
+A note holds a thought that isn't a task yet: an idea, a snippet, something an agent noticed. Notes belong to a project, have no status or title, and keep your backlog for real work. A note can become a task when it's ready. See [Notes](notes.md).
+
 ## Workspaces
 
 A workspace is a folder on this machine where a project lives. `taskship init` records it, and Taskship uses it to tell which project you're in and where to start an agent. Workspaces are per machine: the same project can live at different paths on different machines. Git worktrees of a set-up repository are recognized without being recorded. See [Projects](projects.md).

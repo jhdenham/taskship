@@ -25,19 +25,23 @@ func (c Comment) Edited() bool { return !c.UpdatedAt.Equal(c.CreatedAt) }
 
 // CleanCommentBody drops leading blank lines and trailing whitespace from a
 // comment body and checks that something is left.
-func CleanCommentBody(body string) (string, error) {
+func CleanCommentBody(body string) (string, error) { return cleanBody(body, "comment") }
+
+func cleanBody(body, what string) (string, error) {
 	body = strings.TrimRight(strings.TrimLeft(strings.ReplaceAll(body, "\r\n", "\n"), "\n"), " \t\n")
 	if strings.TrimSpace(body) == "" {
-		return "", fmt.Errorf("%w: comment must not be empty", ErrInvalid)
+		return "", fmt.Errorf("%w: %s must not be empty", ErrInvalid, what)
 	}
 	return body, nil
 }
 
 // ParseCommentNumber parses a comment number such as "2" or "#2".
-func ParseCommentNumber(s string) (int, error) {
+func ParseCommentNumber(s string) (int, error) { return parseNumber(s, "comment") }
+
+func parseNumber(s, what string) (int, error) {
 	n, err := strconv.Atoi(strings.TrimPrefix(s, "#"))
 	if err != nil || n < 1 {
-		return 0, fmt.Errorf("%w: %q is not a comment number (expected a number such as 2)", ErrInvalid, s)
+		return 0, fmt.Errorf("%w: %q is not a %s number (expected a number such as 2)", ErrInvalid, s, what)
 	}
 	return n, nil
 }

@@ -36,6 +36,7 @@ func NewRootCmd(version string) *cobra.Command {
 		newTaskListCmd("tasks"),
 		newTaskShowCmd("show"),
 		newCommentCmd(),
+		newNoteCmd(),
 		newExportCmd(),
 		newWorkspaceCmd(),
 		newRunCmd(),

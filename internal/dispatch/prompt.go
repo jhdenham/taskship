@@ -114,6 +114,8 @@ func instructions(t core.Task, taskship string) string {
 - Don't modify any files until the user explicitly approves the plan.
 - If you find work that's outside this task, don't do it. Mention it and
   offer to add it as a new task: %[1]s add "TITLE" --project %[3]s
+  or, if it isn't clearly work yet, as a note: %[1]s note add --project %[3]s -
+  (the note text is read from stdin)
 - When the work is done, summarize what changed and how you verified it. For
   larger or riskier changes, or anything you couldn't verify yourself, suggest
   specific manual checks or a smoke test for the user to run.
