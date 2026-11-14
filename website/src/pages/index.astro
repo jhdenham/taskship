@@ -5,6 +5,26 @@ import GitHubIcon from '../components/GitHubIcon.astro';
 import tuiBoard from '../assets/tui-board.html?raw';
 
 const check = '<svg class="check" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>';
+
+// Line glyphs in the logo's style: 24px grid, round 1.75px strokes, coloured
+// by CSS.
+const icons = {
+  thought: '<path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.7L4.5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5z"></path>',
+  code: '<path d="M8.5 7.5 4 12l4.5 4.5M15.5 7.5 20 12l-4.5 4.5"></path>',
+  file: '<path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z"></path><path d="M14 3v5h5M8.5 13h7M8.5 16.5h4.5"></path>',
+  tab: '<rect x="3" y="4.5" width="18" height="15" rx="2"></rect><path d="M3 9h18M6.5 6.75h.01M9.5 6.75h.01"></path>',
+  branch: '<circle cx="6.5" cy="5.5" r="2"></circle><circle cx="6.5" cy="18.5" r="2"></circle><circle cx="17.5" cy="6.5" r="2"></circle><path d="M6.5 7.5v9M17.5 8.5v1.5a4 4 0 0 1-4 4h-3a4 4 0 0 0-4 2.5"></path>',
+  checklist: '<rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="m8 8.5 1.5 1.5L12 7.5M8 15l1.5 1.5L12 14M14.5 9h2M14.5 15.5h2"></path>',
+  board: '<rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v16M5.5 8h1.5M11 8h1.5M11 11.5h1.5M17 8h1.5"></path>',
+  resume: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4 9.3"></path><path d="M4 4.5v4.8h4.8"></path><path d="m10.5 9.5 4 2.5-4 2.5z"></path>',
+  prompt: '<rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="m7 9.5 2.5 2.5L7 14.5M12 14.5h5"></path>',
+  database: '<ellipse cx="12" cy="6" rx="7" ry="2.5"></ellipse><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"></path>',
+  agents: '<rect x="3" y="8" width="13" height="12" rx="2"></rect><path d="M8 5h11a2 2 0 0 1 2 2v9M6.5 12l2 2-2 2M10.5 16h2.5"></path>',
+  machines: '<rect x="3" y="5" width="11" height="8" rx="1.5"></rect><path d="M1.5 16.5h14M17 4.5h4a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1zM18.5 8h1M18.5 11h1"></path>',
+  issue: '<circle cx="14" cy="12" r="7.5"></circle><circle cx="14" cy="12" r="1.5"></circle><path d="M1.5 12h5M4.5 9.5 7 12l-2.5 2.5"></path>',
+};
+const glyph = (paths: string, size = 24) =>
+  `<svg class="glyph" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`;
 ---
 
 <Base title="Taskship · From task to agent, in one command" status>
@@ -148,6 +168,65 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
       </div>
     </div>
 
+    <section class="why" aria-labelledby="why-heading">
+      <div class="why-intro">
+        <div class="why-copy">
+          <p class="eyebrow">Why Taskship</p>
+          <h2 id="why-heading">Your agent is only as good as <span>its brief.</span></h2>
+          <p>
+            Most work starts somewhere that makes a poor brief: a thought you meant to come back
+            to, a <code>TODO</code> comment, a notes file you keep out of the repository, or an
+            issue tracker in a browser tab. So every session starts with you re-explaining the
+            task.
+          </p>
+          <p class="why-turn">
+            Taskship gives you one place to put that work, in the terminal, and turns any task
+            into a brief with one command.
+          </p>
+        </div>
+        <figure class="why-map" aria-label="Scattered notes, captured with taskship add, become one task and one command">
+          <ul class="why-before">
+            <li><Fragment set:html={glyph(icons.thought, 16)} />A thought</li>
+            <li><Fragment set:html={glyph(icons.code, 16)} /><code>TODO</code> comment</li>
+            <li><Fragment set:html={glyph(icons.file, 16)} />Notes file</li>
+            <li><Fragment set:html={glyph(icons.tab, 16)} />Browser tab</li>
+          </ul>
+          <svg class="why-join across" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0 12.5C55 12.5 45 50 100 50M0 37.5C55 37.5 45 50 100 50M0 62.5C55 62.5 45 50 100 50M0 87.5C55 87.5 45 50 100 50"></path>
+          </svg>
+          <svg class="why-join down" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M25 0C25 55 50 45 50 100M75 0C75 55 50 45 50 100"></path>
+          </svg>
+          <div class="why-after">
+            <code class="why-via"><span aria-hidden="true">$ </span>taskship add</code>
+            <div class="why-task">
+              <span class="why-ref">PROJ-1 <span>high</span></span>
+              <span class="why-title">Add CSV export to the reports page</span>
+            </div>
+            <code class="why-cmd"><span aria-hidden="true">$ </span>taskship PROJ-1</code>
+          </div>
+        </figure>
+      </div>
+      <ol class="beats">
+        <li>
+          <code>taskship add</code>
+          <p><b>Capture</b> as it comes up, from any folder of the repository, or by asking the agent you're already talking to.</p>
+        </li>
+        <li>
+          <code>taskship refine PROJ-1</code>
+          <p><b>Refine</b> a rough idea into a task that's ready to work on, with acceptance criteria, before an agent touches the code.</p>
+        </li>
+        <li>
+          <code>taskship PROJ-1</code>
+          <p><b>Launch</b> an agent in the right folder, with instructions to plan first and wait for your approval.</p>
+        </li>
+        <li>
+          <code>taskship runs PROJ-1</code>
+          <p><b>Keep the record:</b> the agent's summary can become a comment, the task knows which run finished it, and each run's session is kept so you can resume it.</p>
+        </li>
+      </ol>
+    </section>
+
     <section id="how" class="band">
       <div class="band-inner">
         <div class="sectionhead">
@@ -167,15 +246,15 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
             <span class="step-num">02 — Capture</span>
             <code class="cmdchip">taskship add "Add CSV export"</code>
             <p>
-              Run it from any folder in the repository (or outside of it) and it's filed under
-              the right project as <code>PROJ-1</code>.
+              Run it from any folder in the repository and it's filed under the right project
+              as <code>PROJ-1</code>.
             </p>
           </li>
           <li>
             <span class="step-num">03 — Hand off</span>
             <code class="cmdchip">taskship PROJ-1</code>
             <p>
-              Starts your preferred coding agent at the project's root with the task and
+              Starts your coding agent at the project's root with the task and
               instructions to plan first.
             </p>
           </li>
@@ -188,7 +267,7 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
         <p class="eyebrow">Plan-first dispatch</p>
         <h2>A brief built to keep your agent on track.</h2>
         <p class="feature-lede">
-          Every run starts from the same short, safe brief: the task, and clear instructions to
+          Every run starts from the same short, consistent brief: the task, and clear instructions to
           plan before touching anything.
         </p>
         <ul class="checks">
@@ -280,7 +359,7 @@ by hand: export a large report.</pre>
           "add a task for that", "what should I work on next?", or "clean up the backlog".
         </p>
         <ul class="checks">
-          <li><Fragment set:html={check} /><span><b>Claude Code and Codex.</b> <code>taskship skill install all</code> sets up every agent on your <code>PATH</code>.</span></li>
+          <li><Fragment set:html={check} /><span><b>Claude Code and Codex.</b> <code>taskship skill install all</code> sets up both, if they're on your <code>PATH</code>.</span></li>
           <li><Fragment set:html={check} /><span><b>It asks first.</b> The agent shows what it will add or change, and does it once you agree.</span></li>
           <li><Fragment set:html={check} /><span><b>Tasks written your way.</b> It follows Taskship's guide to writing tasks, and your own conventions on top.</span></li>
         </ul>
@@ -323,16 +402,15 @@ by hand: export a large report.</pre>
             Use it on any repository, including ones you don't own.
           </p>
           <Terminal chrome="plain">
-            <pre><span class="cmd">$ taskship init</span>
+            <pre class="wrap"><span class="cmd">$ taskship init</span>
 Setting up Taskship for <span class="val">~/code/myproject</span>
-Taskship doesn't write anything to this repository.
-Everything lives in <span class="val">~/.taskship</span>.
+Taskship doesn't write anything to this repository. Everything lives in <span class="val">~/.taskship</span>.
 
 ? Project name (myproject):
 ? Task prefix (MYPT): PROJ
 
-<span class="good">✓</span> Created project <span class="val">myproject</span>. Tasks will be numbered
-  PROJ-1, PROJ-2, and so on.
+<span class="good">✓</span> Created project <span class="val">myproject</span>. Tasks will be numbered PROJ-1, PROJ-2, and so on.
+<span class="dim">…</span>
 
 <span class="cmd">$ git status --short</span>
 <span class="dim"># nothing new, nothing to ignore</span></pre>
@@ -373,39 +451,50 @@ Users want to open report data in a spreadsheet.
       <h2>Built for the way you already work.</h2>
       <div class="grid">
         <article>
+          <Fragment set:html={glyph(icons.branch)} />
           <h3>Worktrees and monorepos</h3>
-          <p>Run Taskship from any worktree or subfolder. It works out the project from Git, with nothing to configure.</p>
+          <p>Run Taskship from any worktree or subfolder. It works out the project from Git, with nothing extra to configure.</p>
         </article>
         <article>
+          <Fragment set:html={glyph(icons.checklist)} />
           <h3>Good tasks by default</h3>
           <p>Agents follow Taskship's built-in guide to writing tasks. Want it your way? Add your rules to <code>~/.taskship/conventions.md</code>.</p>
         </article>
         <article>
+          <Fragment set:html={glyph(icons.board)} />
           <h3>A board that keeps up</h3>
           <p>The TUI shows changes from other terminals and from your agents as they land, without a key press.</p>
         </article>
         <article>
-          <h3>Resume any run</h3>
-          <p>Every launch is recorded with its session, so you can pick up where an agent stopped.</p>
+          <Fragment set:html={glyph(icons.resume)} />
+          <h3>Pick up any run</h3>
+          <p>Every launch is recorded with its session, so your agent can pick up where it stopped.</p>
         </article>
         <article>
+          <Fragment set:html={glyph(icons.prompt)} />
           <h3>Useful without an agent</h3>
           <p>A fast task manager for the terminal, with JSON output and Markdown files for scripts.</p>
         </article>
         <article>
+          <Fragment set:html={glyph(icons.database)} />
           <h3>Local-first</h3>
           <p>One SQLite database under <code>~/.taskship</code>. No account, no server, no sign-up.</p>
         </article>
+      </div>
+      <div class="grid planned">
         <article>
-          <div class="cardhead"><h3>More agents</h3><span class="pill">Planned</span></div>
+          <div class="cardhead"><Fragment set:html={glyph(icons.agents)} /><span class="pill">Planned</span></div>
+          <h3>More agents</h3>
           <p>Launching Codex is next. The skill already works in it.</p>
         </article>
         <article>
-          <div class="cardhead"><h3>Shared across machines</h3><span class="pill">Planned</span></div>
+          <div class="cardhead"><Fragment set:html={glyph(icons.machines)} /><span class="pill">Planned</span></div>
+          <h3>Shared across machines</h3>
           <p>An optional self-hosted server shares tasks between your laptop and a remote machine.</p>
         </article>
         <article>
-          <div class="cardhead"><h3>Your existing issues</h3><span class="pill">Planned</span></div>
+          <div class="cardhead"><Fragment set:html={glyph(icons.issue)} /><span class="pill">Planned</span></div>
+          <h3>Your existing issues</h3>
           <p>Dispatch GitHub Issues and Linear issues directly, without copying them.</p>
         </article>
       </div>
