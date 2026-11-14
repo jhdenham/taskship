@@ -303,7 +303,7 @@ func (m *model) footer() string {
 		case inputFilter:
 			return m.th.keys("enter", "apply", "esc", "cancel", "#web", "label", "status:todo", "", "prio:high", "")
 		case inputNew:
-			return m.th.keys("enter", "add", "ctrl-e", "add and open in "+editor.Name(), "esc", "cancel")
+			return m.th.keys("enter", "add", "ctrl-g", "add and open in "+editor.Name(), "esc", "cancel")
 		}
 	case modeConfirm:
 		return m.th.keys("y", m.confirm.yes, "n", m.confirm.no)
@@ -371,7 +371,7 @@ func (m *model) recordFooterZones(y int, footer string) {
 		switch k {
 		case "enter", "esc", "tab", "?", "q", "n", "o", "/", "A", "C", "P", "s", "p", "#", "a", "i", "y", "e", "d", "R":
 			m.onKey(rect{x, y, lipgloss.Width(part), 1}, k)
-		case "ctrl-s", "ctrl-e", "ctrl-r":
+		case "ctrl-s", "ctrl-g", "ctrl-r":
 			m.onKey(rect{x, y, lipgloss.Width(part), 1}, strings.Replace(k, "-", "+", 1))
 		}
 		x += lipgloss.Width(part) + 2

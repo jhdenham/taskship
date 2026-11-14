@@ -18,13 +18,13 @@ var (
 	helpViews = helpSection{"Views", [][2]string{{"1 2", "board / list"}, {"P", "projects"}, {"/", "filter"},
 		{"o", "sort (list)"}, {"C", "show canceled"}, {"A", "show archived"}, {"R", "refresh"}}}
 	helpTasks = helpSection{"Tasks", [][2]string{{"enter", "open"}, {"n", "new task"}, {"H L", "move left / right"},
-		{"s", "status"}, {"p", "priority"}, {"#", "labels"}, {"e", "edit (ctrl-e: EDITOR)"}, {"a", "archive / restore"}}}
+		{"s", "status"}, {"p", "priority"}, {"#", "labels"}, {"e", "edit (ctrl-g: EDITOR)"}, {"a", "archive / restore"}}}
 	helpDetail = helpSection{"Detail", [][2]string{{"r", "launch agent"}, {"c", "add comment"}, {"[ ]", "pick a comment"},
 		{"e d", "edit / delete it"}, {"y", "copy ref"}, {"esc", "close"}}}
 	helpGeneral = helpSection{"General", [][2]string{{"?", "this help"}, {"q", "quit"}}}
 	helpMouse   = helpSection{"Mouse", [][2]string{{"click", "select, open, press"}, {"wheel", "scroll"}}}
 	helpBoxes   = helpSection{"Boxes", [][2]string{{"tab", "title ↔ description"}, {"ctrl-s", "save"},
-		{"ctrl-e", "open in EDITOR"}, {"ctrl-r", "earlier comments"}}}
+		{"ctrl-g", "open in EDITOR"}, {"ctrl-r", "earlier comments"}}}
 	// At 80 columns, tab (board ↔ detail) doesn't apply: the detail
 	// replaces the board.
 	helpMoveNarrow = helpSection{"Move", helpMove.keys[:2]}

@@ -13,13 +13,13 @@
  │└──────────────────────────────────┃                                   s           status                e d         edit / delete it       ┃                                  ││
  │                                   ┃ Views                             p           priority              y           copy ref               ┃──────────────────────────────────┘│
  │                                   ┃ 1 2         board / list          #           labels                esc         close                  ┃                                   │
- │                                   ┃ P           projects              e           edit (ctrl-e: vi)                                        ┃                                   │
+ │                                   ┃ P           projects              e           edit (ctrl-g: vi)                                        ┃                                   │
  │                                   ┃ /           filter                a           archive / restore     Mouse                              ┃                                   │
  │                                   ┃ o           sort (list)                                             click       select, open, press    ┃                                   │
  │                                   ┃ C           show canceled         Boxes                             wheel       scroll                 ┃                                   │
  │                                   ┃ A           show archived         tab         title ↔ description                                      ┃                                   │
  │                                   ┃ R           refresh               ctrl-s      save                  General                            ┃                                   │
- │                                   ┃                                   ctrl-e      open in vi            ?           this help              ┃                                   │
+ │                                   ┃                                   ctrl-g      open in vi            ?           this help              ┃                                   │
  │                                   ┃                                   ctrl-r      earlier comments      q           quit                   ┃                                   │
  │                                   ┃                                                                                                        ┃                                   │
  │                                   ┃ Mouse is captured: Shift-drag selects text (Option-drag in iTerm2).                                    ┃                                   │

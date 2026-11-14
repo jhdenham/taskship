@@ -12,7 +12,7 @@ import (
 )
 
 // Editing a task's title and description in a box over the current view.
-// ctrl-e moves the edit to $EDITOR as the whole task's Markdown, like
+// ctrl-g moves the edit to $EDITOR as the whole task's Markdown, like
 // "taskship task edit".
 
 // startEditTask opens the edit box on t, with the focus on the
@@ -47,7 +47,7 @@ func (m *model) editTaskKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case "ctrl+s":
 		return m.saveTaskEdit()
-	case "ctrl+e":
+	case "ctrl+g":
 		t := m.editBase
 		t.Title, t.Description = m.titleIn.Value(), restoreTabs(m.area.Value(), t.Description)
 		draft, err := editor.Draft(t.Ref+"-*.md", core.TaskMarkdown(t))
@@ -195,7 +195,7 @@ func (m *model) drawEditTask(screen []string, area rect) {
 	m.titleIn.SetWidth(inner - 5)
 	titleBox := m.box(inner, 3, boxOpts{focused: m.editTitle && !asking}, []string{" " + m.titleIn.View()})
 
-	keyText := th.keys("tab", "title/description", "ctrl-s", "save", "ctrl-e", "open in "+editor.Name(), "esc", "cancel")
+	keyText := th.keys("tab", "title/description", "ctrl-s", "save", "ctrl-g", "open in "+editor.Name(), "esc", "cancel")
 	if asking {
 		keyText = m.confirm.question + "  " + th.questionKeys("y", m.confirm.yes, "n", m.confirm.no)
 	}

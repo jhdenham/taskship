@@ -209,7 +209,7 @@ func (m *model) inputKey(msg tea.KeyPressMsg) tea.Cmd {
 		return nil
 	case "enter":
 		return m.submitInput(false)
-	case "ctrl+e":
+	case "ctrl+g":
 		if m.inputKind == inputNew {
 			return m.submitInput(true)
 		}
@@ -552,7 +552,7 @@ func (m *model) drawComment(screen []string, r rect) {
 	}
 	w := m.modalWidth(90)
 	textW := w - 4
-	bottom, keys := boxKeys(w, th.keys("enter", "new line", "ctrl-s", "save", "ctrl-e", "open in "+editor.Name(), "esc", "cancel"))
+	bottom, keys := boxKeys(w, th.keys("enter", "new line", "ctrl-s", "save", "ctrl-g", "open in "+editor.Name(), "esc", "cancel"))
 	alert := m.mode == modeConfirm
 	if alert {
 		bottom, keys = boxKeys(w, m.confirm.question+"  "+th.questionKeys("y", m.confirm.yes, "n", m.confirm.no))
@@ -692,7 +692,7 @@ func (m *model) commentKey(msg tea.KeyPressMsg) tea.Cmd {
 	case "ctrl+r":
 		m.showEarlier = !m.showEarlier
 		return nil
-	case "ctrl+e":
+	case "ctrl+g":
 		draft, err := editor.Draft(m.editRef+"-comment-*.md", m.commentText())
 		if err != nil {
 			m.fail(err)

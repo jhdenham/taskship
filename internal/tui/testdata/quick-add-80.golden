@@ -21,4 +21,4 @@
  │                 │ ┃└───────────────┘┃ │                 │ │                │
  └─────────────────┘ ┗━━━━━━━━━━━━━━━━━┛ └─────────────────┘ └────────────────┘
 
- enter add  ctrl-e add and open in vi  esc cancel
+ enter add  ctrl-g add and open in vi  esc cancel

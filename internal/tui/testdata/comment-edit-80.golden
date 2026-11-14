@@ -16,7 +16,7 @@
  ┃ ┃                                                                        ┃ ┃
  ┃ ┃                                                                        ┃ ┃
  ┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃
- ┗ enter new line  ctrl-s save  ctrl-e open in vi  esc cancel ━━━━━━━━━━━━━━━━┛
+ ┗ enter new line  ctrl-s save  ctrl-g open in vi  esc cancel ━━━━━━━━━━━━━━━━┛
  │ r launch agent · e edit · s status · p priority · # labels · c comment     │
  │ a archive · y copy ref                                                     │
  └────────────────────────────────────────────────────────────── ↑ j k scroll ┘

@@ -316,6 +316,56 @@ func TestComments(t *testing.T) {
 	}
 }
 
+// ctrl-e reaches the text fields and moves to the end of the line.
+func TestCtrlELineEnd(t *testing.T) {
+	m, _ := myproject(t, 80, 24)
+	lineEnd := "ctrl+a text:X ctrl+e text:Y"
+	check := func(name, value string) {
+		t.Helper()
+		line, _, _ := strings.Cut(value, "\n")
+		if !strings.HasPrefix(line, "X") || !strings.HasSuffix(line, "Y") {
+			t.Errorf("%s: ctrl-a X ctrl-e Y gave %q", name, line)
+		}
+	}
+	press(m, "l", "l", "j", "e")
+	press(m, strings.Fields(lineEnd)...)
+	check("description", m.area.Value())
+	press(m, "tab")
+	press(m, strings.Fields(lineEnd)...)
+	check("title", m.titleIn.Value())
+	press(m, "esc", "y", "c", "text:ab")
+	press(m, strings.Fields(lineEnd)...)
+	check("comment", m.area.Value())
+	press(m, "esc", "y", "n", "text:ab")
+	press(m, strings.Fields(lineEnd)...)
+	check("quick add", m.input.Value())
+	press(m, "esc", "/", "text:ab")
+	press(m, strings.Fields(lineEnd)...)
+	check("filter", m.input.Value())
+}
+
+// ctrl-g opens $EDITOR from the boxes. The returned command, which would
+// start the editor, isn't run.
+func TestCtrlGOpensEditor(t *testing.T) {
+	t.Setenv("TMPDIR", t.TempDir()) // the drafts the editor would open
+	m, s := myproject(t, 80, 24)
+	press(m, "l", "l", "j", "e")
+	if _, cmd := m.Update(keyMsg("ctrl+g")); cmd == nil || m.editingTask() {
+		t.Errorf("ctrl-g in the edit box: cmd %v, still editing %v", cmd, m.editingTask())
+	}
+	press(m, "c", "text:Later.")
+	if _, cmd := m.Update(keyMsg("ctrl+g")); cmd == nil {
+		t.Error("ctrl-g in the comment box returned no command")
+	}
+	press(m, "esc", "y", "n", "text:Write the docs")
+	if _, cmd := m.Update(keyMsg("ctrl+g")); cmd == nil {
+		t.Error("ctrl-g in quick add returned no command")
+	}
+	if got := task(t, s, "PROJ-10"); got.Title != "Write the docs" {
+		t.Errorf("ctrl-g in quick add added %+v", got)
+	}
+}
+
 func TestFilter(t *testing.T) {
 	m, _ := myproject(t, 80, 24)
 	for _, tt := range []struct {
