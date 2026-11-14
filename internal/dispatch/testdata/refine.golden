@@ -31,7 +31,8 @@ Instructions:
 - Look at the project's other tasks: taskship tasks --project myproject --json
   and taskship show REF --json for any that look related. Find duplicates of
   this task, tasks that fit well with it (such as a bug in the same code),
-  and tasks that should be done before or after it.
+  and tasks that should be done before or after it. If you find none, don't
+  mention it.
 - Assess the task against the guide. Ask concise questions about gaps only
   the user can fill. Don't invent requirements.
 - Then propose your changes in your reply, and stop there: make none until
@@ -49,8 +50,10 @@ Instructions:
   - Merge a duplicate: fold what it adds into this task, then
     taskship task archive DUPLICATE_REF
   - Note something on another task: taskship comment add OTHER_REF -
-- Finally, summarize what changed and which task to work on first. The user
-  can launch an agent on it with: taskship TASK_REF
+- Finally, summarize what changed and which task to work on first. Leave
+  out checks that found nothing, but if anything the user approved wasn't
+  applied, say what and why. The user can launch an agent on it with:
+  taskship TASK_REF
 
 For the latest task details, run: taskship show PROJ-42 --json
 

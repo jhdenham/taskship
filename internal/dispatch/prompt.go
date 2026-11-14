@@ -72,7 +72,8 @@ func refineInstructions(t core.Task, taskship string) string {
 - Look at the project's other tasks: %[1]s tasks --project %[3]s --json
   and %[1]s show REF --json for any that look related. Find duplicates of
   this task, tasks that fit well with it (such as a bug in the same code),
-  and tasks that should be done before or after it.
+  and tasks that should be done before or after it. If you find none, don't
+  mention it.
 - Assess the task against the guide. Ask concise questions about gaps only
   the user can fill. Don't invent requirements.
 - Then propose your changes in your reply, and stop there: make none until
@@ -90,8 +91,10 @@ func refineInstructions(t core.Task, taskship string) string {
   - Merge a duplicate: fold what it adds into this task, then
     %[1]s task archive DUPLICATE_REF
   - Note something on another task: %[1]s comment add OTHER_REF -
-- Finally, summarize what changed and which task to work on first. The user
-  can launch an agent on it with: %[1]s TASK_REF
+- Finally, summarize what changed and which task to work on first. Leave
+  out checks that found nothing, but if anything the user approved wasn't
+  applied, say what and why. The user can launch an agent on it with:
+  %[1]s TASK_REF
 
 For the latest task details, run: %[1]s show %[2]s --json
 `, taskship, t.Ref, t.Project)
