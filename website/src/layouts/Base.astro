@@ -100,7 +100,7 @@ const path = Astro.url.pathname;
       <nav id="mobilenav" class="mobilenav" aria-label="Menu" hidden>
         <a href="/#how">How it works</a>
         <a href="/docs/" aria-current={path.startsWith('/docs/') ? 'page' : undefined}>Docs</a>
-        <a href="https://github.com/jhdenham/taskship">GitHub</a>
+        <a href="https://github.com/jhdenham/taskship"><GitHubIcon size={18} />GitHub</a>
       </nav>
     </header>
     <slot />
