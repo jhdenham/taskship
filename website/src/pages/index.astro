@@ -95,19 +95,19 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
 
 <span class="dim">&gt;</span> You are beginning a Taskship refinement session. <span class="dim">…</span>
 
-<span class="ch good">⏺</span> <b>Bash</b>(taskship tasks --project myproject --json)
+<span class="ch good">●</span> <b>Bash</b>(taskship tasks --project myproject --json)
   <span class="dim">⎿  [&#123;"ref": "PROJ-1", …&#125;, … +5 tasks]</span>
 
-<span class="ch good">⏺</span> <b>Search</b>(pattern: "login", path: "tests")
+<span class="ch good">●</span> <b>Search</b>(pattern: "login", path: "tests")
   <span class="dim">⎿  Found 2 files</span>
 
-<span class="ch">⏺</span> PROJ-2 doesn't say when the test fails, and PROJ-6
+<span class="ch">●</span> PROJ-2 doesn't say when the test fails, and PROJ-6
   "Login test times out on CI" looks like the same bug.
   Does it fail locally too, or only on CI?
 
 <span class="dim">&gt;</span> Only on CI, about one run in five.
 
-<span class="ch">⏺</span> Here's what I'd change:
+<span class="ch">●</span> Here's what I'd change:
   1. Rewrite PROJ-2 as "Fix login test timing out on CI",
      with the cause, the scope, and acceptance criteria
   2. Merge PROJ-6 into PROJ-2 and archive PROJ-6
@@ -115,13 +115,13 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
 
 <span class="dim">&gt;</span> Yes
 
-<span class="ch good">⏺</span> <b>Bash</b>(taskship task edit PROJ-2 --from -)
+<span class="ch good">●</span> <b>Bash</b>(taskship task edit PROJ-2 --from -)
   <span class="dim">⎿  ✓ Updated PROJ-2: Fix login test timing out on CI</span>
 
-<span class="ch good">⏺</span> <b>Bash</b>(taskship task archive PROJ-6)
+<span class="ch good">●</span> <b>Bash</b>(taskship task archive PROJ-6)
   <span class="dim">⎿  ✓ Archived PROJ-6: Login test times out on CI</span>
 
-<span class="ch">⏺</span> PROJ-2 is ready to work on. Start it with: taskship PROJ-2</pre>
+<span class="ch">●</span> PROJ-2 is ready to work on. Start it with: taskship PROJ-2</pre>
           </Terminal>
         </div>
         <div class="panel" role="tabpanel" id="panel-launch" aria-labelledby="tab-launch" hidden>
@@ -132,13 +132,13 @@ PROJ-2  todo    <span class="err">urgent</span>    <span class="dim">bug</span> 
 
 <span class="dim">&gt;</span> You are beginning a Taskship agent run. <span class="dim">…</span>
 
-<span class="ch good">⏺</span> <b>Read</b>(reports/export.ts)
+<span class="ch good">●</span> <b>Read</b>(reports/export.ts)
   <span class="dim">⎿  Read 84 lines</span>
 
-<span class="ch good">⏺</span> <b>Search</b>(pattern: "toJson", path: "reports")
+<span class="ch good">●</span> <b>Search</b>(pattern: "toJson", path: "reports")
   <span class="dim">⎿  Found 3 files</span>
 
-<span class="ch">⏺</span> The task is ready. The reports page already exports JSON
+<span class="ch">●</span> The task is ready. The reports page already exports JSON
   through toJson(), so CSV can follow the same path.
 
 <span class="dim">╭──────────────────────────────────────────────────────────────╮</span>
@@ -359,10 +359,10 @@ by hand: export a large report.</pre>
         <pre class="claude"><span class="dim">&gt;</span> The export times out on big reports too. Add a
   task for that.
 
-<span class="ch good">⏺</span> <b>Bash</b>(taskship skill guide)
+<span class="ch good">●</span> <b>Bash</b>(taskship skill guide)
   <span class="dim">⎿  # Writing Taskship tasks …</span>
 
-<span class="ch">⏺</span> Here's the task I'd add to myproject:
+<span class="ch">●</span> Here's the task I'd add to myproject:
 
   <b>Fix CSV export timing out on large reports</b>
   Labels: bug · Priority: high
@@ -375,10 +375,10 @@ by hand: export a large report.</pre>
 
 <span class="dim">&gt;</span> Yes
 
-<span class="ch good">⏺</span> <b>Bash</b>(taskship add "Fix CSV export timing out on…")
+<span class="ch good">●</span> <b>Bash</b>(taskship add "Fix CSV export timing out on…")
   <span class="dim">⎿  &#123;"ref": "PROJ-3", …&#125;</span>
 
-<span class="ch">⏺</span> Added PROJ-3.</pre>
+<span class="ch">●</span> Added PROJ-3.</pre>
       </Terminal>
     </section>
 
