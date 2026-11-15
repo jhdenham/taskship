@@ -54,7 +54,7 @@ const path = Astro.url.pathname;
           <p>
             <span class="badge">Early</span>
             <span>Taskship is in early development.</span>
-            <a href="/docs/roadmap/">See the roadmap →</a>
+            <a href="/docs/roadmap/"><span class="hide-sm">See the </span><span class="roadmap">roadmap</span> →</a>
           </p>
         </div>
       )
@@ -87,8 +87,21 @@ const path = Astro.url.pathname;
             </svg>
           </button>
           <a class="btn primary small" href="/docs/">Get started</a>
+          <button class="navtoggle iconlink" type="button" aria-expanded="false" aria-controls="mobilenav" aria-label="Menu">
+            <svg class="open" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16"></path>
+            </svg>
+            <svg class="close" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18"></path>
+            </svg>
+          </button>
         </nav>
       </div>
+      <nav id="mobilenav" class="mobilenav" aria-label="Menu" hidden>
+        <a href="/#how">How it works</a>
+        <a href="/docs/" aria-current={path.startsWith('/docs/') ? 'page' : undefined}>Docs</a>
+        <a href="https://github.com/jhdenham/taskship">GitHub</a>
+      </nav>
     </header>
     <slot />
     <footer class="footer">
@@ -107,6 +120,25 @@ const path = Astro.url.pathname;
         try {
           localStorage.setItem('theme', root.dataset.theme);
         } catch {}
+      });
+
+      // Phone menu: the toggle shows and hides the links under the header.
+      // Choosing a link or pressing Escape closes it.
+      const toggle = document.querySelector<HTMLButtonElement>('.navtoggle')!;
+      const mobilenav = document.getElementById('mobilenav')!;
+      const setMenu = (open: boolean) => {
+        toggle.setAttribute('aria-expanded', String(open));
+        mobilenav.hidden = !open;
+      };
+      toggle.addEventListener('click', () => setMenu(mobilenav.hidden));
+      mobilenav.addEventListener('click', (e) => {
+        if ((e.target as Element).closest('a')) setMenu(false);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !mobilenav.hidden) {
+          setMenu(false);
+          toggle.focus();
+        }
       });
     </script>
   </body>

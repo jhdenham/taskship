@@ -251,6 +251,37 @@ code {
   color: var(--ink);
 }
 
+/* Phone menu: hidden until the narrow-screen rules below show it. */
+.toplinks .navtoggle,
+.mobilenav {
+  display: none;
+}
+
+.navtoggle[aria-expanded='false'] .close,
+.navtoggle[aria-expanded='true'] .open {
+  display: none;
+}
+
+.mobilenav {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 8px 0 12px;
+  border-top: 1px solid var(--line);
+}
+
+.mobilenav a {
+  display: block;
+  padding: 12px var(--gutter);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.mobilenav a:hover,
+.mobilenav a[aria-current] {
+  color: var(--ink);
+}
+
 .iconlink svg {
   fill: none;
   stroke: currentColor;
@@ -369,6 +400,11 @@ code {
   white-space: pre;
   overflow-x: auto;
   font: 13px/1.65 var(--mono);
+}
+
+/* The brief is prose: it wraps to the box rather than scrolling sideways. */
+.terminal pre.brief {
+  white-space: pre-wrap;
 }
 
 .terminal .cmd {
@@ -543,7 +579,7 @@ code {
 .tabs {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -689,6 +725,28 @@ code {
   padding: 20px 16px 22px;
   font-size: clamp(6px, (100cqw - 32px) / 86, 13px);
   line-height: 1.25;
+}
+
+/* Too narrow for the whole screen at a readable size: crop it. Below 900px
+   the screen is sized so the four board columns (80 cells, about 49em)
+   fill the width and the details panel is cut off; below 560px, the first
+   two columns (about 25em). The empty rows under the cards are cut too.
+   The right and bottom edges fade out. */
+@container (max-width: 899px) {
+  .panel .terminal .tui {
+    overflow: hidden;
+    max-height: calc(19 * 1.25em + 20px);
+    font-size: min(12px, (100cqw - 32px) / 49);
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent calc(100% - 8px)),
+      linear-gradient(to bottom, #000 calc(100% - 4em), transparent);
+    mask-composite: intersect;
+  }
+}
+
+@container (max-width: 559px) {
+  .panel .terminal .tui {
+    font-size: min(12.5px, (100cqw - 32px) / 25);
+  }
 }
 
 /* Why Taskship: the argument (copy beside a small before/after figure), then
@@ -959,7 +1017,6 @@ code {
    and the beats run down one track on the left. */
 @media (max-width: 560px) {
   .why-intro {
-    padding-top: 64px;
     gap: 40px;
   }
 
@@ -1060,7 +1117,7 @@ code {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
@@ -1094,6 +1151,13 @@ code {
 .steps p {
   margin: 0;
   color: var(--muted);
+}
+
+/* Three across, or stacked: never two and one. */
+@media (max-width: 950px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Feature rows */
@@ -1604,10 +1668,6 @@ code {
 }
 
 @media (max-width: 860px) {
-  .feature.flip .copy {
-    order: 0;
-  }
-
   .docs {
     grid-template-columns: 1fr;
   }
@@ -1645,6 +1705,36 @@ code {
   }
 }
 
+/* Stacked sections: less room between them, and every feature row reads
+   heading first. */
+@media (max-width: 1023px) {
+  .showcase,
+  .why {
+    padding-bottom: 48px;
+  }
+
+  .why-intro {
+    padding-top: 48px;
+  }
+
+  .feature,
+  .feature.flip {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 48px var(--gutter);
+  }
+
+  .feature.flip .copy {
+    order: 0;
+  }
+
+  .band-inner,
+  .features,
+  .cta {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+}
+
 @media (max-width: 640px) {
   .hide-sm {
     display: none;
@@ -1654,36 +1744,34 @@ code {
     margin-left: 4px;
   }
 
-  .hero {
-    padding: 56px var(--gutter) 64px;
-    gap: 32px;
+  .toplinks .docslink,
+  .toplinks .github {
+    display: none;
+  }
+
+  .toplinks .navtoggle {
+    display: grid;
+  }
+
+  .mobilenav:not([hidden]) {
+    display: block;
+  }
+
+  .doc {
+    padding-top: 20px;
   }
 
   .feature,
   .feature.flip {
-    padding: 64px var(--gutter);
     gap: 32px;
-  }
-
-  .band-inner,
-  .features,
-  .cta {
-    padding-top: 72px;
-    padding-bottom: 72px;
   }
 
   .paircard {
     padding: 24px;
   }
-
-  .panel .terminal pre {
-    padding: 20px;
-    font-size: 13px;
-  }
 }
 
-/* Phones: the header row must fit. GitHub is also linked in the footer, and
-   "Get started" leads into the docs. */
+/* Phones: the header row must fit. */
 @media (max-width: 460px) {
   :root {
     --gutter: 16px;
@@ -1692,18 +1780,199 @@ code {
   .topbar-inner {
     gap: 8px;
   }
+}
 
-  .toplinks .github {
+/* The smallest phones: "Get started" goes to the docs, which the menu links. */
+@media (max-width: 370px) {
+  .toplinks .btn {
     display: none;
-  }
-
-  .toplinks > a.docslink {
-    padding: 12px 8px;
   }
 }
 
-@media (max-width: 370px) {
-  .toplinks > a.docslink {
+/* Below 1024px the hero stacks into one column, so it needs less room
+   above the eyebrow, between the headline and the lede, and above the
+   tabs. */
+@media (max-width: 1023px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 48px;
+    padding-bottom: 56px;
+    gap: 24px;
+  }
+}
+
+/* Tablets: the four tabs go two by two (never three and one), up to the
+   width where four across stops making tall cards. */
+@media (max-width: 899px) {
+  .tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phones: a compact hero. The status bar and header tighten, the eyebrow
+   loses its pill, the install command wraps beside a small Copy button, and
+   the showcase tabs become one segmented row with the selected tab's
+   description under it. Text and fonts are the same as on desktop. */
+@media (max-width: 640px) {
+  .statusbar p {
+    padding: 8px var(--gutter);
+    gap: 2px 8px;
+    font-size: 13px;
+  }
+
+  /* One line: the link reads "Roadmap →". */
+  .statusbar .roadmap {
+    text-transform: capitalize;
+  }
+
+  .toplinks .btn.small {
+    padding: 8px 14px;
+  }
+
+  .hero {
+    padding: 24px var(--gutter) 32px;
+    gap: 16px;
+  }
+
+  .eyebrow-pill {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .eyebrow-pill span {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    margin-top: 6px;
+  }
+
+  .hero h1 {
+    font-size: 38px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+  }
+
+  .lede {
+    margin-bottom: 20px;
+    font-size: 16px;
+  }
+
+  /* The command wraps under its own "$ " with Copy beside it. */
+  .install {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 8px 8px 12px;
+    border-radius: 12px;
+  }
+
+  .install code {
+    white-space: normal;
+    overflow-wrap: break-word;
+    padding-left: 2ch;
+    text-indent: -2ch;
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+
+  /* A fixed width, so "Copied" or "Selected" doesn't push the command onto
+     a third line. */
+  .install .copy {
+    width: 60px;
+    padding: 0;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .trust {
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  /* Segmented tabs. The buttons are static so the selected description can
+     sit under the whole row; the pill drops behind them (z-index -1 inside
+     the row's own stacking context). */
+  .tabs {
+    isolation: isolate;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 46px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-alt);
+  }
+
+  .tabs button {
+    position: static;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 8px;
+  }
+
+  .tab-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .tab-label::before {
     display: none;
+  }
+
+  .tabs button[aria-selected='true'] .tab-label {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .tab-desc {
+    display: none;
+  }
+
+  .tabs button[aria-selected='true'] .tab-desc {
+    display: block;
+    position: absolute;
+    top: calc(100% + 12px);
+    left: -1px;
+    right: -1px;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .tab-pill {
+    z-index: -1;
+    border-width: 1px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  }
+
+  .panel .terminal pre {
+    padding: 16px;
+    font-size: 12.5px;
+  }
+}
+
+/* Narrow phones: the status bar drops its badge to stay on one line, and
+   the install command drops its hanging indent and shrinks a little so
+   "| sh" stays on line two. */
+@media (max-width: 379px) {
+  .statusbar .badge {
+    display: none;
+  }
+
+  .install code {
+    padding-left: 0;
+    text-indent: 0;
+    font-size: 11px;
   }
 }
