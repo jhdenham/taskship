@@ -29,7 +29,7 @@ Taskship is a local-first task manager and coding-agent dispatcher for developer
   <img src="docs/images/tui-board.png" alt="The Taskship terminal UI showing a board of tasks">
 </p>
 
-> **Status:** early development, working toward v0.1. The CLI, terminal UI and Claude Code launching work today; `docs/` also describes planned features, and the [roadmap](docs/roadmap.md) says which release each one belongs to.
+> **Status:** early development. v0.1 is out: the CLI, terminal UI and Claude Code launching work today. `docs/` also describes planned features, and the [roadmap](docs/roadmap.md) says which release each one belongs to.
 
 ## Install
 
@@ -37,7 +37,7 @@ Taskship is a local-first task manager and coding-agent dispatcher for developer
 curl -fsSL https://taskship.dev/install.sh | sh
 ```
 
-This installs the `taskship` binary for macOS or Linux in `~/.local/bin`; see the [quickstart](docs/quickstart.md) for options. The first release isn't out yet, so for now build from source with `go install github.com/jhdenham/taskship/cmd/taskship@latest`. The script lives in `website/public/install.sh`.
+This installs the `taskship` binary for macOS or Linux in `~/.local/bin`; see the [quickstart](docs/quickstart.md) for options, or build from source with `go install github.com/jhdenham/taskship/cmd/taskship@latest`. The script lives in `website/public/install.sh`.
 
 Data is stored in `~/.taskship/` (override with `TASKSHIP_HOME`), which is created by the first command that needs it.
 
