@@ -8,7 +8,7 @@ Projects and tasks in a local SQLite database, with no server or account. A CLI 
 
 ## `v0.2`: Shared server
 
-An optional REST API backed by PostgreSQL or SQLite, with API tokens, so your laptop and a remote machine share the same tasks. Agents still run on the machine where you start them. Remote mode needs a connection; there is no offline sync.
+An optional self-hosted server, so your laptop and a remote machine share the same tasks. Each device keeps working from its own database when the server can't be reached, and syncs when it's back. Agents still run on the machine where you start them.
 
 ## `v0.3`: More agents
 
@@ -20,4 +20,4 @@ Browse and dispatch GitHub Issues and Linear issues directly, without copying th
 
 ## Later
 
-An MCP server, remote dispatch, worktree provisioning, an optional desktop app, offline sync across machines, and team features.
+An MCP server, remote dispatch, worktree provisioning, an optional desktop app, bringing your own coding agent, plugins and hooks, and team features.
