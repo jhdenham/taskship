@@ -67,6 +67,12 @@ func TestInstallLifecycle(t *testing.T) {
 	if s := state(v1); s != Newer {
 		t.Errorf("seen by an older taskship: %s", s)
 	}
+	if s := state(Render("v0.2.0-rc.1")); s != Newer {
+		t.Errorf("seen by a pre-release of its version: %s", s)
+	}
+	if err := Install(dir, Render("v0.2.0-rc.1"), Installed); err != nil || state(v2) != Outdated {
+		t.Errorf("pre-release skill seen by its release: %v, %s", err, state(v2))
+	}
 
 	// Uninstall leaves files Taskship didn't write, and so the folder.
 	os.WriteFile(filepath.Join(dir, "notes.md"), []byte("mine"), 0o644)

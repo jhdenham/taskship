@@ -10,6 +10,16 @@ The script downloads the `taskship` binary for macOS or Linux from the latest Gi
 
 > To install in another folder, set `TASKSHIP_INSTALL_DIR` for the script: `curl -fsSL https://taskship.dev/install.sh | TASKSHIP_INSTALL_DIR=~/bin sh`. `TASKSHIP_VERSION` installs a specific release the same way, such as `TASKSHIP_VERSION=v0.1.0`.
 
+### Upgrading
+
+```sh
+taskship upgrade
+```
+
+`upgrade` checks for a newer release and shows the current and latest versions, then asks before changing anything (`--yes` skips the question, and is needed without a terminal). It downloads the release for your system, checks its checksum, runs it once in the folder it will live in, and only then replaces the `taskship` binary, following a symlink to the real file. If any step fails, the old binary stays in place. Then the new version updates [the skill](skill.md) for each agent where it's installed and outdated; agents without the skill are left alone. Pre-releases are never installed, but a pre-release such as `v0.2.0-rc.1` upgrades to its release, `v0.2.0`.
+
+A `taskship` built from source (`go install` or `go build`) isn't replaced; update it with `go install github.com/jhdenham/taskship/cmd/taskship@latest`.
+
 ## First steps
 
 ```sh

@@ -37,7 +37,7 @@ Taskship is a local-first task manager and coding-agent dispatcher for developer
 curl -fsSL https://taskship.dev/install.sh | sh
 ```
 
-This installs the `taskship` binary for macOS or Linux in `~/.local/bin`; see the [quickstart](docs/quickstart.md) for options, or build from source with `go install github.com/jhdenham/taskship/cmd/taskship@latest`. The script lives in `website/public/install.sh`.
+This installs the `taskship` binary for macOS or Linux in `~/.local/bin`; see the [quickstart](docs/quickstart.md) for options, or build from source with `go install github.com/jhdenham/taskship/cmd/taskship@latest`. The script lives in `website/public/install.sh`. `taskship upgrade` installs a newer release in place; a build from source updates with `go install` instead.
 
 Data is stored in `~/.taskship/` (override with `TASKSHIP_HOME`), which is created by the first command that needs it.
 

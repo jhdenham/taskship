@@ -30,6 +30,12 @@ func TestPrintError(t *testing.T) {
 	if got, want := banner.String(), "\n ERROR  no project here\n"; got != want {
 		t.Errorf("terminal: got %q, want %q", got, want)
 	}
+
+	var details bytes.Buffer
+	printError(&details, errors.New("no project here\n\nrun taskship init"))
+	if got, want := details.String(), "\n ERROR  no project here\n\n        run taskship init\n"; got != want {
+		t.Errorf("details: got %q, want %q", got, want)
+	}
 }
 
 func TestWrap(t *testing.T) {

@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -94,32 +93,13 @@ func Status(dir, want string) (State, string, error) {
 		return NotOurs, "", nil
 	case *got == want:
 		return Installed, version, nil
-	case newer(version, markerVersion.FindStringSubmatch(want)[1]):
+	case core.VersionNewer(version, markerVersion.FindStringSubmatch(want)[1]):
 		return Newer, version, nil
 	case version != markerVersion.FindStringSubmatch(want)[1]:
 		return Outdated, version, nil
 	default:
 		return Modified, version, nil
 	}
-}
-
-var release = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)`)
-
-// newer reports whether version a is a later release than b. Versions that
-// aren't releases, such as "dev", are never newer.
-func newer(a, b string) bool {
-	ma, mb := release.FindStringSubmatch(a), release.FindStringSubmatch(b)
-	if ma == nil || mb == nil {
-		return false
-	}
-	for i := 1; i <= 3; i++ {
-		x, _ := strconv.Atoi(ma[i])
-		y, _ := strconv.Atoi(mb[i])
-		if x != y {
-			return x > y
-		}
-	}
-	return false
 }
 
 // read returns the skill file in dir and its version if Taskship wrote it.

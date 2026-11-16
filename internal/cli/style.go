@@ -36,7 +36,8 @@ var (
 
 // printError prints err to w. In a terminal, it is a blank line and an ERROR
 // badge with the message beside it, wrapped to the terminal (at most 80
-// columns). Anywhere else, it is one plain "taskship: message" line for
+// columns). The message's first line is the error; any lines after it are
+// details, printed faint. Anywhere else, it is plain "taskship: message" for
 // scripts and logs.
 func printError(w io.Writer, err error) {
 	if !isTerminal(w) {
@@ -44,8 +45,18 @@ func printError(w io.Writer, err error) {
 		return
 	}
 	width := termWidth(w)
-	indent := lipgloss.Width(errBadge) + 1
-	lipgloss.Fprint(w, "\n"+errBadge+" "+wrap(err.Error(), width-indent, strings.Repeat(" ", indent))+"\n")
+	indent := strings.Repeat(" ", lipgloss.Width(errBadge)+1)
+	head, details, _ := strings.Cut(err.Error(), "\n")
+	out := "\n" + errBadge + " " + wrap(head, width-len(indent), indent)
+	if details != "" {
+		for _, line := range strings.Split(wrap(details, width-len(indent), ""), "\n") {
+			out += "\n"
+			if line != "" {
+				out += indent + faint.Render(line)
+			}
+		}
+	}
+	lipgloss.Fprint(w, out+"\n")
 }
 
 // termWidth is the width of the terminal w, at most 80 columns.
