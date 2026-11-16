@@ -109,6 +109,13 @@ func (m *model) list(screen []string, r rect) {
 	body := []string{row(m.th, header, " ")}
 
 	avail := r.h - 3
+	top := r.y + 2 // the first row's line
+	if m.mode == modeInput && m.inputKind == inputNew {
+		m.input.SetWidth(inner - 5)
+		body = append(body, m.box(inner, 3, boxOpts{title: m.th.faint.Render("new in " + statusName(m.quickAddCol)), focused: true}, []string{" " + m.input.View()})...)
+		avail -= 3
+		top += 3
+	}
 	m.listTop = min(m.listTop, m.listRow)
 	if m.listRow >= m.listTop+avail {
 		m.listTop = m.listRow - avail + 1
@@ -128,7 +135,7 @@ func (m *model) list(screen []string, r rect) {
 			cells[0], cells[1] = th.keyBold.Render(t.Ref), th.bold.Render(t.Title)
 		}
 		body = append(body, row(th, cells, marker))
-		m.onClick(rect{r.x + 1, r.y + 2 + i - m.listTop, inner, 1}, func() tea.Cmd {
+		m.onClick(rect{r.x + 1, top + i - m.listTop, inner, 1}, func() tea.Cmd {
 			m.listRow = i
 			m.openDetail(t.Ref)
 			return nil

@@ -334,10 +334,7 @@ func (m *model) inputLines() []string {
 	case inputLabels:
 		return nil // the labels box
 	}
-	if m.view == viewList {
-		return []string{m.th.keyBold.Render("+ ") + m.th.faint.Render("new in "+statusName(m.quickAddCol)+": ") + m.input.View()}
-	}
-	return nil
+	return nil // the new-task box
 }
 
 func (m *model) startQuickAdd() tea.Cmd {

@@ -29,7 +29,7 @@ Setting up projects and their folders stays on the command line (`taskship init`
 
 Status, priority, labels, the title and description, and comments change in a box in the middle of the screen, over what you were looking at; closing the box puts you back exactly there. Each box lists its keys on its bottom border, where a question such as "Discard your changes?" also appears, in red; while it's open, the footer and the header's `? help` are hidden and the views behind it lose their focus highlight.
 
-- `n` adds a task to the selected column (to todo in the list). Type its title and press `enter`, or `ctrl-g` to add it and open it in your editor.
+- `n` opens a box for a new task at the top of the selected column. In the list, it opens at the top of the list and adds the task to todo. Type its title and press `enter`, or `ctrl-g` to add it and open it in your editor.
 - `s` and `p` open a menu for the status and the priority. In the detail view, the field being changed is marked. In the detail view, clicking a field's value does the same.
 - `#` opens a box to edit the labels. Separate them with commas or spaces; an empty line removes them all.
 - `a` archives the task, or restores it when archived tasks are shown, after a `y`/`n` question.

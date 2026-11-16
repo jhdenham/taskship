@@ -175,6 +175,7 @@ func TestScreens(t *testing.T) {
 		{"priority-menu-list-bottom-80", 80, 24, []string{"2", "G", "p"}},
 		{"labels-detail-80", 80, 24, []string{"l", "enter", "#"}},
 		{"quick-add-80", 80, 24, []string{"l", "n", "text:Update README"}},
+		{"quick-add-list-80", 80, 24, []string{"2", "n", "text:Update README"}},
 		{"archive-confirm-80", 80, 24, []string{"l", "j", "j", "a"}},
 		{"archived-80", 80, 24, []string{"l", "j", "j", "a", "y", "2"}},
 		{"archived-empty-80", 80, 24, []string{"A"}},
@@ -289,6 +290,35 @@ func TestQuickAdd(t *testing.T) {
 	press(m, "n", "esc")
 	if _, err := s.GetTask(context.Background(), "PROJ-11"); err == nil {
 		t.Error("esc added a task")
+	}
+}
+
+// In the list, quick add opens a box at the top and always adds to todo.
+func TestQuickAddList(t *testing.T) {
+	t.Setenv("TMPDIR", t.TempDir()) // the draft ctrl-g would open
+	m, s := myproject(t, 80, 24)
+	press(m, "2", "j", "j", "n")
+	if lines := m.statusLines(); len(lines) != 0 {
+		t.Errorf("quick add in the list shows status lines %q", lines)
+	}
+	press(m, "text:Write the docs", "enter")
+	got := task(t, s, "PROJ-10")
+	if got.Title != "Write the docs" || got.Status != core.StatusTodo {
+		t.Errorf("added %+v", got)
+	}
+	if sel, _ := m.selected(); sel.Ref != "PROJ-10" {
+		t.Errorf("selected %s after adding", sel.Ref)
+	}
+	press(m, "n", "esc")
+	if _, err := s.GetTask(context.Background(), "PROJ-11"); err == nil {
+		t.Error("esc added a task")
+	}
+	press(m, "n", "text:Open me")
+	if _, cmd := m.Update(keyMsg("ctrl+g")); cmd == nil {
+		t.Error("ctrl-g in the list's quick add returned no command")
+	}
+	if got := task(t, s, "PROJ-11"); got.Title != "Open me" || got.Status != core.StatusTodo {
+		t.Errorf("ctrl-g added %+v", got)
 	}
 }
 
