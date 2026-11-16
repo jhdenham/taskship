@@ -3,9 +3,11 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -110,8 +112,94 @@ func TestOpenRejectsNewerSchema(t *testing.T) {
 	db.Close()
 
 	_, err = Open(context.Background(), dir)
-	if err == nil || !strings.Contains(err.Error(), "upgrade taskship") {
-		t.Fatalf("Open with newer schema: err = %v, want upgrade error", err)
+	var newer *NewerSchemaError
+	if !errors.As(err, &newer) || newer.Version != 999 || newer.Supported != 10 || newer.Path != filepath.Join(dir, DBFile) {
+		t.Fatalf("Open with newer schema: err = %v, want NewerSchemaError", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, BackupDir)); !os.IsNotExist(err) {
+		t.Errorf("backup folder created for a newer schema: %v", err)
+	}
+}
+
+// oldDatabase creates a database in dir with only the first n migrations,
+// as an older taskship left it, holding one project.
+func oldDatabase(t *testing.T, dir string, n int) {
+	t.Helper()
+	db, err := sql.Open("sqlite", filepath.Join(dir, DBFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	files, _ := fs.Glob(migrations, "migrations/*.sql")
+	for _, f := range files[:n] {
+		b, err := migrations.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := db.Exec(string(b)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := db.Exec(fmt.Sprintf(`PRAGMA user_version = %d;
+		INSERT INTO projects (id, slug, task_prefix, created_at, updated_at)
+		VALUES ('p1', 'myproject', 'PROJ', 'now', 'now')`, n)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMigrateBacksUpFirst(t *testing.T) {
+	dir := t.TempDir()
+	oldDatabase(t, dir, 9)
+	s := openTest(t, dir)
+	if v := userVersion(t, s); v != 10 {
+		t.Errorf("user_version = %d, want 10", v)
+	}
+	backup := s.Backup()
+	if ok, _ := filepath.Match(filepath.Join(dir, BackupDir, "schema-9-*.db"), backup); !ok {
+		t.Fatalf("backup = %q", backup)
+	}
+	db, err := sql.Open("sqlite", backup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var version, projects int
+	db.QueryRow("PRAGMA user_version").Scan(&version)
+	db.QueryRow("SELECT count(*) FROM projects").Scan(&projects)
+	if version != 9 || projects != 1 {
+		t.Errorf("backup has schema %d and %d projects, want 9 and 1", version, projects)
+	}
+
+	// Nothing to migrate: no backup.
+	s.Close()
+	if s := openTest(t, dir); s.Backup() != "" {
+		t.Errorf("backup without a migration: %q", s.Backup())
+	}
+	// A new database has nothing to back up.
+	if s := openTest(t, t.TempDir()); s.Backup() != "" {
+		t.Errorf("backup of a new database: %q", s.Backup())
+	}
+}
+
+func TestMigrateStopsWhenBackupFails(t *testing.T) {
+	dir := t.TempDir()
+	oldDatabase(t, dir, 9)
+	if err := os.WriteFile(filepath.Join(dir, BackupDir), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Open(context.Background(), dir)
+	var backupErr *BackupError
+	if !errors.As(err, &backupErr) || backupErr.Path != filepath.Join(dir, DBFile) {
+		t.Fatalf("err = %v, want BackupError", err)
+	}
+	db, err := sql.Open("sqlite", filepath.Join(dir, DBFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var version int
+	if db.QueryRow("PRAGMA user_version").Scan(&version); version != 9 {
+		t.Errorf("user_version = %d after a failed backup, want 9", version)
 	}
 }
 

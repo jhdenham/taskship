@@ -55,7 +55,7 @@ questions, and -y accepts the defaults, so init can run without a terminal.`,
 			}
 			r.cmd, r.p = cmd, newPrompter(cmd)
 			r.interactive = inputIsTerminal(cmd.InOrStdin())
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

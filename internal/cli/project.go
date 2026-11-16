@@ -41,7 +41,7 @@ func newProjectAddCmd() *cobra.Command {
 			if p.TaskPrefix == "" {
 				return usageError{fmt.Errorf("--prefix is required")}
 			}
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -70,7 +70,7 @@ func newProjectListCmd() *cobra.Command {
 		Short: "List projects",
 		Args:  exactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -114,7 +114,7 @@ func newProjectShowCmd() *cobra.Command {
 		Short: "Show project details",
 		Args:  exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -165,7 +165,7 @@ func newProjectEditCmd() *cobra.Command {
 			if patch == (store.ProjectPatch{}) {
 				return usageError{fmt.Errorf("nothing to change; pass --name or --description")}
 			}
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -199,7 +199,7 @@ func newProjectArchiveCmd(archive bool) *cobra.Command {
 		Short: short,
 		Args:  exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

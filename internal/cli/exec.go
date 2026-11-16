@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -40,7 +40,15 @@ func Execute(cmd *cobra.Command, args []string) int {
 	if errors.As(err, &agentExit) {
 		return int(agentExit)
 	}
-	if store.IsReadOnly(err) {
+	var newer *store.NewerSchemaError
+	var backup *store.BackupError
+	switch {
+	case errors.As(err, &newer):
+		err = fmt.Errorf("%s was updated by a newer taskship version (schema %d; taskship %s supports up to %d)\n\nRun %s to install the latest version.",
+			display.Path(newer.Path), newer.Version, cmd.Version, newer.Supported, cmdRef("taskship upgrade"))
+	case errors.As(err, &backup):
+		err = fmt.Errorf("couldn't back up %s before updating it: %v\n\nYour data wasn't changed.", display.Path(backup.Path), backup.Err)
+	case store.IsReadOnly(err):
 		err = readOnlyError(err)
 	}
 	printError(cmd.ErrOrStderr(), err)
@@ -133,12 +141,16 @@ func rangeArgs(min, max int) cobra.PositionalArgs {
 
 // openStore opens the local store, creating it on first use. Only call it
 // from commands that need stored data, so metadata commands stay side-effect free.
-func openStore(ctx context.Context) (*store.Store, error) {
+func openStore(cmd *cobra.Command) (*store.Store, error) {
 	dir, err := home.Dir()
 	if err != nil {
 		return nil, err
 	}
-	return store.Open(ctx, dir)
+	s, err := store.Open(cmd.Context(), dir)
+	if err == nil && s.Backup() != "" {
+		lipgloss.Fprintf(cmd.ErrOrStderr(), "Backed up your Taskship data to %s before updating it.\n", pathRef(s.Backup()))
+	}
+	return s, err
 }
 
 func writeJSON(cmd *cobra.Command, v any) error {

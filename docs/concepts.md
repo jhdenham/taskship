@@ -32,4 +32,4 @@ The optional Taskship skill teaches an agent to manage tasks in any session, not
 
 ## Storage
 
-Everything Taskship knows lives in `~/.taskship` (or `$TASKSHIP_HOME`), in a SQLite database that's created by the first command that needs it. Installing Taskship, `--help`, and `--version` create no files.
+Everything Taskship knows lives in `~/.taskship` (or `$TASKSHIP_HOME`), in a SQLite database that's created by the first command that needs it. Before a new release updates the database, Taskship copies it into `~/.taskship/backups/` (see [Upgrading](quickstart.md#upgrading)), and running sessions such as the terminal UI are recorded in `~/.taskship/sessions/` while they're open. Installing Taskship, `--help`, and `--version` create no files.

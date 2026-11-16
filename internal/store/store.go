@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
@@ -27,10 +28,42 @@ var migrations embed.FS
 
 // Store is a Taskship SQLite database.
 type Store struct {
-	db *sql.DB
+	db     *sql.DB
+	backup string
 }
 
-// Open creates dir and the database if needed and applies pending migrations.
+// NewerSchemaError reports a database whose schema is newer than this
+// build's migrations, so a newer taskship has used it.
+type NewerSchemaError struct {
+	Path      string
+	Version   int // the database's schema version
+	Supported int // the newest schema this build knows
+}
+
+func (e *NewerSchemaError) Error() string {
+	return fmt.Sprintf("%s was updated by a newer taskship version (schema %d; this build supports up to %d)", e.Path, e.Version, e.Supported)
+}
+
+// BackupError reports a backup that failed before migrating the database
+// at Path, which is left unchanged.
+type BackupError struct {
+	Path string
+	Err  error
+}
+
+func (e *BackupError) Error() string {
+	return fmt.Sprintf("couldn't back up %s before updating it: %v", e.Path, e.Err)
+}
+
+func (e *BackupError) Unwrap() error { return e.Err }
+
+// BackupDir is where Open copies the database, inside the Taskship home
+// directory, before migrating it.
+const BackupDir = "backups"
+
+// Open creates dir and the database if needed and applies pending
+// migrations. Before migrating an existing database, it copies it into
+// BackupDir; Backup reports the copy.
 func Open(ctx context.Context, dir string) (*Store, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
@@ -43,11 +76,23 @@ func Open(ctx context.Context, dir string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := migrate(ctx, db); err != nil {
+	backup, err := migrate(ctx, db, dir)
+	if err != nil {
 		db.Close()
+		var newer *NewerSchemaError
+		var backupErr *BackupError
+		if errors.As(err, &newer) || errors.As(err, &backupErr) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("migrate %s: %w", filepath.Join(dir, DBFile), err)
 	}
-	return &Store{db: db}, nil
+	return &Store{db: db, backup: backup}, nil
+}
+
+// Backup returns the path of the copy Open made before migrating the
+// database, or "" if it didn't migrate one.
+func (s *Store) Backup() string {
+	return s.backup
 }
 
 // IsReadOnly reports whether err is SQLite refusing a write because the
@@ -62,38 +107,66 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func migrate(ctx context.Context, db *sql.DB) error {
+// migrate applies pending migrations to the database in dir. Before
+// migrating an existing database, it copies it into BackupDir and returns
+// the copy's path.
+func migrate(ctx context.Context, db *sql.DB, dir string) (string, error) {
 	files, err := fs.Glob(migrations, "migrations/*.sql")
 	if err != nil {
-		return err
+		return "", err
 	}
+	path := filepath.Join(dir, DBFile)
+	version, err := schemaVersion(ctx, db, path, len(files))
+	if err != nil || version == len(files) {
+		return "", err
+	}
+	backup := ""
+	if version > 0 {
+		// VACUUM can't run in a transaction, so the copy is made first. If
+		// another taskship migrates in between, the copy is only redundant.
+		backup = filepath.Join(dir, BackupDir, fmt.Sprintf("schema-%d-%s.db", version, time.Now().Format("20060102-150405")))
+		if err := os.MkdirAll(filepath.Dir(backup), 0o700); err != nil {
+			return "", &BackupError{path, err}
+		}
+		if _, err := db.ExecContext(ctx, "VACUUM INTO ?", backup); err != nil {
+			return "", &BackupError{path, err}
+		}
+	}
+
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer tx.Rollback()
-
-	var version int
-	if err := tx.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
-		return err
-	}
-	if version > len(files) {
-		return fmt.Errorf("database schema version %d is newer than this taskship supports (%d); upgrade taskship", version, len(files))
-	}
-	if version == len(files) {
-		return nil
+	if version, err = schemaVersion(ctx, tx, path, len(files)); err != nil || version == len(files) {
+		return backup, err
 	}
 	for _, f := range files[version:] {
 		sqlText, err := migrations.ReadFile(f)
 		if err != nil {
-			return err
+			return "", err
 		}
 		if _, err := tx.ExecContext(ctx, string(sqlText)); err != nil {
-			return fmt.Errorf("%s: %w", f, err)
+			return "", fmt.Errorf("%s: %w", f, err)
 		}
 	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", len(files))); err != nil {
-		return err
+		return "", err
 	}
-	return tx.Commit()
+	return backup, tx.Commit()
+}
+
+// schemaVersion returns the schema version of the database at path, which
+// this build supports up to supported.
+func schemaVersion(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}, path string, supported int) (int, error) {
+	var version int
+	if err := q.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+		return 0, err
+	}
+	if version > supported {
+		return 0, &NewerSchemaError{path, version, supported}
+	}
+	return version, nil
 }

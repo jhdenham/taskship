@@ -64,7 +64,7 @@ Without --project, the project is the one set up for the current folder.`,
 		Args: rangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -109,7 +109,7 @@ func newNoteListCmd() *cobra.Command {
 		Args:    exactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -164,7 +164,7 @@ Without TEXT, the note opens in $VISUAL or $EDITOR.`,
 				return err
 			}
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -220,7 +220,7 @@ notes don't change, and the number isn't reused.`,
 				return usageError{errors.New("deleting a note needs a terminal to confirm; pass --yes to delete it without asking")}
 			}
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

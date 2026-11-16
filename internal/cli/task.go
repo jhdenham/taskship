@@ -65,7 +65,7 @@ new task in $VISUAL or $EDITOR, as "taskship task edit" does.`,
 			if err := checkEditFlag(cmd, edit, asJSON); err != nil {
 				return err
 			}
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -152,7 +152,7 @@ first line says what is shown and how to change it.`,
 				}
 				filter.Statuses = append(filter.Statuses, st)
 			}
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -289,7 +289,7 @@ func newTaskShowCmd(name string) *cobra.Command {
 			if asJSON && asMarkdown {
 				return usageError{fmt.Errorf("--json and --md cannot be used together")}
 			}
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -409,7 +409,7 @@ for the format.`,
 				return usageError{fmt.Errorf("--from cannot be combined with --title, --description, --status, or --priority")}
 			}
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -572,7 +572,7 @@ opens the copy in $VISUAL or $EDITOR, as "taskship task edit" does.`,
 			if err := checkEditFlag(cmd, edit, asJSON); err != nil {
 				return err
 			}
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -615,7 +615,7 @@ func newTaskArchiveCmd(archive bool) *cobra.Command {
 		Short: short,
 		Args:  exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

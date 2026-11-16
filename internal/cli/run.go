@@ -114,7 +114,7 @@ func runAgent(cmd *cobra.Command, mode core.RunMode, ref, agent, workspacePath, 
 		return usageError{errors.New("launching an agent needs a terminal; use --dry-run to preview the run")}
 	}
 	ctx := cmd.Context()
-	s, err := openStore(ctx)
+	s, err := openStore(cmd)
 	if err != nil {
 		return err
 	}
@@ -149,6 +149,7 @@ func runAgent(cmd *cobra.Command, mode core.RunMode, ref, agent, workspacePath, 
 		}
 		return err
 	}
+	defer startSession(cmd, plan.Task.Ref)()
 	return launch(cmd, s, plan)
 }
 

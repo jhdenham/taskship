@@ -37,7 +37,7 @@ Without TEXT, it opens $VISUAL or $EDITOR; an empty comment adds nothing.`,
 		Args: rangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -74,7 +74,7 @@ func newCommentListCmd() *cobra.Command {
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -117,7 +117,7 @@ is "-". Without TEXT, the comment opens in $VISUAL or $EDITOR.`,
 				return err
 			}
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -168,7 +168,7 @@ numbers of other comments don't change, and the number isn't reused.`,
 				return usageError{errors.New("deleting a comment needs a terminal to confirm; pass --yes to delete it without asking")}
 			}
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

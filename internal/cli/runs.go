@@ -27,7 +27,7 @@ Claude session with "claude --resume SESSION" from the run's folder.`,
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

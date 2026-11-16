@@ -49,7 +49,7 @@ func newWorkspaceAddCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			s, err := openStore(ctx)
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -83,7 +83,7 @@ func newWorkspaceListCmd() *cobra.Command {
 		Long:  "List registered workspaces. Paths that no longer exist are marked (missing); remove them with \"taskship workspace remove PATH\".",
 		Args:  exactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}
@@ -131,7 +131,7 @@ func newWorkspaceRemoveCmd() *cobra.Command {
 			if real, err := filepath.EvalSymlinks(path); err == nil {
 				path = real
 			}
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

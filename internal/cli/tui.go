@@ -43,11 +43,12 @@ func hasTerminal(cmd *cobra.Command) bool {
 // has checked for a terminal.
 func runTUI(cmd *cobra.Command) error {
 	ctx := cmd.Context()
-	s, err := openStore(ctx)
+	s, err := openStore(cmd)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
+	defer startSession(cmd, "")()
 	for {
 		loc, ws, err := currentDir(ctx, s)
 		if err != nil {

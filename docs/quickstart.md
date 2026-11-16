@@ -16,9 +16,13 @@ The script downloads the `taskship` binary for macOS or Linux from the latest Gi
 taskship upgrade
 ```
 
-`upgrade` checks for a newer release and shows the current and latest versions, then asks before changing anything (`--yes` skips the question, and is needed without a terminal). It downloads the release for your system, checks its checksum, runs it once in the folder it will live in, and only then replaces the `taskship` binary, following a symlink to the real file. If any step fails, the old binary stays in place. Then the new version updates [the skill](skill.md) for each agent where it's installed and outdated; agents without the skill are left alone. Pre-releases are never installed, but a pre-release such as `v0.2.0-rc.1` upgrades to its release, `v0.2.0`.
+`upgrade` checks for a newer release and shows the current and latest versions with a link to the release notes, then asks before changing anything (`--yes` skips the question, and is needed without a terminal). It downloads the release for your system, checks its checksum, runs it once in the folder it will live in, and only then replaces the `taskship` binary, following a symlink to the real file. If any step fails, or you press Ctrl+C, the old binary stays in place. Then the new version updates [the skill](skill.md) for each agent where it's installed and outdated; agents without the skill are left alone. Pre-releases are never installed, but a pre-release such as `v0.2.0-rc.1` upgrades to its release, `v0.2.0`.
 
-A `taskship` built from source (`go install` or `go build`) isn't replaced; update it with `go install github.com/jhdenham/taskship/cmd/taskship@latest`.
+Taskship sessions that are already running, such as the terminal UI or an agent run, keep using the old version. `upgrade` lists them with their process IDs so you can restart them.
+
+A `taskship` built from source isn't replaced. If you installed it with `go install`, update it with `go install github.com/jhdenham/taskship/cmd/taskship@latest`; if you built it in a checkout, pull and rebuild.
+
+To go back to an earlier release, reinstall it with the install script: `curl -fsSL https://taskship.dev/install.sh | TASKSHIP_VERSION=v0.1.0 sh`. If the newer release updated your data, the earlier one won't open it. Before each update, Taskship saves a copy of your data in `~/.taskship/backups/`; to restore it, close Taskship and replace `~/.taskship/taskship.db` with the copy. Changes made since then are lost.
 
 ## First steps
 

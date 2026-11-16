@@ -24,7 +24,7 @@ the files do not change the tasks or notes.`,
 		Example: "  taskship export ~/taskship-export --project myproject",
 		Args:    exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := openStore(cmd.Context())
+			s, err := openStore(cmd)
 			if err != nil {
 				return err
 			}

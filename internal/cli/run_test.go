@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/jhdenham/taskship/internal/core"
 	"github.com/jhdenham/taskship/internal/dispatch"
 	"github.com/jhdenham/taskship/internal/display"
@@ -147,7 +149,7 @@ func asTerminal(t *testing.T) {
 func runsOf(t *testing.T, ref string) []core.Run {
 	t.Helper()
 	ctx := context.Background()
-	s, err := openStore(ctx)
+	s, err := openStore(cmdWithContext(ctx))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,7 +341,7 @@ func TestRunIDFromEnvironment(t *testing.T) {
 	seedCLIProjects(t)
 	mustRun(t, "add", "Fix export", "-p", "myproject")
 	ctx := context.Background()
-	s, err := openStore(ctx)
+	s, err := openStore(cmdWithContext(ctx))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -399,4 +401,12 @@ func TestRunIDFromEnvironment(t *testing.T) {
 	if runs := mustRun(t, "runs", "PROJ-1"); strings.Contains(runs, "✓") {
 		t.Errorf("runs after reopening =\n%s", runs)
 	}
+}
+
+// cmdWithContext returns a command for helpers such as openStore that take
+// one, outside a command run.
+func cmdWithContext(ctx context.Context) *cobra.Command {
+	cmd := NewRootCmd("")
+	cmd.SetContext(ctx)
+	return cmd
 }
