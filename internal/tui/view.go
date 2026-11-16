@@ -124,6 +124,9 @@ func (m *model) header() string {
 		if m.showCanceled {
 			right = append(right, m.th.faint.Render("showing ")+m.th.value.Bold(true).Render("canceled"))
 		}
+		if m.hideDone && m.view == viewList {
+			right = append(right, m.th.faint.Render("hiding ")+m.th.value.Bold(true).Render("done"))
+		}
 		if m.laneShown() {
 			right = append(right, m.th.faint.Render("showing ")+m.th.value.Bold(true).Render("notes"))
 		}
@@ -393,7 +396,7 @@ func (m *model) footer() string {
 		keys = append(keys, "j k", "move", "enter", "open", "o", "sort", "n", "new", "/", "filter", "A", archivedShort)
 	case m.view == viewList:
 		keys = append(keys, "j k", "move", "enter", "open", "o", "sort", "n", "new task", "s", "status", "p", "priority",
-			"#", "labels", "a", m.archiveWord(), "/", "filter", "A", archived, "1 2 3", "views", "P", "projects")
+			"#", "labels", "a", m.archiveWord(), "/", "filter", "A", archived, "D", m.doneWord(), "1 2 3", "views", "P", "projects")
 	case narrow && m.showArchived:
 		keys = append(keys, "hjkl", "move", "enter", "open", "A", "hide archived", "/", "filter")
 	case narrow:
@@ -457,6 +460,14 @@ func (m *model) notesFooter(narrow bool) string {
 	return m.th.keys(append(keys, "?", "help", "q", "quit")...)
 }
 
+// doneWord is what D does in the list.
+func (m *model) doneWord() string {
+	if m.hideDone {
+		return "show done"
+	}
+	return "hide done"
+}
+
 // archiveWord is what a does in the current view.
 func (m *model) archiveWord() string {
 	if m.showArchived {
@@ -472,7 +483,7 @@ func (m *model) recordFooterZones(y int, footer string) {
 	for _, part := range strings.Split(plain, "  ") {
 		k, _, _ := strings.Cut(part, " ")
 		switch k {
-		case "enter", "esc", "tab", "?", "q", "n", "o", "/", "A", "C", "P", "s", "p", "#", "a", "i", "y", "e", "d", "R", "t", "N":
+		case "enter", "esc", "tab", "?", "q", "n", "o", "/", "A", "C", "D", "P", "s", "p", "#", "a", "i", "y", "e", "d", "R", "t", "N":
 			m.onKey(rect{x, y, lipgloss.Width(part), 1}, k)
 		case "ctrl-s", "ctrl-g", "ctrl-r":
 			m.onKey(rect{x, y, lipgloss.Width(part), 1}, strings.Replace(k, "-", "+", 1))

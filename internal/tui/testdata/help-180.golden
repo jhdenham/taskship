@@ -15,7 +15,7 @@
  │                                   ┃ P           projects              #           labels                                                   ┃                                   │
  │                                   ┃ /           filter                e           edit (ctrl-g: vi)     Mouse                              ┃                                   │
  │                                   ┃ o           sort (list)           a           archive / restore     click       select, open, press    ┃                                   │
- │                                   ┃ C N         canceled / notes                                        wheel       scroll                 ┃                                   │
+ │                                   ┃ C D N       canceled/done/notes                                     wheel       scroll                 ┃                                   │
  │                                   ┃ A           show archived         Boxes                                                                ┃                                   │
  │                                   ┃ R           refresh               tab         title ↔ description   General                            ┃                                   │
  │                                   ┃                                   ctrl-s      save                  ?           this help              ┃                                   │

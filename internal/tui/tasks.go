@@ -66,9 +66,13 @@ func (f filter) match(t core.Task) bool {
 }
 
 // shown reports whether t belongs in the current views before the filter:
-// archived or not as toggled, canceled only when shown.
+// archived or not as toggled, canceled only when shown, and done unless the
+// list hides it.
 func (m *model) shown(t core.Task) bool {
 	if (t.ArchivedAt != nil) != m.showArchived {
+		return false
+	}
+	if m.hideDone && m.view == viewList && t.Status == core.StatusDone {
 		return false
 	}
 	return m.showCanceled || t.Status != core.StatusCanceled

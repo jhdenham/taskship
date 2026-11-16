@@ -146,6 +146,7 @@ type model struct {
 
 	view          viewKind
 	showCanceled  bool
+	hideDone      bool // the list hides done tasks
 	showLane      bool // the board shows the notes lane
 	inLane        bool // the selection is in the notes lane
 	laneTop       int  // the first note the lane shows
@@ -456,6 +457,12 @@ func (m *model) key(k string) tea.Cmd {
 		m.showCanceled = !m.showCanceled
 		m.selectRef(m.selRef)
 		return nil
+	case "D":
+		if m.view == viewList {
+			m.hideDone = !m.hideDone
+			m.selectRef(m.selRef)
+		}
+		return nil
 	case "N":
 		m.showLane = !m.showLane
 		if !m.showLane && m.inLane {
@@ -606,7 +613,7 @@ func (m *model) openProject(name string) {
 		return
 	}
 	m.project = p
-	m.filter, m.showArchived, m.showCanceled = filter{}, false, false
+	m.filter, m.showArchived, m.showCanceled, m.hideDone = filter{}, false, false, false
 	m.detailOpen, m.focusDetail, m.selRef = false, false, ""
 	m.col, m.listRow, m.listTop = 0, 0, 0
 	m.noteOpen, m.focusNote, m.noteFilter = false, false, ""

@@ -16,7 +16,7 @@ type helpSection struct {
 var (
 	helpMove  = helpSection{"Move", [][2]string{{"h j k l", "move (or arrows)"}, {"g G", "first / last"}, {"tab", "board ↔ detail"}}}
 	helpViews = helpSection{"Views", [][2]string{{"1 2 3", "board / list / notes"}, {"P", "projects"}, {"/", "filter"},
-		{"o", "sort (list)"}, {"C N", "canceled / notes"}, {"A", "show archived"}, {"R", "refresh"}}}
+		{"o", "sort (list)"}, {"C D N", "canceled/done/notes"}, {"A", "show archived"}, {"R", "refresh"}}}
 	helpTasks = helpSection{"Tasks", [][2]string{{"enter", "open"}, {"n", "new task / note"}, {"t", "make task from note"}, {"H L", "move left / right"},
 		{"s", "status"}, {"p", "priority"}, {"#", "labels"}, {"e", "edit (ctrl-g: EDITOR)"}, {"a", "archive / restore"}}}
 	helpDetail = helpSection{"Detail", [][2]string{{"r", "launch agent"}, {"c", "add comment"}, {"[ ]", "pick a comment"},

@@ -9,7 +9,7 @@
  │└─┃ P           projects              p           priority               ┃─┘│
  │┌─┃ /           filter                #           labels                 ┃─┐│
  ││ ┃ o           sort (list)           e           edit (ctrl-g: vi)      ┃ ││
- ││ ┃ C N         canceled / notes      a           archive / restore      ┃ ││
+ ││ ┃ C D N       canceled/done/notes   a           archive / restore      ┃ ││
  │└─┃ A           show archived                                            ┃ ││
  │  ┃ R           refresh               Detail                             ┃─┘│
  │  ┃                                   r           launch agent           ┃  │

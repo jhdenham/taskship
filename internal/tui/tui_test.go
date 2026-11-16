@@ -176,6 +176,7 @@ func TestScreens(t *testing.T) {
 		{"labels-detail-80", 80, 24, []string{"l", "enter", "#"}},
 		{"quick-add-80", 80, 24, []string{"l", "n", "text:Update README"}},
 		{"quick-add-list-80", 80, 24, []string{"2", "n", "text:Update README"}},
+		{"list-hide-done-80", 80, 24, []string{"2", "D"}},
 		{"archive-confirm-80", 80, 24, []string{"l", "j", "j", "a"}},
 		{"archived-80", 80, 24, []string{"l", "j", "j", "a", "y", "2"}},
 		{"archived-empty-80", 80, 24, []string{"A"}},
@@ -1049,6 +1050,42 @@ func TestRefreshKeepsDetail(t *testing.T) {
 	m.Update(checkMsg{})
 	if !m.detailOpen || m.detailRef != "PROJ-9" || m.selRef == "PROJ-9" {
 		t.Errorf("detail %v %q, selected %q", m.detailOpen, m.detailRef, m.selRef)
+	}
+}
+
+// D hides and shows done tasks in the list, without changing them, and does
+// nothing on the board.
+func TestHideDone(t *testing.T) {
+	m, s := myproject(t, 80, 24)
+	press(m, "D")
+	if m.hideDone {
+		t.Error("D toggled on the board")
+	}
+	press(m, "2", "G", "D")
+	for _, t2 := range m.listTasks() {
+		if t2.Status == core.StatusDone {
+			t.Errorf("list shows done task %s", t2.Ref)
+		}
+	}
+	if !strings.Contains(header(m), "hiding done") {
+		t.Errorf("header: %q", header(m))
+	}
+	if sel, ok := m.selected(); !ok || sel.Status == core.StatusDone {
+		t.Errorf("selected %+v after hiding done", sel)
+	}
+	if got := task(t, s, "PROJ-1"); got.Status != core.StatusDone {
+		t.Errorf("hiding changed PROJ-1 to %s", got.Status)
+	}
+	press(m, "1")
+	if tasks, _ := m.column(core.StatusDone); len(tasks) != 2 {
+		t.Errorf("board done column has %d tasks", len(tasks))
+	}
+	press(m, "2", "D")
+	if n := len(m.listTasks()); n != 9 {
+		t.Errorf("list shows %d tasks after showing done", n)
+	}
+	if strings.Contains(header(m), "hiding done") {
+		t.Errorf("header: %q", header(m))
 	}
 }
 

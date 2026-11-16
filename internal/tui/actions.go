@@ -184,6 +184,9 @@ func (m *model) setStatus(t core.Task, st core.Status) {
 	if st == core.StatusCanceled && !m.showCanceled {
 		more = append(more, m.th.keys("C", "shows canceled tasks"))
 	}
+	if st == core.StatusDone && m.hideDone && m.view == viewList {
+		more = append(more, m.th.keys("D", "shows done tasks"))
+	}
 	m.msg = okMsg(m.th, fmt.Sprintf("Moved %s to %s", t.Ref, statusName(st))+strings.Repeat(" ", 3*len(more))+strings.Join(more, ""))
 }
 

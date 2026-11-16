@@ -15,7 +15,7 @@ Setting up projects and their folders stays on the command line (`taskship init`
 ## Views
 
 - **Board** (`1`): one column per status (backlog, todo, in progress, done). Moving a card to another column with `H` and `L` changes its status. Canceled tasks are hidden unless you press `C`, and `N` shows your notes in a lane before backlog, so you can turn one into a task without leaving the board: move into the lane with `h`, then use the note keys below. There, `n` adds a one-line note in place, the way it adds a task to a column (`ctrl-g` adds it and opens it in your editor).
-- **List** (`2`): the same tasks as a table. `o` changes the sort order: priority, status, ref, or last updated. Clicking a column header sorts by it.
+- **List** (`2`): the same tasks as a table. `o` changes the sort order: priority, status, ref, or last updated. Clicking a column header sorts by it. `D` hides done tasks and shows them again; the header says "hiding done" while they're hidden. Their status doesn't change, and the board still shows them.
 
   ![The list view: one row per task, with status, priority, labels, and when it was last updated](images/tui-list.png)
 
@@ -85,6 +85,7 @@ The TUI then closes, leaves lines such as `✓ Launching Claude for PROJ-42 in ~
 | `/` | Filter |
 | `o` | Sort the list |
 | `C` / `A` | Show canceled / archived tasks |
+| `D` | Hide done tasks in the list |
 | `N` | Show the notes lane on the board |
 | `P` | Projects |
 | `R` | Reload |
