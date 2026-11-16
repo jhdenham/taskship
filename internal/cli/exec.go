@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/display"
 	"github.com/jhdenham/taskship/internal/home"
 	"github.com/jhdenham/taskship/internal/store"
 )
@@ -38,6 +39,9 @@ func Execute(cmd *cobra.Command, args []string) int {
 	var agentExit agentExitError
 	if errors.As(err, &agentExit) {
 		return int(agentExit)
+	}
+	if store.IsReadOnly(err) {
+		err = readOnlyError(err)
 	}
 	printError(cmd.ErrOrStderr(), err)
 	var usage usageError
@@ -80,6 +84,16 @@ type kindError struct {
 
 func (e kindError) Error() string { return e.msg }
 func (e kindError) Unwrap() error { return e.err }
+
+// readOnlyError explains a write the database refused, which almost always
+// means an agent's sandbox doesn't let taskship write to its folder.
+func readOnlyError(err error) error {
+	dir, derr := home.Dir()
+	if derr != nil {
+		return err
+	}
+	return kindError{fmt.Sprintf("can't write to %s\n\nIf an agent ran this command, its sandbox may block that folder. To allow it, see https://taskship.dev/docs/skill/#agent-sandboxes", display.Path(dir)), err}
+}
 
 // errDeclined ends a command the user declined to go on with. The command
 // has already said what happened, so it isn't printed, but it exits 1.

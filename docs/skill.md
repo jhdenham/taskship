@@ -23,7 +23,7 @@ The skill runs `taskship` from your `PATH`, so `install` needs it there. Run `ta
 
 ## Permissions in Claude Code
 
-In a session Taskship didn't launch, Claude's permission settings apply to `taskship` commands like any other, so auto mode may stop to check a command that changes a task. To allow them, add rules to `~/.claude/settings.json`, for example:
+In a session Taskship didn't launch, Claude's permission settings apply to `taskship` commands like any other, so Claude may ask before running a command that changes a task. To skip those prompts, add rules to `~/.claude/settings.json`, for example:
 
 ```json
 {
@@ -42,3 +42,32 @@ In a session Taskship didn't launch, Claude's permission settings apply to `task
 ```
 
 Taskship never changes your Claude settings itself.
+
+## Agent sandboxes
+
+An agent's sandbox can stop `taskship` from writing to `~/.taskship` (or `$TASKSHIP_HOME`, if you set it). Reading tasks still works, but commands that change them fail with "can't write to ~/.taskship". To fix it, allow the agent to write to that folder.
+
+Codex's sandbox is on by default. Add the folder as a writable root in `~/.codex/config.toml`:
+
+```toml
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+writable_roots = ["~/.taskship"]
+```
+
+Or allow it for a single session with `codex --add-dir ~/.taskship`. Commands that stay inside the sandbox run without asking, so Codex needs no allow list for `taskship` commands.
+
+Claude Code's sandbox is off by default. If you have it turned on, add the folder to `~/.claude/settings.json`:
+
+```json
+{
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": ["~/.taskship"]
+    }
+  }
+}
+```
+
+Taskship never changes your agent settings itself.

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/jhdenham/taskship/internal/core"
+	"github.com/jhdenham/taskship/internal/display"
 	"github.com/jhdenham/taskship/internal/store"
 )
 
@@ -100,6 +101,40 @@ func TestFirstStatefulCommandInitializesStorage(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(home, store.DBFile)); err != nil {
 		t.Errorf("database not created: %v", err)
+	}
+}
+
+func TestReadOnlyDatabaseError(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root can write to read-only files")
+	}
+	home := tempHome(t)
+	mustRun(t, "project", "add", "myproject", "--prefix", "PROJ")
+	db := filepath.Join(home, store.DBFile)
+	for _, p := range []string{db, home} {
+		if err := os.Chmod(p, 0o555); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Cleanup(func() {
+		os.Chmod(home, 0o700)
+		os.Chmod(db, 0o600)
+	})
+
+	if out := mustRun(t, "project", "list"); !strings.Contains(out, "myproject") {
+		t.Errorf("project list = %q", out)
+	}
+	r := run(t, "", "add", "Fix export", "-p", "myproject")
+	if r.code != exitFailure {
+		t.Errorf("exit code = %d, want %d", r.code, exitFailure)
+	}
+	for _, want := range []string{"can't write to " + display.Path(home), "https://taskship.dev/docs/skill/#agent-sandboxes"} {
+		if !strings.Contains(r.stderr, want) {
+			t.Errorf("stderr = %q, want it to contain %q", r.stderr, want)
+		}
+	}
+	if strings.Contains(r.stderr, "readonly database") {
+		t.Errorf("stderr shows the SQLite error: %q", r.stderr)
 	}
 }
 

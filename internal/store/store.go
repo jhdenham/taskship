@@ -5,12 +5,14 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 
-	_ "modernc.org/sqlite"
+	"modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 // DBFile is the database file name inside the Taskship home directory.
@@ -46,6 +48,13 @@ func Open(ctx context.Context, dir string) (*Store, error) {
 		return nil, fmt.Errorf("migrate %s: %w", filepath.Join(dir, DBFile), err)
 	}
 	return &Store{db: db}, nil
+}
+
+// IsReadOnly reports whether err is SQLite refusing a write because the
+// database can't be written, as inside an agent's sandbox.
+func IsReadOnly(err error) bool {
+	var e *sqlite.Error
+	return errors.As(err, &e) && e.Code()&0xff == sqlite3.SQLITE_READONLY
 }
 
 // Close closes the database.
