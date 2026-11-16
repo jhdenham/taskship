@@ -51,7 +51,9 @@ Work you find outside the task: mention it and offer to add it as a new task, or
 
 ### Capture work ("add a task for that")
 
-Draft the task following the guide, show it to the user, and add it once they agree. Split work that's too big into several tasks that each stand on their own.
+1. Draft the task following the guide, and split work that's too big into several tasks that each stand on their own.
+2. Show the draft to the user, then stop. Being asked to add a task doesn't mean the user agrees to your draft, because it has details they haven't seen yet: the description, acceptance criteria, labels, priority. Don't run `taskship add` until they reply to say yes.
+3. Add what they agreed to, with any changes they asked for.
 
 ### Refine a task ("refine PROJ-42", "clean up the backlog")
 
