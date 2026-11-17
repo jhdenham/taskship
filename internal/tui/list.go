@@ -123,7 +123,7 @@ func (m *model) list(screen []string, r rect) {
 	for i := m.listTop; i < len(tasks) && i < m.listTop+avail; i++ {
 		t := tasks[i]
 		th, marker := m.th, " "
-		if i == m.listRow {
+		if i == m.listRow && !m.noSel {
 			th = m.th.onSelection()
 			marker = m.th.keyBold.Render("▌")
 		}
@@ -131,12 +131,12 @@ func (m *model) list(screen []string, r rect) {
 		for j, c := range cols {
 			cells[j] = c.cell(th, t)
 		}
-		if i == m.listRow {
+		if i == m.listRow && !m.noSel {
 			cells[0], cells[1] = th.keyBold.Render(t.Ref), th.bold.Render(t.Title)
 		}
 		body = append(body, row(th, cells, marker))
 		m.onClick(rect{r.x + 1, top + i - m.listTop, inner, 1}, func() tea.Cmd {
-			m.listRow = i
+			m.listRow, m.noSel = i, false
 			m.openDetail(t.Ref)
 			return nil
 		})

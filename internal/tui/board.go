@@ -21,10 +21,10 @@ func (m *model) boardKey(k string) (tea.Cmd, bool) {
 			m.selectNote(m.selNote)
 			break
 		}
-		m.col = max(0, m.col-1)
+		m.col, m.noSel = max(0, m.col-1), false
 		m.selChanged()
 	case "l", "right":
-		m.col = min(len(cols)-1, m.col+1)
+		m.col, m.noSel = min(len(cols)-1, m.col+1), false
 		m.selChanged()
 	case "j", "down":
 		m.moveRow(1)
@@ -89,7 +89,7 @@ func (m *model) drawColumn(screen []string, r rect, i int, st core.Status) {
 		}
 	}
 	m.onClick(r, func() tea.Cmd {
-		m.col, m.focusDetail, m.inLane, m.noteOpen = i, false, false, false
+		m.col, m.focusDetail, m.inLane, m.noteOpen, m.noSel = i, false, false, false, false
 		m.selChanged()
 		return nil
 	})
@@ -147,10 +147,10 @@ func (m *model) drawColumn(screen []string, r rect, i int, st core.Status) {
 			break
 		}
 		t := tasks[j]
-		selected := i == m.col && j == sel && !m.inLane
+		selected := i == m.col && j == sel && !m.inLane && !m.noSel
 		card := m.card(t, inner, selected)
 		m.onClick(rect{r.x + 1, y + used, inner, len(card)}, func() tea.Cmd {
-			m.col, m.rows[st], m.inLane = i, j, false
+			m.col, m.rows[st], m.inLane, m.noSel = i, j, false, false
 			m.openDetail(tasks[j].Ref)
 			return nil
 		})

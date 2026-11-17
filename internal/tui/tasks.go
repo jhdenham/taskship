@@ -65,14 +65,19 @@ func (f filter) match(t core.Task) bool {
 	return len(f.priorities) == 0 || slices.Contains(f.priorities, t.Priority)
 }
 
-// shown reports whether t belongs in the current views before the filter:
-// archived or not as toggled, canceled only when shown, and done unless the
-// list hides it.
+// shown reports whether t belongs in the current view before the filter.
 func (m *model) shown(t core.Task) bool {
+	return m.shownIn(t, m.view)
+}
+
+// shownIn reports whether t belongs in view v before the filter: archived
+// or not as toggled, canceled only when shown, and done unless v is the
+// list and it hides done tasks.
+func (m *model) shownIn(t core.Task, v viewKind) bool {
 	if (t.ArchivedAt != nil) != m.showArchived {
 		return false
 	}
-	if m.hideDone && m.view == viewList && t.Status == core.StatusDone {
+	if m.hideDone && v == viewList && t.Status == core.StatusDone {
 		return false
 	}
 	return m.showCanceled || t.Status != core.StatusCanceled
@@ -113,7 +118,7 @@ func byPriority(a, b core.Task) int {
 // without the filter.
 func (m *model) column(st core.Status) (tasks []core.Task, total int) {
 	for _, t := range m.tasks {
-		if m.shown(t) && t.Status == st {
+		if m.shownIn(t, viewBoard) && t.Status == st {
 			total++
 			if m.filter.match(t) {
 				tasks = append(tasks, t)
@@ -144,7 +149,7 @@ var sorts = []struct {
 func (m *model) listTasks() []core.Task {
 	var tasks []core.Task
 	for _, t := range m.tasks {
-		if m.shown(t) && m.filter.match(t) {
+		if m.shownIn(t, viewList) && m.filter.match(t) {
 			tasks = append(tasks, t)
 		}
 	}
@@ -154,6 +159,9 @@ func (m *model) listTasks() []core.Task {
 
 // selected returns the selected task in the board or list.
 func (m *model) selected() (core.Task, bool) {
+	if m.noSel {
+		return core.Task{}, false
+	}
 	if m.view == viewList {
 		tasks := m.listTasks()
 		if m.listRow < len(tasks) {
@@ -172,25 +180,50 @@ func (m *model) selected() (core.Task, bool) {
 	return core.Task{}, false
 }
 
-// selectRef selects the task with ref if it shows, else keeps the position
-// within bounds. The detail pane beside the board follows the selection.
+// selectRef selects the task with ref, as after a view switch, a toggle or
+// a filter change. If the view hides the task, nothing is selected.
 func (m *model) selectRef(ref string) {
+	if t, ok := m.task(ref); ok && !(m.shown(t) && m.filter.match(t)) {
+		// A toggle or the filter hides it here: select nothing, and
+		// select it again in a view that shows it. The detail pane stays.
+		m.selRef, m.noSel = ref, true
+		m.clampRows()
+		return
+	}
+	m.selectNear(ref)
+}
+
+// selectNear selects the task with ref where it shows, else keeps the
+// position within bounds, so the selection moves to a neighbour when the
+// selected task disappears, as after archiving it. The detail pane beside
+// the board follows the selection.
+func (m *model) selectNear(ref string) {
+	m.noSel = false
 	cols := m.columns()
 	m.col = min(m.col, len(cols)-1)
-	if t, ok := m.task(ref); ok && m.shown(t) && m.filter.match(t) {
-		if i := slices.Index(cols, t.Status); i >= 0 {
+	if t, ok := m.task(ref); ok && m.filter.match(t) {
+		if i := slices.Index(cols, t.Status); i >= 0 && m.shownIn(t, viewBoard) {
 			m.col = i
 			tasks, _ := m.column(t.Status)
 			m.rows[t.Status] = slices.IndexFunc(tasks, func(x core.Task) bool { return x.Ref == ref })
 		}
-		m.listRow = slices.IndexFunc(m.listTasks(), func(x core.Task) bool { return x.Ref == ref })
+		if m.shownIn(t, viewList) {
+			m.listRow = slices.IndexFunc(m.listTasks(), func(x core.Task) bool { return x.Ref == ref })
+		}
 	}
+	m.clampRows()
+	m.selChanged()
+}
+
+// clampRows keeps the board's and list's positions within bounds.
+func (m *model) clampRows() {
+	cols := m.columns()
+	m.col = min(m.col, len(cols)-1)
 	for _, st := range cols {
 		tasks, _ := m.column(st)
 		m.rows[st] = max(0, min(m.rows[st], len(tasks)-1))
 	}
 	m.listRow = max(0, min(m.listRow, len(m.listTasks())-1))
-	m.selChanged()
 }
 
 // selChanged records the selected task after the selection moved.
@@ -208,6 +241,9 @@ func (m *model) selChanged() {
 // moveRow moves the selection by delta rows, or to the first or last row
 // for delta -inf/+inf (use a large number).
 func (m *model) moveRow(delta int) {
+	if m.noSel { // nothing is selected: select the first task
+		m.noSel, delta = false, -1<<30
+	}
 	if m.view == viewList {
 		n := len(m.listTasks())
 		m.listRow = max(0, min(m.listRow+delta, n-1))

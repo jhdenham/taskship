@@ -17,6 +17,8 @@ Setting up projects and their folders stays on the command line (`taskship init`
 - **Board** (`1`): one column per status (backlog, todo, in progress, done). Moving a card to another column with `H` and `L` changes its status. Canceled tasks are hidden unless you press `C`, and `N` shows your notes in a lane before backlog, so you can turn one into a task without leaving the board: move into the lane with `h`, then use the note keys below. There, `n` adds a one-line note in place, the way it adds a task to a column (`ctrl-g` adds it and opens it in your editor).
 - **List** (`2`): the same tasks as a table. `o` changes the sort order: priority, status, ref, or last updated. Clicking a column header sorts by it. `D` hides done tasks and shows them again; the header says "hiding done" while they're hidden. Their status doesn't change, and the board still shows them.
 
+The board and list share the selected task. If a view hides it, for example a done task in the list with `D` on, a hidden canceled lane, or a filter, nothing is selected there and the detail view stays open on it. Back in a view that shows it, it's selected again, and moving with the arrow keys or `j`/`k` selects the first task.
+
   ![The list view: one row per task, with status, priority, labels, and when it was last updated](images/tui-list.png)
 
 - **Detail** (`enter`): the task's fields, its description rendered as Markdown (including the acceptance criteria checklist), its comments, and the actions you can take. In a terminal at least 140 columns wide, it opens beside the board or list and follows the selection; `tab` moves between them. In a narrower one, it replaces them. `esc` closes it.

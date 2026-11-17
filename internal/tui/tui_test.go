@@ -1089,6 +1089,84 @@ func TestHideDone(t *testing.T) {
 	}
 }
 
+// The board and list share the selection, but a task the view hides
+// (here, done tasks in the list) leaves nothing selected there and is
+// selected again where it shows. The board keeps its place in the done
+// column, and moving selects the first task.
+func TestSelectionAcrossViews(t *testing.T) {
+	m, _ := myproject(t, 80, 24)
+	press(m, "l", "l", "l", "j")
+	if sel, ok := m.selected(); !ok || sel.Ref != "PROJ-2" {
+		t.Fatalf("selected %q on the board", sel.Ref)
+	}
+	press(m, "2", "D")
+	if sel, ok := m.selected(); ok {
+		t.Errorf("selected %q in the list hiding done", sel.Ref)
+	}
+	if strings.Contains(screen(m), "▌") {
+		t.Errorf("a row is highlighted:\n%s", screen(m))
+	}
+	press(m, "1")
+	if sel, ok := m.selected(); !ok || sel.Ref != "PROJ-2" || m.rows[core.StatusDone] != 1 {
+		t.Errorf("back on the board: selected %q, done row %d", sel.Ref, m.rows[core.StatusDone])
+	}
+	press(m, "2", "j")
+	if sel, ok := m.selected(); !ok || sel.Ref != m.listTasks()[0].Ref {
+		t.Errorf("moving selected %q, want the first task", sel.Ref)
+	}
+}
+
+// The detail pane stays on its task when a toggle or the filter hides it.
+func TestSelectionHiddenKeepsDetail(t *testing.T) {
+	m, _ := myproject(t, 180, 40)
+	press(m, "l", "l", "l", "j", "enter", "2", "D")
+	if !m.detailOpen || m.detailRef != "PROJ-2" {
+		t.Errorf("detail %v %q after hiding done", m.detailOpen, m.detailRef)
+	}
+	if sel, ok := m.selected(); ok {
+		t.Errorf("selected %q in the list hiding done", sel.Ref)
+	}
+	press(m, "1", "/", "text:Rate", "enter")
+	if sel, ok := m.selected(); ok {
+		t.Errorf("selected %q with a filter that hides PROJ-2", sel.Ref)
+	}
+	if !m.detailOpen || m.detailRef != "PROJ-2" {
+		t.Errorf("detail %v %q after filtering", m.detailOpen, m.detailRef)
+	}
+}
+
+// Hiding the canceled lane leaves nothing selected if a canceled task was,
+// and showing it again selects that task.
+func TestSelectionCanceledLane(t *testing.T) {
+	m, s := myproject(t, 80, 24)
+	canceled := core.StatusCanceled
+	if _, err := s.UpdateTask(context.Background(), "PROJ-3", store.TaskPatch{Status: &canceled}); err != nil {
+		t.Fatal(err)
+	}
+	press(m, "R", "C", "l", "l", "l", "l")
+	if sel, ok := m.selected(); !ok || sel.Ref != "PROJ-3" {
+		t.Fatalf("selected %q in the canceled lane", sel.Ref)
+	}
+	press(m, "C")
+	if sel, ok := m.selected(); ok {
+		t.Errorf("selected %q after hiding canceled", sel.Ref)
+	}
+	press(m, "C")
+	if sel, ok := m.selected(); !ok || sel.Ref != "PROJ-3" {
+		t.Errorf("selected %q after showing canceled again", sel.Ref)
+	}
+}
+
+// Acting on a task so that it disappears still moves the selection to a
+// neighbour, so archiving one task after another works.
+func TestSelectionAfterArchive(t *testing.T) {
+	m, _ := myproject(t, 80, 24)
+	press(m, "l", "l", "l", "a", "y")
+	if sel, ok := m.selected(); !ok || sel.Ref != "PROJ-2" {
+		t.Errorf("selected %q, %v after archiving PROJ-1", sel.Ref, ok)
+	}
+}
+
 // When the header is full, the sync state goes first.
 func TestHeaderMakesRoom(t *testing.T) {
 	m, _ := myproject(t, 80, 24)

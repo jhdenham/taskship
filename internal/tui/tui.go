@@ -157,6 +157,7 @@ type model struct {
 	rows          map[core.Status]int // selected row per board column
 	listRow       int
 	selRef        string // the selected task, kept across reloads
+	noSel         bool   // the view hides selRef, so nothing is selected
 	quickAddCol   core.Status
 	listTop       int
 	colTop        map[core.Status]int
@@ -475,7 +476,9 @@ func (m *model) key(k string) tea.Cmd {
 		if m.inLane { // notes aren't archived, so the lane hides
 			m.inLane, m.noteOpen = false, false
 		}
-		m.selectRef(m.selRef)
+		// Archived and other tasks are separate sets, and the detail pane
+		// closes, so select a task near the position rather than nothing.
+		m.selectNear(m.selRef)
 		return nil
 	case "R":
 		m.reload()
@@ -614,7 +617,7 @@ func (m *model) openProject(name string) {
 	}
 	m.project = p
 	m.filter, m.showArchived, m.showCanceled, m.hideDone = filter{}, false, false, false
-	m.detailOpen, m.focusDetail, m.selRef = false, false, ""
+	m.detailOpen, m.focusDetail, m.selRef, m.noSel = false, false, "", false
 	m.col, m.listRow, m.listTop = 0, 0, 0
 	m.noteOpen, m.focusNote, m.noteFilter = false, false, ""
 	m.noteRow, m.selNote, m.noteTop = 0, 0, 0
@@ -652,7 +655,11 @@ func (m *model) reload() {
 	// The detail view stays on its task even if the selection has to move
 	// (the selected task was archived elsewhere, say).
 	ref, scroll, pick := m.detailRef, m.detailScroll, m.pick
-	m.selectRef(m.selRef)
+	if m.noSel {
+		m.selectRef(m.selRef)
+	} else {
+		m.selectNear(m.selRef)
+	}
 	if m.detailOpen && m.detailRef != ref {
 		m.detailRef, m.detailScroll, m.pick = ref, scroll, pick
 	}
