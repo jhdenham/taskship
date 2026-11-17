@@ -25,3 +25,33 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Installs the previous release with install.sh and upgrades it to the one
+  # just published, so a mistake in archive names or layout turns this run
+  # red. It runs after publishing, so it can't stop a bad release.
+  upgrade:
+    needs: goreleaser
+    # Pre-releases never become the latest release, so upgrade can't reach them.
+    if: ${{ !contains(github.ref_name, '-') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # linux/amd64, linux/arm64, darwin/arm64. darwin/amd64 has no free runner.
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install the previous release
+        run: |
+          previous=$(git describe --tags --abbrev=0 --exclude='*-*' "$GITHUB_REF_NAME^")
+          echo "Previous release: $previous"
+          TASKSHIP_VERSION=$previous TASKSHIP_INSTALL_DIR=$RUNNER_TEMP/bin sh website/public/install.sh
+          "$RUNNER_TEMP/bin/taskship" --version
+      - name: Upgrade to ${{ github.ref_name }}
+        run: |
+          "$RUNNER_TEMP/bin/taskship" upgrade --yes
+          got=$("$RUNNER_TEMP/bin/taskship" --version)
+          echo "$got"
+          test "$got" = "taskship version $GITHUB_REF_NAME"

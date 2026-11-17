@@ -108,6 +108,8 @@ Planned additions: `internal/` packages for the domain, storage, dispatch and se
 
 Push a `v*` tag and `.github/workflows/release.yml` runs GoReleaser, which publishes a GitHub release with the archives and `checksums.txt` that `install.sh` downloads. Tags with a suffix, such as `v0.1.0-rc.1`, are published as pre-releases and don't become the latest release.
 
+After a release publishes, the `upgrade` job installs the previous release with `install.sh` on Linux (amd64, arm64) and macOS (arm64), runs `taskship upgrade --yes`, and fails if the result doesn't report the new tag. It can't stop a bad release, only turn the run red.
+
 To check a release build locally without publishing anything:
 
 ```sh
