@@ -40,15 +40,7 @@ func Execute(cmd *cobra.Command, args []string) int {
 	if errors.As(err, &agentExit) {
 		return int(agentExit)
 	}
-	var newer *store.NewerSchemaError
-	var backup *store.BackupError
-	switch {
-	case errors.As(err, &newer):
-		err = fmt.Errorf("%s was updated by a newer taskship version (schema %d; taskship %s supports up to %d)\n\nRun %s to install the latest version.",
-			display.Path(newer.Path), newer.Version, cmd.Version, newer.Supported, cmdRef("taskship upgrade"))
-	case errors.As(err, &backup):
-		err = fmt.Errorf("couldn't back up %s before updating it: %v\n\nYour data wasn't changed.", display.Path(backup.Path), backup.Err)
-	case store.IsReadOnly(err):
+	if store.IsReadOnly(err) {
 		err = readOnlyError(err)
 	}
 	printError(cmd.ErrOrStderr(), err)
@@ -147,10 +139,23 @@ func openStore(cmd *cobra.Command) (*store.Store, error) {
 		return nil, err
 	}
 	s, err := store.Open(cmd.Context(), dir)
-	if err == nil && s.Backup() != "" {
+	var newer *store.NewerSchemaError
+	var backup *store.BackupError
+	switch {
+	case errors.As(err, &newer):
+		return nil, kindError{fmt.Sprintf("%s was updated by a newer taskship version (schema %d; taskship %s supports up to %d)\n\n%s",
+			display.Path(newer.Path), newer.Version, cmd.Root().Version, newer.Supported, updateHint(cmd)), err}
+	case errors.As(err, &backup) && backup.Denied():
+		return nil, readOnlyError(err)
+	case errors.As(err, &backup):
+		return nil, kindError{fmt.Sprintf("couldn't back up %s before updating it: %v\n\nYour data wasn't changed.", display.Path(backup.Path), backup.Err), err}
+	case err != nil:
+		return nil, err
+	}
+	if s.Backup() != "" {
 		lipgloss.Fprintf(cmd.ErrOrStderr(), "Backed up your Taskship data to %s before updating it.\n", pathRef(s.Backup()))
 	}
-	return s, err
+	return s, nil
 }
 
 func writeJSON(cmd *cobra.Command, v any) error {

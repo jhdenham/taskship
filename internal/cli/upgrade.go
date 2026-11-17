@@ -41,9 +41,30 @@ var builtFromCheckout = func() bool {
 	return info.Main.Version == "" || info.Main.Version == "(devel)"
 }
 
-// newUpgradeCmd returns the upgrade command. release is the version set at
-// release build time, which is empty for binaries built from source.
-func newUpgradeCmd(release string) *cobra.Command {
+// releaseKey annotates the root command with the version set at release
+// build time, which is empty for binaries built from source.
+const releaseKey = "release"
+
+// How to update a taskship that upgrade won't replace.
+const (
+	checkoutHint  = "To update it, pull the latest changes and rebuild it."
+	goInstallHint = "Update it with:\ngo install github.com/jhdenham/taskship/cmd/taskship@latest"
+)
+
+// updateHint says how to update the running taskship: with upgrade for a
+// release build, else the way it was built.
+func updateHint(cmd *cobra.Command) string {
+	switch {
+	case cmd.Root().Annotations[releaseKey] != "":
+		return fmt.Sprintf("Run %s to install the latest version.", cmdRef("taskship upgrade"))
+	case builtFromCheckout():
+		return checkoutHint
+	default:
+		return goInstallHint
+	}
+}
+
+func newUpgradeCmd() *cobra.Command {
 	var yes bool
 	cmd := &cobra.Command{
 		Use:   "upgrade",
@@ -67,13 +88,15 @@ rebuild it from your checkout.`,
 			if err != nil {
 				return err
 			}
-			if release == "" {
+			current := cmd.Root().Annotations[releaseKey]
+			if current == "" {
+				how := "was installed with go install"
 				if builtFromCheckout() {
-					return kindError{fmt.Sprintf("%s was built from a source checkout, so upgrade won't replace it\n\nTo update it, pull the latest changes and rebuild it.", display.Path(target)), core.ErrInvalid}
+					how = "was built from a source checkout"
 				}
-				return kindError{fmt.Sprintf("%s was installed with go install, so upgrade won't replace it\n\nUpdate it with:\ngo install github.com/jhdenham/taskship/cmd/taskship@latest", display.Path(target)), core.ErrInvalid}
+				return kindError{fmt.Sprintf("%s %s, so upgrade won't replace it\n\n%s", display.Path(target), how, updateHint(cmd)), core.ErrInvalid}
 			}
-			out, current := cmd.OutOrStdout(), cmd.Root().Version
+			out := cmd.OutOrStdout()
 			latest, notes, err := upgrade.Latest(cmd.Context())
 			if err != nil {
 				return err
@@ -131,25 +154,28 @@ rebuild it from your checkout.`,
 func updateSkills(cmd *cobra.Command, bin, version string) error {
 	want := skill.Render(version)
 	for _, agent := range skill.Agents {
-		dir, err := skill.Dir(agent)
-		if err != nil {
-			return err
-		}
-		state, _, err := skill.Status(dir, want)
-		if err != nil {
-			return err
-		}
-		if state != skill.Outdated {
-			continue
-		}
-		c := exec.CommandContext(cmd.Context(), bin, "skill", "install", agent)
-		c.Stdout, c.Stderr = cmd.OutOrStdout(), cmd.ErrOrStderr()
-		if err := c.Run(); err != nil {
+		if err := updateSkill(cmd, bin, agent, want); err != nil {
 			return fmt.Errorf("taskship was upgraded to %s, but updating the skill for %s failed (%v)\n\nTo update it, run: %s",
 				version, core.AgentName(agent), err, command.Render("taskship skill install "+agent))
 		}
 	}
 	return nil
+}
+
+// updateSkill has the taskship at bin update agent's skill to want if it's
+// installed and outdated.
+func updateSkill(cmd *cobra.Command, bin, agent, want string) error {
+	dir, err := skill.Dir(agent)
+	if err != nil {
+		return err
+	}
+	state, _, err := skill.Status(dir, want)
+	if err != nil || state != skill.Outdated {
+		return err
+	}
+	c := exec.CommandContext(cmd.Context(), bin, "skill", "install", agent)
+	c.Stdout, c.Stderr = cmd.OutOrStdout(), cmd.ErrOrStderr()
+	return c.Run()
 }
 
 // startSession records cmd as a running session, labelled with its command
@@ -180,11 +206,9 @@ func printSessions(w io.Writer, version string) {
 	if err != nil || len(sessions) == 0 {
 		return
 	}
-	if len(sessions) == 1 {
-		fmt.Fprintf(w, "You have a running Taskship session that needs to be restarted to use %s:\n", version)
-	} else {
-		fmt.Fprintf(w, "You have running Taskship sessions that need to be restarted to use %s:\n", version)
-	}
+	n := len(sessions)
+	fmt.Fprintf(w, "You have %s that %s to be restarted to use %s:\n",
+		plural(n, "a running Taskship session", "running Taskship sessions"), plural(n, "needs", "need"), version)
 	rows := make([][2]string, len(sessions))
 	for i, s := range sessions {
 		rows[i] = [2]string{s.Label, fmt.Sprintf("pid %d", s.PID)}

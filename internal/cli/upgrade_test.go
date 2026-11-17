@@ -27,8 +27,11 @@ import (
 type fakeRelease struct {
 	bin         []byte
 	noRelease   bool   // there is no latest release
+	status      int    // if set, the latest release lookup fails with it
 	noArchive   bool   // the archive is missing
 	badChecksum bool   // checksums.txt doesn't match the archive
+	noChecksum  bool   // checksums.txt has no entry for the archive
+	requested   *bool  // set when the archive is requested
 	name        string // the binary's name in the archive, if not taskship
 	onArchive   func() // called when the archive is requested
 }
@@ -53,6 +56,10 @@ func (f fakeRelease) serve(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/releases/latest", func(w http.ResponseWriter, r *http.Request) {
+		if f.status != 0 {
+			w.WriteHeader(f.status)
+			return
+		}
 		if f.noRelease {
 			http.Redirect(w, r, "/releases", http.StatusFound)
 			return
@@ -60,6 +67,9 @@ func (f fakeRelease) serve(t *testing.T) {
 		http.Redirect(w, r, "/releases/tag/v0.2.0", http.StatusFound)
 	})
 	mux.HandleFunc("/download/v0.2.0/"+archive, func(w http.ResponseWriter, r *http.Request) {
+		if f.requested != nil {
+			*f.requested = true
+		}
 		if f.onArchive != nil {
 			f.onArchive()
 			<-r.Context().Done()
@@ -72,6 +82,10 @@ func (f fakeRelease) serve(t *testing.T) {
 		w.Write(tgz.Bytes())
 	})
 	mux.HandleFunc("/download/v0.2.0/checksums.txt", func(w http.ResponseWriter, _ *http.Request) {
+		if f.noChecksum {
+			fmt.Fprintf(w, "%s  taskship_other_arch.tar.gz\n", strings.Repeat("0", 64))
+			return
+		}
 		fmt.Fprintf(w, "%s  taskship_other_arch.tar.gz\n%s  %s\n", strings.Repeat("0", 64), hex.EncodeToString(sum[:]), archive)
 	})
 	srv := httptest.NewServer(mux)
@@ -219,6 +233,60 @@ func TestUpgradeNoRelease(t *testing.T) {
 		t.Errorf("%+v\nwant stderr:\n%s", out, want)
 	}
 	assertUntouched(t, real)
+}
+
+func TestUpgradeLookupFails(t *testing.T) {
+	tempHome(t)
+	fakeRelease{status: http.StatusTooManyRequests}.serve(t)
+	real := oldBinary(t)
+	out := runUpgrade(t, t.Context(), "v0.1.0", "", "--yes")
+	want := "taskship: couldn't check for the latest release at " + upgrade.LatestURL + ": 429 Too Many Requests\n"
+	if out.code != exitFailure || out.stderr != want {
+		t.Errorf("%+v\nwant stderr:\n%s", out, want)
+	}
+	assertUntouched(t, real)
+}
+
+// A release without a checksum for this system fails before the archive
+// is downloaded.
+func TestUpgradeNoChecksumEntry(t *testing.T) {
+	tempHome(t)
+	requested := false
+	fakeRelease{bin: script("v0.2.0"), noChecksum: true, requested: &requested}.serve(t)
+	real := oldBinary(t)
+	out := runUpgrade(t, t.Context(), "v0.1.0", "", "--yes")
+	archive := fmt.Sprintf("taskship_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+	want := "taskship: checksums.txt has no entry for " + archive + "\n\nNothing changed: taskship v0.1.0 is still installed.\n"
+	if out.code != exitFailure || out.stderr != want || requested {
+		t.Errorf("%+v, archive requested: %v\nwant stderr:\n%s", out, requested, want)
+	}
+	assertUntouched(t, real)
+}
+
+// A skill that can't be read after the binary is replaced is reported as
+// a skill problem, not a failed upgrade.
+func TestUpgradeSkillUnreadable(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root can read anything")
+	}
+	tempHome(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	dir := filepath.Join(home, ".claude", "skills", "taskship")
+	os.MkdirAll(dir, 0o755)
+	os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("x"), 0o000)
+	fakeRelease{bin: script("v0.2.0")}.serve(t)
+	real := oldBinary(t)
+	out := runUpgrade(t, t.Context(), "v0.1.0", "", "--yes")
+	if out.code != exitFailure || !strings.Contains(out.stdout, "✓ Upgraded taskship v0.1.0 → v0.2.0\n") ||
+		!strings.HasPrefix(out.stderr, "taskship: taskship was upgraded to v0.2.0, but updating the skill for Claude failed (") ||
+		!strings.HasSuffix(out.stderr, "permission denied)\n\nTo update it, run: taskship skill install claude\n") {
+		t.Errorf("%+v", out)
+	}
+	if b, _ := os.ReadFile(real); string(b) != string(script("v0.2.0")) {
+		t.Errorf("binary not replaced: %q", b)
+	}
 }
 
 func TestUpgradeFailures(t *testing.T) {

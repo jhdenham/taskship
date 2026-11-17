@@ -56,6 +56,9 @@ func Latest(ctx context.Context) (tag, notes string, err error) {
 		return "", "", err
 	}
 	resp.Body.Close()
+	if resp.StatusCode < 300 || resp.StatusCode >= 400 {
+		return "", "", errors.New(resp.Status)
+	}
 	loc, err := resp.Location()
 	if err != nil {
 		return "", "", errors.New("no release found")
@@ -95,10 +98,8 @@ func Install(ctx context.Context, tag, target string) error {
 
 	archive := fmt.Sprintf("taskship_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
 	base := DownloadURL + "/" + tag + "/"
-	data, err := get(ctx, base+archive)
-	if err != nil {
-		return err
-	}
+	// The small checksums.txt comes first, so a release without this
+	// system's archive fails before the large download.
 	sums, err := get(ctx, base+"checksums.txt")
 	if err != nil {
 		return err
@@ -106,6 +107,10 @@ func Install(ctx context.Context, tag, target string) error {
 	want, ok := checksum(sums, archive)
 	if !ok {
 		return fmt.Errorf("checksums.txt has no entry for %s", archive)
+	}
+	data, err := get(ctx, base+archive)
+	if err != nil {
+		return err
 	}
 	if got := sha256.Sum256(data); hex.EncodeToString(got[:]) != want {
 		return fmt.Errorf("checksum mismatch for %s", archive)

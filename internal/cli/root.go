@@ -15,6 +15,7 @@ func NewRootCmd(version string) *cobra.Command {
 		Short:         "From task to agent, in one command.",
 		Example:       "  taskship PROJ-42   Launch Claude on a task, plan-first (short for: taskship run PROJ-42)",
 		Version:       resolveVersion(version),
+		Annotations:   map[string]string{releaseKey: version},
 		SilenceUsage:  true,
 		SilenceErrors: true, // Execute prints errors and picks the exit code
 		// Bare "taskship" opens the TUI in a terminal, and prints help
@@ -45,7 +46,7 @@ func NewRootCmd(version string) *cobra.Command {
 		newInitCmd(),
 		newTUICmd(),
 		newSkillCmd(),
-		newUpgradeCmd(version),
+		newUpgradeCmd(),
 	)
 	return root
 }

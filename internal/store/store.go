@@ -41,7 +41,7 @@ type NewerSchemaError struct {
 }
 
 func (e *NewerSchemaError) Error() string {
-	return fmt.Sprintf("%s was updated by a newer taskship version (schema %d; this build supports up to %d)", e.Path, e.Version, e.Supported)
+	return fmt.Sprintf("%s: schema version %d is newer than the supported %d", e.Path, e.Version, e.Supported)
 }
 
 // BackupError reports a backup that failed before migrating the database
@@ -52,10 +52,21 @@ type BackupError struct {
 }
 
 func (e *BackupError) Error() string {
-	return fmt.Sprintf("couldn't back up %s before updating it: %v", e.Path, e.Err)
+	return fmt.Sprintf("back up %s: %v", e.Path, e.Err)
 }
 
 func (e *BackupError) Unwrap() error { return e.Err }
+
+// Denied reports whether the backup failed because the Taskship home
+// directory can't be written, as inside an agent's sandbox.
+func (e *BackupError) Denied() bool {
+	var s *sqlite.Error
+	if errors.As(e.Err, &s) {
+		code := s.Code() & 0xff
+		return code == sqlite3.SQLITE_READONLY || code == sqlite3.SQLITE_CANTOPEN
+	}
+	return errors.Is(e.Err, fs.ErrPermission)
+}
 
 // BackupDir is where Open copies the database, inside the Taskship home
 // directory, before migrating it.
@@ -116,14 +127,23 @@ func migrate(ctx context.Context, db *sql.DB, dir string) (string, error) {
 		return "", err
 	}
 	path := filepath.Join(dir, DBFile)
-	version, err := schemaVersion(ctx, db, path, len(files))
+	// The transaction takes the write lock at BEGIN (_txlock=immediate), so
+	// other taskship processes wait here, and only the one that migrates
+	// makes a backup.
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+	version, err := schemaVersion(ctx, tx, path, len(files))
 	if err != nil || version == len(files) {
 		return "", err
 	}
 	backup := ""
 	if version > 0 {
-		// VACUUM can't run in a transaction, so the copy is made first. If
-		// another taskship migrates in between, the copy is only redundant.
+		// VACUUM can't run in a transaction, so another connection makes
+		// the copy. It can still read while this one holds the write lock,
+		// and sees the database as it was, since nothing is written yet.
 		backup = filepath.Join(dir, BackupDir, fmt.Sprintf("schema-%d-%s.db", version, time.Now().Format("20060102-150405")))
 		if err := os.MkdirAll(filepath.Dir(backup), 0o700); err != nil {
 			return "", &BackupError{path, err}
@@ -131,15 +151,6 @@ func migrate(ctx context.Context, db *sql.DB, dir string) (string, error) {
 		if _, err := db.ExecContext(ctx, "VACUUM INTO ?", backup); err != nil {
 			return "", &BackupError{path, err}
 		}
-	}
-
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-	if version, err = schemaVersion(ctx, tx, path, len(files)); err != nil || version == len(files) {
-		return backup, err
 	}
 	for _, f := range files[version:] {
 		sqlText, err := migrations.ReadFile(f)
@@ -158,11 +169,9 @@ func migrate(ctx context.Context, db *sql.DB, dir string) (string, error) {
 
 // schemaVersion returns the schema version of the database at path, which
 // this build supports up to supported.
-func schemaVersion(ctx context.Context, q interface {
-	QueryRowContext(context.Context, string, ...any) *sql.Row
-}, path string, supported int) (int, error) {
+func schemaVersion(ctx context.Context, tx *sql.Tx, path string, supported int) (int, error) {
 	var version int
-	if err := q.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+	if err := tx.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return 0, err
 	}
 	if version > supported {

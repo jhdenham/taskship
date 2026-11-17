@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/jhdenham/taskship/internal/core"
@@ -178,6 +179,52 @@ func TestMigrateBacksUpFirst(t *testing.T) {
 	// A new database has nothing to back up.
 	if s := openTest(t, t.TempDir()); s.Backup() != "" {
 		t.Errorf("backup of a new database: %q", s.Backup())
+	}
+}
+
+// Two taskship processes that open an older database at once, as an agent's
+// parallel commands right after an upgrade do, both succeed, and only the
+// one that migrates makes a backup, of the old schema.
+func TestMigrateConcurrently(t *testing.T) {
+	dir := t.TempDir()
+	oldDatabase(t, dir, 9)
+	var wg sync.WaitGroup
+	errs := make([]error, 4)
+	backups := make([]string, 4)
+	for i := range errs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s, err := Open(context.Background(), dir)
+			if err == nil {
+				backups[i] = s.Backup()
+				s.Close()
+			}
+			errs[i] = err
+		}()
+	}
+	wg.Wait()
+	made := 0
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("Open %d: %v", i, err)
+		}
+		if backups[i] != "" {
+			made++
+		}
+	}
+	files, _ := filepath.Glob(filepath.Join(dir, BackupDir, "*.db"))
+	if made != 1 || len(files) != 1 {
+		t.Fatalf("%d opens reported a backup, %d files: %v", made, len(files), files)
+	}
+	db, err := sql.Open("sqlite", files[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var version int
+	if db.QueryRow("PRAGMA user_version").Scan(&version); version != 9 {
+		t.Errorf("backup has schema %d, want 9", version)
 	}
 }
 
